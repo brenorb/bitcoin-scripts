@@ -14,6 +14,7 @@ Measured fragments exclude input pushes and output comparison.
 | SHA-256 u4 | 32-byte input | 332,942 | differentially-validated | Large research fragment |
 | SHA-256 u4 shared lookup | 80-byte input, two chunks | 736,595 | locally-reproduced | 905-item strict peak; 11-byte saving per extra chunk over table reload |
 | SHA-256 u32 | 32-byte input | 512,428 | differentially-validated | Larger than local u4 variant |
+| SHA-256 u32 prefix | 32-byte input, 8-byte prefix | 512,456 | differentially-validated | Adapter does not reduce compression cost |
 | SHAKE256 byte | 32-byte input, 1,024-byte output | 15,927,814 | locally-reproduced | Raw output exceeds 1,000 items |
 | SHAKE256 byte prefix | 32-byte input, 32-byte output | 2,000,127 | locally-reproduced | Strict stack-compatible locally; still a 2 MB fragment |
 | SHAKE256 byte prefix | 32-byte input, 137-byte output | 3,989,612 | locally-reproduced | Rate-crossing prefix; 893-item strict peak |

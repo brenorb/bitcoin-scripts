@@ -13,6 +13,8 @@ the concrete algorithm to SHA-256.
   complete compression schedule.
 - `sha2_u4`: two nibbles per input byte and optional addition-table use chosen
   from the block count. The documented default is 32 bytes.
+- `sha256_prefix`: the u4 backend can retain a leading digest prefix measured
+  in nibbles after hashing.
 - `sha2_u4_stack`: the tracked-stack generator additionally selects addition
   tables and full/half XOR tables; defaults in its size tests are enabled.
 
@@ -26,6 +28,7 @@ output comparison.
 | `sha2_u32` | <!-- metric:sha2_u32_32 -->512428<!-- /metric:sha2_u32_32 --> bytes |
 | `sha2_u32`, first 8 digest bytes | <!-- metric:sha2_u32_prefix_32_8 -->512456<!-- /metric:sha2_u32_prefix_32_8 --> bytes |
 | `sha2_u4` | <!-- metric:sha2_u4_32 -->332942<!-- /metric:sha2_u4_32 --> bytes |
+| `sha256_prefix` (32-byte input, 8-nibble output) | <!-- metric:sha2_u4_prefix_32_8 -->332970<!-- /metric:sha2_u4_prefix_32_8 --> bytes |
 
 The `sha2_u4` multi-chunk path reuses its 16-entry row-offset lookup table
 while replacing the 136-entry XOR/AND table between chunks. For an 80-byte
@@ -71,3 +74,7 @@ truncated digest binding.
 No hints are required. `sha2_u32` consumes one stack item per byte;
 `sha2_u4` consumes two canonical nibbles per byte in the order documented by
 the push helpers.
+
+`sha256_prefix` retains the leading digest nibbles and drops the remainder;
+the full hash is still evaluated, so this is an output-shape adapter rather
+than a cheaper truncated-hash implementation.

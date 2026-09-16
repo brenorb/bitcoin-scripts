@@ -4113,6 +4113,7 @@ fn metrics() -> Vec<Metric> {
     .chain(u32_conditional_negate_metrics())
     .chain(u4_le_bits_metrics())
     .chain(u32_iszero_metrics())
+    .chain(sha2_u4_shared_lookup_metrics())
     .collect()
 }
 
@@ -4332,6 +4333,60 @@ fn check_readme_metrics(metrics: Vec<Metric>) {
             );
         }
     }
+}
+
+fn sha2_u4_shared_lookup_metrics() -> Vec<Metric> {
+    let fragment = sha256::sha2_u4::sha256(80);
+    let witness = vec![Vec::new(); 160];
+    let cleanup = u4::stack::u4_drop(64);
+    let execution = execute_script_with_inputs_strict(
+        script! {
+            { fragment.clone() }
+            { cleanup.clone() }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    assert!(
+        execution.success,
+        "strict SHA-256 u4 metric failed: {execution}"
+    );
+    vec![
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_80_shared_lookup",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_80_shared_lookup_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_80_shared_lookup_hints",
+            value: 0,
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_80_shared_lookup_stack",
+            value: execution.stats.max_nb_stack_items,
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_80_shared_lookup_opcodes",
+            value: execution
+                .stats
+                .opcode_count
+                .checked_sub(cleanup.compile_with_policy().instructions().count() + 1)
+                .expect("cleanup and terminator must be counted"),
+        },
+    ]
+}
+
+#[test]
+fn sha2_u4_shared_lookup_metrics_are_current() {
+    check_readme_metrics(sha2_u4_shared_lookup_metrics());
 }
 
 #[test]

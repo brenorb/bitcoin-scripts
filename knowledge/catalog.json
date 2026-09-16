@@ -2667,6 +2667,33 @@
       "stack_contract": "Consumes two canonical nibble items per message byte and returns digest nibbles in the documented order.",
       "configurations": [
         {
+          "id": "message-80-shared-lookup",
+          "label": "80-byte input with shared row lookup",
+          "parameters": {
+            "message_bytes": 80,
+            "chunks": 2,
+            "shared_lookup_items": 16
+          },
+          "includes": "fragment-only: hashing fragment; excludes message pushes and digest comparison",
+          "evidence": "locally-reproduced",
+          "execution": "unclassified",
+          "script_bytes": 736595,
+          "witness_bytes": 161,
+          "witness_bytes_max": 161,
+          "max_stack_items": 905,
+          "executed_opcodes": 594466,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 736595,
+          "metric_keys": [
+            "sha2_u4_80_shared_lookup",
+            "sha2_u4_80_shared_lookup_witness",
+            "sha2_u4_80_shared_lookup_hints",
+            "sha2_u4_80_shared_lookup_stack",
+            "sha2_u4_80_shared_lookup_opcodes"
+          ]
+        },
+        {
           "id": "message-32",
           "label": "32-byte input",
           "parameters": {

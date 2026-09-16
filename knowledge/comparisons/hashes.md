@@ -10,6 +10,7 @@ Measured fragments exclude input pushes and output comparison.
 | RIPEMD-160 u32 | 32-byte input | 244,063 | differentially-validated | 160-bit output |
 | HASH160 SHA-256 → RIPEMD-160 | 32-byte input | 756,491 | differentially-validated | Large composed research fragment |
 | SHA-256 u4 | 32-byte input | 332,942 | differentially-validated | Large research fragment |
+| SHA-256 u4 shared lookup | 80-byte input, two chunks | 736,595 | locally-reproduced | 905-item strict peak; 11-byte saving per extra chunk over table reload |
 | SHA-256 u32 | 32-byte input | 512,428 | differentially-validated | Larger than local u4 variant |
 | SHAKE256 byte | 32-byte input, 1,024-byte output | 15,927,814 | locally-reproduced | Raw output exceeds 1,000 items |
 | SHAKE256 byte prefix | 32-byte input, 32-byte output | 2,000,127 | locally-reproduced | Strict stack-compatible locally; still a 2 MB fragment |

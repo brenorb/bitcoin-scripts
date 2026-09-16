@@ -311,13 +311,13 @@ pub fn sha256(num_bytes: u32) -> Script {
         for c in 0..chunks {
 
             if c > 0 {
-                //change and with xor
-                //TODO: if lookup table is pushed first and substracted
-                // then we could avoid changing it  ~(32 * chunk)
-                { u4_drop_half_lookup() }
+                // Change the AND table back to XOR for the next schedule.
+                // The row-offset lookup table is identical for both tables;
+                // park it while replacing the table beneath it.
+                { u4_toaltstack(16) }
                 { u4_drop_half_table() }
                 { u4_push_half_xor_table() }
-                { u4_push_half_lookup() }
+                { u4_fromaltstack(16) }
             }
 
             for _ in 0..bytes_per_chunk[c as usize]*2 {

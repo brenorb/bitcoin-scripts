@@ -24,6 +24,20 @@ output comparison.
 | `sha2_u32` | <!-- metric:sha2_u32_32 -->512428<!-- /metric:sha2_u32_32 --> bytes |
 | `sha2_u4` | <!-- metric:sha2_u4_32 -->332942<!-- /metric:sha2_u4_32 --> bytes |
 
+The `sha2_u4` multi-chunk path reuses its 16-entry row-offset lookup table
+while replacing the 136-entry XOR/AND table between chunks. For an 80-byte
+two-chunk message this saves 11 bytes over reloading the unchanged lookup
+table:
+
+| Profile | Script bytes | Witness bytes | Hints | Strict peak | Fragment opcodes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `sha2_u4(80)` with shared lookup | <!-- metric:sha2_u4_80_shared_lookup -->736595<!-- /metric:sha2_u4_80_shared_lookup --> | <!-- metric:sha2_u4_80_shared_lookup_witness -->161<!-- /metric:sha2_u4_80_shared_lookup_witness --> | <!-- metric:sha2_u4_80_shared_lookup_hints -->0<!-- /metric:sha2_u4_80_shared_lookup_hints --> | <!-- metric:sha2_u4_80_shared_lookup_stack -->905<!-- /metric:sha2_u4_80_shared_lookup_stack --> | <!-- metric:sha2_u4_80_shared_lookup_opcodes -->594466<!-- /metric:sha2_u4_80_shared_lookup_opcodes --> |
+
+The profile uses 160 complete data items for the 80 message nibbles and no
+auxiliary hints; padding, output cleanup, and the terminal predicate are
+outside the fragment byte count. The strict run is local `bitcoin-scriptexec`
+evidence only and does not establish consensus or relay-policy deployment.
+
 Both fragments exceed the repository optimizer's 32 KiB input cutoff and are
 reported unoptimized.
 

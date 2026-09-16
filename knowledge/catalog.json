@@ -7784,6 +7784,76 @@
         "OP-002",
         "OP-003"
       ]
+    },
+    {
+      "id": "arithmetic/u4-zero-bitmask",
+      "name": "Checked u4 packed zero-bitmask projection",
+      "class": "arithmetic/word",
+      "summary": "Range-checked batches of canonical u4 nibbles packed into numeric byte zero masks without a lookup table.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-16",
+      "knowledge_page": "knowledge/primitives/u4-zero-bitmask.md",
+      "implementation": "src/arithmetic/u4/zero_bitmask.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "src/arithmetic/u4/zero_bitmask.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "batch-projection",
+        "canonical-encoding",
+        "bit-packing"
+      ],
+      "security": "Every hostile input is checked for canonical ScriptNum encoding and numeric range 0..=15 before contributing to a mask; the fragment makes no cryptographic claim and does not provide a terminal predicate.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | mask[0] ... mask[n/8-1], with bit i of mask[j] set iff nibble[8*j+i] is zero; complete groups are required and no auxiliary hint items or lookup table are used.",
+      "configurations": [
+        {
+          "id": "checked-batch32",
+          "label": "u4_nibbles_to_zero_bitmasks(32)",
+          "parameters": {
+            "nibble_count": 32,
+            "group_nibbles": 8,
+            "output_items": 4,
+            "data_items": 32,
+            "hint_items": 0,
+            "table_items": 0,
+            "input_check": "canonical-and-range"
+          },
+          "includes": "fragment-only: four checked eight-nibble accumulations, altstack output routing, and output restoration; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 482,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 36,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 482,
+          "static_non_push_opcodes": 382,
+          "metric_keys": [
+            "u4_zero_bitmask_batch32",
+            "u4_zero_bitmask_batch32_witness",
+            "u4_zero_bitmask_batch32_stack",
+            "u4_zero_bitmask_batch32_opcodes"
+          ]
+        }
+      ],
+      "limitations": [
+        "Input count must be a multiple of eight and the standalone strict bound is 992 nibbles",
+        "Outputs are numeric ScriptNum byte masks, not raw byte arrays or terminal truth values",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "Bitcoin Core consensus and relay-policy validation have not been performed"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
     }
   ]
 }

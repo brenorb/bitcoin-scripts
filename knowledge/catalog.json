@@ -2522,14 +2522,14 @@
             "intermediate_representation": "32 byte-valued stack items"
           },
           "includes": "fragment-with-memory: SHA-256 and RIPEMD-160 fragments with table setup and cleanup; excludes message pushes, digest comparison, and witness serialization",
-          "script_bytes": 756491,
+          "script_bytes": 752651,
           "witness_bytes": 65,
           "witness_bytes_max": 65,
           "max_stack_items": 856,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": null,
-          "per_use_script_bytes": 756491,
+          "per_use_script_bytes": 752651,
           "metric_keys": [
             "hash160_32",
             "hash160_witness_32",

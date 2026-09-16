@@ -5359,6 +5359,42 @@ fn u32_iszero_metrics_are_current() {
 }
 
 #[test]
+fn u32_zero_byte_mask_metrics_are_current() {
+    let fragment = u32::zero_byte_mask::u32_to_zero_byte_mask();
+    let witness = vec![scriptnum(255); 4];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            OP_DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_zero_byte_mask",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_zero_byte_mask_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_zero_byte_mask_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_zero_byte_mask_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
+#[test]
 fn commitment_metrics_are_current() {
     check_readme_metrics(commitment_metrics());
 }

@@ -7784,6 +7784,74 @@
         "OP-002",
         "OP-003"
       ]
+    },
+    {
+      "id": "arithmetic/u32-zero-byte-mask",
+      "name": "Checked u32 zero-byte mask",
+      "class": "arithmetic/word",
+      "summary": "Range-checked projection from four canonical u32 byte limbs to one numeric per-byte zero mask.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-16",
+      "knowledge_page": "knowledge/primitives/u32-zero-byte-mask.md",
+      "implementation": "src/arithmetic/u32/zero_byte_mask.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "src/arithmetic/u32/zero_byte_mask.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "batch-projection",
+        "canonical-encoding",
+        "bit-packing"
+      ],
+      "security": "Every hostile byte limb is checked for canonical ScriptNum encoding and numeric range 0..=255 before contributing to the mask; the fragment makes no cryptographic claim and does not provide a terminal predicate.",
+      "stack_contract": "Consumes preserved | byte[0] | byte[1] | byte[2] | byte[3], with the least-significant byte on top, and returns preserved | mask where bit i is set iff byte[i] is zero; no auxiliary hint items or lookup table are used.",
+      "configurations": [
+        {
+          "id": "checked-word",
+          "label": "u32_to_zero_byte_mask()",
+          "parameters": {
+            "byte_limbs": 4,
+            "output_items": 1,
+            "data_items": 4,
+            "hint_items": 0,
+            "table_items": 0,
+            "input_check": "canonical-and-range"
+          },
+          "includes": "fragment-only: four canonical byte checks, zero comparisons, and accumulator packing; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 67,
+          "witness_bytes": 13,
+          "witness_bytes_max": 13,
+          "max_stack_items": 8,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 67,
+          "static_non_push_opcodes": 46,
+          "metric_keys": [
+            "u32_zero_byte_mask",
+            "u32_zero_byte_mask_witness",
+            "u32_zero_byte_mask_stack",
+            "u32_zero_byte_mask_opcodes"
+          ]
+        }
+      ],
+      "limitations": [
+        "The four input limbs must use the existing MSB-first u32 stack representation",
+        "Output is a numeric four-bit mask, not a byte array or terminal truth value",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "Bitcoin Core consensus and relay-policy validation have not been performed"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002"
+      ]
     }
   ]
 }

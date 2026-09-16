@@ -8,4 +8,5 @@ pub mod rotate;
 pub mod stack;
 pub mod sub;
 pub mod xor;
+pub mod zero_byte_mask;
 pub mod zip;

@@ -2428,6 +2428,7 @@
       "documentation": "src/hashes/hash160/README.md",
       "tests": [
         "hashes::hash160::tests::matches_reference_vectors",
+        "hashes::hash160::tests::shared_table_rejects_non_byte_inputs",
         "hashes::hash160::tests::rejects_unsupported_message_length"
       ],
       "references": [
@@ -2462,6 +2463,29 @@
             "hash160_32",
             "hash160_witness_32",
             "hash160_stack_32"
+          ]
+        },
+        {
+          "id": "message-32-shared-table",
+          "label": "32-byte input with shared byte-logic table",
+          "parameters": {
+            "message_bytes": 32,
+            "intermediate_representation": "32 byte-valued stack items",
+            "shared_table_items": 256
+          },
+          "includes": "fragment-with-memory: one shared byte-logic table, SHA-256 and RIPEMD-160 fragments, and final table cleanup; excludes message pushes, digest comparison, and witness serialization",
+          "script_bytes": 756167,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 856,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 756167,
+          "metric_keys": [
+            "hash160_shared_table_32",
+            "hash160_witness_32",
+            "hash160_shared_table_stack_32"
           ]
         }
       ],

@@ -28,11 +28,28 @@ const INITSTATE: [u32; 8] = [
 
 /// sha256 take indefinite length input on the top of stack and return 256 bit (64 byte)
 pub fn sha256(num_bytes: usize) -> Script {
+    sha256_with_table(num_bytes, true, true)
+}
+
+fn sha256_with_table(num_bytes: usize, push_table: bool, drop_table: bool) -> Script {
+    sha256_with_table_after_input(num_bytes, push_table, drop_table, true)
+}
+
+pub(crate) fn sha256_without_table_after_input(num_bytes: usize) -> Script {
+    sha256_with_table_after_input(num_bytes, false, false, false)
+}
+
+fn sha256_with_table_after_input(
+    num_bytes: usize,
+    push_table: bool,
+    drop_table: bool,
+    move_input: bool,
+) -> Script {
     if num_bytes == 32 {
-        return sha256_32bytes();
+        return sha256_32bytes_with_table(push_table, drop_table, move_input);
     }
     if num_bytes == 80 {
-        return sha256_80bytes();
+        return sha256_80bytes_with_table(push_table, drop_table, move_input);
     }
     let mut chunks_size: usize = num_bytes / 64 + 1;
     if (num_bytes % 64) > 55 {
@@ -40,10 +57,10 @@ pub fn sha256(num_bytes: usize) -> Script {
     }
 
     script! {
-        {push_reverse_bytes_to_alt(num_bytes)}
+        if move_input { {push_reverse_bytes_to_alt(num_bytes)} }
 
         // top of stack: [ [n bytes input] ]
-        {u8_push_xor_table()}
+        if push_table { {u8_push_xor_table()} }
         {sha256_k()}
         // top of stack: [ [64 byte chunks]... ]
         {padding_add_roll(num_bytes)}
@@ -60,7 +77,7 @@ pub fn sha256(num_bytes: usize) -> Script {
         for _ in 0..64 {
             {u32_drop()}
         }
-        {u8_drop_xor_table()}
+        if drop_table { {u8_drop_xor_table()} }
 
         for _ in 0..8 {
             {u32_fromaltstack()}
@@ -69,11 +86,15 @@ pub fn sha256(num_bytes: usize) -> Script {
 }
 
 pub fn sha256_32bytes() -> Script {
+    sha256_32bytes_with_table(true, true, true)
+}
+
+fn sha256_32bytes_with_table(push_table: bool, drop_table: bool, move_input: bool) -> Script {
     script! {
-        {push_reverse_bytes_to_alt(32)}
+        if move_input { {push_reverse_bytes_to_alt(32)} }
 
         // top of stack: [ [n bytes input] ]
-        {u8_push_xor_table()}
+        if push_table { {u8_push_xor_table()} }
         {sha256_k()}
         // top of stack: [ [64 byte chunks]... ]
         {padding_add_roll(32)}
@@ -88,7 +109,7 @@ pub fn sha256_32bytes() -> Script {
         for _ in 0..64 {
             {u32_drop()}
         }
-        {u8_drop_xor_table()}
+        if drop_table { {u8_drop_xor_table()} }
 
         for _ in 0..8 {
             {u32_fromaltstack()}
@@ -97,11 +118,15 @@ pub fn sha256_32bytes() -> Script {
 }
 
 pub fn sha256_80bytes() -> Script {
+    sha256_80bytes_with_table(true, true, true)
+}
+
+fn sha256_80bytes_with_table(push_table: bool, drop_table: bool, move_input: bool) -> Script {
     script! {
-        {push_reverse_bytes_to_alt(80)}
+        if move_input { {push_reverse_bytes_to_alt(80)} }
 
         // top of stack: [ [n bytes input] ]
-        {u8_push_xor_table()}
+        if push_table { {u8_push_xor_table()} }
         {sha256_k()}
         // top of stack: [ [64 byte chunks]... ]
         {padding_add_roll(80)}
@@ -119,7 +144,7 @@ pub fn sha256_80bytes() -> Script {
         for _ in 0..64 {
             {u32_drop()}
         }
-        {u8_drop_xor_table()}
+        if drop_table { {u8_drop_xor_table()} }
 
         for _ in 0..8 {
             {u32_fromaltstack()}

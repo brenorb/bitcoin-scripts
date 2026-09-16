@@ -5116,6 +5116,7 @@ fn hash_path_chain_metrics_are_current() {
 }
 
 fn hash160_composition_metrics() -> Vec<Metric> {
+    let shared = hash160::hash160_shared_table(32);
     vec![
         Metric {
             readme: "src/hashes/hash160/README.md",
@@ -5136,6 +5137,23 @@ fn hash160_composition_metrics() -> Vec<Metric> {
                     for _ in 0..20 {
                         OP_DROP
                     }
+                    OP_TRUE
+                },
+                vec![vec![0x42]; 32],
+            ),
+        },
+        Metric {
+            readme: "src/hashes/hash160/README.md",
+            key: "hash160_shared_table_32",
+            value: script_len(shared.clone()),
+        },
+        Metric {
+            readme: "src/hashes/hash160/README.md",
+            key: "hash160_shared_table_stack_32",
+            value: max_stack_items_strict(
+                script! {
+                    { shared }
+                    for _ in 0..20 { OP_DROP }
                     OP_TRUE
                 },
                 vec![vec![0x42]; 32],

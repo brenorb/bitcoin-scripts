@@ -51,6 +51,14 @@ const RIGHT_ROTATIONS: [usize; 80] = [
 /// and leaves the 20 digest bytes on the stack, with the first digest byte on
 /// top.
 pub fn ripemd160(num_bytes: usize) -> Script {
+    ripemd160_with_table(num_bytes, true, true)
+}
+
+pub(crate) fn ripemd160_without_table(num_bytes: usize) -> Script {
+    ripemd160_with_table(num_bytes, false, false)
+}
+
+fn ripemd160_with_table(num_bytes: usize, push_table: bool, drop_table: bool) -> Script {
     assert!(
         num_bytes < 512,
         "This RIPEMD-160 implementation supports messages shorter than 512 bytes"
@@ -63,7 +71,7 @@ pub fn ripemd160(num_bytes: usize) -> Script {
 
     script! {
         { push_reverse_bytes_to_alt(num_bytes) }
-        { u8_push_xor_table() }
+        if push_table { { u8_push_xor_table() } }
         { padding_add_roll(num_bytes) }
         { ripemd160_init() }
 
@@ -74,7 +82,7 @@ pub fn ripemd160(num_bytes: usize) -> Script {
         for _ in 0..5 {
             { u32_toaltstack() }
         }
-        { u8_drop_xor_table() }
+        if drop_table { { u8_drop_xor_table() } }
         for _ in 0..5 {
             { u32_fromaltstack() }
         }

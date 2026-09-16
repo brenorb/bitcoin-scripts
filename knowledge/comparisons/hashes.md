@@ -9,6 +9,7 @@ Measured fragments exclude input pushes and output comparison.
 | SHA-1 u32 | 32-byte input | 209,726 | differentially-validated | Collision-broken compatibility hash |
 | RIPEMD-160 u32 | 32-byte input | 244,063 | differentially-validated | 160-bit output |
 | HASH160 SHA-256 → RIPEMD-160 | 32-byte input | 756,491 | differentially-validated | Large composed research fragment |
+| HASH160 shared byte table | 32-byte input | 756,167 | differentially-validated | Saves 324 bytes by sharing the 256-item lookup |
 | SHA-256 u4 | 32-byte input | 332,942 | differentially-validated | Large research fragment |
 | SHA-256 u32 | 32-byte input | 512,428 | differentially-validated | Larger than local u4 variant |
 | SHAKE256 byte | 32-byte input, 1,024-byte output | 15,927,814 | locally-reproduced | Raw output exceeds 1,000 items |

@@ -11,7 +11,7 @@ locking-script size. The measured peak is the combined main and alt stack.
 
 | Configuration | Locking script | Unlocking witness | Maximum stack items |
 | --- | ---: | ---: | ---: |
-| 32-byte input | <!-- metric:hash160_32 -->756491<!-- /metric:hash160_32 --> bytes | <!-- metric:hash160_witness_32 -->65<!-- /metric:hash160_witness_32 --> bytes | <!-- metric:hash160_stack_32 -->856<!-- /metric:hash160_stack_32 --> |
+| 32-byte input | <!-- metric:hash160_32 -->752651<!-- /metric:hash160_32 --> bytes | <!-- metric:hash160_witness_32 -->65<!-- /metric:hash160_witness_32 --> bytes | <!-- metric:hash160_stack_32 -->856<!-- /metric:hash160_stack_32 --> |
 
 The SHA-256 and RIPEMD-160 stages both use byte-valued stack items. The
 intermediate 32-byte SHA-256 digest is consumed directly by RIPEMD-160, so no

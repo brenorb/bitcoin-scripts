@@ -221,6 +221,12 @@ pub fn u32_uncompress() -> Script {
             OP_TUCK OP_GREATERTHAN
             OP_TUCK OP_IF 0x7FFFFFFF OP_ADD OP_1ADD OP_ENDIF
         OP_ENDIF
+        { u32_uncompress_body() }
+    }
+}
+
+fn u32_uncompress_body() -> Script {
+    script! {
         OP_SWAP OP_TOALTSTACK
         for i in 1..8 {
             { 1 << (31 - i) } OP_2DUP OP_GREATERTHANOREQUAL
@@ -243,6 +249,19 @@ pub fn u32_uncompress() -> Script {
         }
         OP_FROMALTSTACK OP_FROMALTSTACK OP_FROMALTSTACK
         OP_SWAP OP_2SWAP OP_SWAP
+    }
+}
+
+/// Decode a canonical non-negative ScriptNum in `0..=0x7fffffff` into four bytes.
+/// The input is consumed and must be minimally encoded.
+pub fn u32_uncompress_canonical_nonnegative() -> Script {
+    script! {
+        OP_DUP 0 OP_GREATERTHANOREQUAL OP_VERIFY
+        OP_DUP { 2_147_483_647i64 } OP_GREATERTHAN OP_NOT OP_VERIFY
+        OP_DUP OP_DUP 0 OP_ADD OP_EQUALVERIFY
+        0
+        OP_SWAP
+        { u32_uncompress_body() }
     }
 }
 
@@ -339,6 +358,34 @@ mod tests {
         rejects_noncanonical(vec![0x01, 0x00, 0x00, 0x00, 0x80]);
         rejects_noncanonical(vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x80]);
     }
+
+    #[test]
+    fn canonical_nonnegative_uncompress_accepts_boundaries_and_rejects_negative() {
+        for value in [0, 1, 127, 128, 255, 256, 0xffff, 0x1234_5678, 0x7fff_ffff] {
+            let script = script! {
+                { u32_uncompress_canonical_nonnegative() }
+                { u32_push(value) }
+                { u32_equalverify() }
+                OP_TRUE
+            };
+            let result = execute_raw_script_with_inputs_strict(
+                script.compile_with_policy().to_bytes(),
+                vec![scriptnum(i64::from(value))],
+            );
+            assert!(result.success, "failed to decode {value:#x}: {result}");
+        }
+
+        for raw in [scriptnum(-128), vec![1, 0]] {
+            let result = execute_raw_script_with_inputs_strict(
+                script! { { u32_uncompress_canonical_nonnegative() } }
+                    .compile_with_policy()
+                    .to_bytes(),
+                vec![raw],
+            );
+            assert!(!result.success, "accepted malformed nonnegative input");
+        }
+    }
+
     #[test]
     fn canonical_byte_boundary_rejects_aliases_and_out_of_range_values() {
         for value in 0..=255 {

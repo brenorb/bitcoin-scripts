@@ -31,6 +31,8 @@ they do not use BN254 or any other field modulus.
 - `u32_uncompress_canonical()` consumes one minimally encoded signed ScriptNum
   representing a u32 and returns its four MSB-first bytes. It rejects raw
   aliases and accepts five bytes only for `-2^31`.
+- `u32_uncompress_canonical_nonnegative()` is a smaller decoder for canonical
+  values in `0..=0x7fffffff`; it rejects negative values and raw aliases.
 
 ## Script metrics
 
@@ -57,6 +59,7 @@ as less-than-or-equal.
 | `u8_push_xor_table()` | <!-- metric:u8_logic_table_push -->236<!-- /metric:u8_logic_table_push --> bytes | 0 bytes | 256 table items |
 | `u8_drop_xor_table()` | <!-- metric:u8_logic_table_drop -->128<!-- /metric:u8_logic_table_drop --> bytes | 0 bytes | consumes 256 table items |
 | `u32_uncompress_canonical()` | <!-- metric:u32_uncompress_canonical -->431<!-- /metric:u32_uncompress_canonical --> bytes | <!-- metric:u32_uncompress_canonical_witness -->7<!-- /metric:u32_uncompress_canonical_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_stack -->7<!-- /metric:u32_uncompress_canonical_stack --> items |
+| `u32_uncompress_canonical_nonnegative()` | <!-- metric:u32_uncompress_canonical_nonnegative -->405<!-- /metric:u32_uncompress_canonical_nonnegative --> bytes | <!-- metric:u32_uncompress_canonical_nonnegative_witness -->6<!-- /metric:u32_uncompress_canonical_nonnegative_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_nonnegative_stack -->7<!-- /metric:u32_uncompress_canonical_nonnegative_stack --> items; <!-- metric:u32_uncompress_canonical_nonnegative_opcodes -->328<!-- /metric:u32_uncompress_canonical_nonnegative_opcodes --> executed fragment opcodes |
 | `u8_extract_hbit_checked(4)` | <!-- metric:u8_extract_hbit_checked -->73<!-- /metric:u8_extract_hbit_checked --> bytes | <!-- metric:u8_extract_hbit_checked_witness -->4<!-- /metric:u8_extract_hbit_checked_witness --> bytes, 1 data item | <!-- metric:u8_extract_hbit_checked_stack -->5<!-- /metric:u8_extract_hbit_checked_stack --> items |
 | `verify_canonical_byte()` | <!-- metric:u32_canonical_byte -->12<!-- /metric:u32_canonical_byte --> bytes | <!-- metric:u32_canonical_byte_witness -->4<!-- /metric:u32_canonical_byte_witness --> bytes, 1 data item | <!-- metric:u32_canonical_byte_stack -->4<!-- /metric:u32_canonical_byte_stack --> items |
 | `u32_popcount()` | <!-- metric:u32_popcount -->455<!-- /metric:u32_popcount --> bytes | <!-- metric:u32_popcount_witness -->13<!-- /metric:u32_popcount_witness --> bytes | <!-- metric:u32_popcount_stack -->262<!-- /metric:u32_popcount_stack --> items; <!-- metric:u32_popcount_opcodes -->171<!-- /metric:u32_popcount_opcodes --> static non-push opcodes |
@@ -95,6 +98,9 @@ operations in one script.
 The canonical compressed-u32 row uses the maximum five-byte witness item for
 `-2^31`. It is a raw-encoding boundary: `u32_uncompress()` remains available
 for callers that intentionally accept ScriptNum aliases.
+The nonnegative decoder is a domain-specialized alternative: it omits signed
+normalization and the five-byte sentinel path, saving locking bytes while
+rejecting the negative half of the compressed u32 domain.
 The popcount table is separate from the Boolean XOR table. Its representative
 32-bit all-ones witness uses four data items and serializes to 13 bytes; the
 strict combined peak is 262 items. The table is generated once per fragment

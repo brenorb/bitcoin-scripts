@@ -673,6 +673,31 @@
           ]
         },
         {
+          "id": "uncompress-canonical-nonnegative",
+          "label": "Canonical nonnegative compressed-u32 decoder",
+          "parameters": {
+            "domain": "0..=0x7fffffff",
+            "raw_aliases": false,
+            "data_items": 1,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: nonnegative-domain check, exact raw ScriptNum encoding check, and four byte outputs; representative witness is canonical 0x7fffffff; excludes terminal predicate, input push, and transaction context",
+          "script_bytes": 405,
+          "witness_bytes": 6,
+          "witness_bytes_max": 6,
+          "max_stack_items": 7,
+          "executed_opcodes": 328,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u32_uncompress_canonical_nonnegative",
+            "u32_uncompress_canonical_nonnegative_witness",
+            "u32_uncompress_canonical_nonnegative_stack",
+            "u32_uncompress_canonical_nonnegative_opcodes"
+          ]
+        },
+        {
           "id": "canonical-byte-boundary",
           "label": "Canonical checked ScriptNum byte",
           "parameters": {

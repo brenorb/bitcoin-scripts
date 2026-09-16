@@ -4297,6 +4297,42 @@ fn u32_uncompress_canonical_metrics_are_current() {
     ]);
 }
 
+#[test]
+fn u32_uncompress_canonical_nonnegative_metrics_are_current() {
+    let fragment = u32::stack::u32_uncompress_canonical_nonnegative();
+    let witness = vec![scriptnum(0x7fff_ffff)];
+    let stack_script = script! {
+        { fragment.clone() }
+        { u32::stack::u32_drop() }
+        OP_1
+    };
+    let result = execute_script_with_inputs_strict(stack_script, witness.clone());
+    assert!(result.success, "strict metric execution failed: {result}");
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_canonical_nonnegative",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_canonical_nonnegative_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_canonical_nonnegative_stack",
+            value: result.stats.max_nb_stack_items,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_canonical_nonnegative_opcodes",
+            value: result.stats.opcode_count - 3,
+        },
+    ]);
+}
+
 fn check_readme_metrics(metrics: Vec<Metric>) {
     let update = env::var_os("UPDATE_PRIMITIVE_METRICS").is_some();
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));

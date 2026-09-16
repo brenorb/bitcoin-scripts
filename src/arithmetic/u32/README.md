@@ -19,6 +19,8 @@ they do not use BN254 or any other field modulus.
   integers and consumes both.
 - `u32_iszero()` consumes the top word and returns whether all four limbs are
   numerically zero.
+- `u32_{xor,and,or}_drop()` consume both input words and return only the
+  bitwise result.
 - `u32_or(a, b, stack_size)`, like XOR and AND, takes distinct word offsets.
   `stack_size` is one plus the number of u32 words above the shared byte-logic
   table. With exactly two working words, the usual value is `3`.
@@ -54,6 +56,9 @@ as less-than-or-equal.
 | `u32_compressed_equal()` | <!-- metric:u32_compressed_equal -->37<!-- /metric:u32_compressed_equal --> bytes | <!-- metric:u32_compressed_equal_witness -->11<!-- /metric:u32_compressed_equal_witness --> bytes | <!-- metric:u32_compressed_equal_stack -->5<!-- /metric:u32_compressed_equal_stack --> items |
 | `u32_conditional_select()` | <!-- metric:u32_conditional_select -->9<!-- /metric:u32_conditional_select --> bytes | <!-- metric:u32_conditional_select_witness_min -->10<!-- /metric:u32_conditional_select_witness_min -->–<!-- metric:u32_conditional_select_witness_max -->30<!-- /metric:u32_conditional_select_witness_max --> bytes | <!-- metric:u32_conditional_select_stack -->9<!-- /metric:u32_conditional_select_stack --> items |
 | `u32_iszero()` | <!-- metric:u32_iszero -->4<!-- /metric:u32_iszero --> bytes | <!-- metric:u32_iszero_witness -->5<!-- /metric:u32_iszero_witness --> bytes | <!-- metric:u32_iszero_stack -->4<!-- /metric:u32_iszero_stack --> items |
+| `u32_xor_drop(0, 1, 3)` | <!-- metric:u32_xor_drop -->202<!-- /metric:u32_xor_drop --> bytes | 0 bytes | <!-- metric:u32_xor_drop_stack -->268<!-- /metric:u32_xor_drop_stack --> items; <!-- metric:u32_xor_drop_opcodes -->174<!-- /metric:u32_xor_drop_opcodes --> static non-push opcodes |
+| `u32_and_drop(0, 1, 3)` | <!-- metric:u32_and_drop -->169<!-- /metric:u32_and_drop --> bytes | 0 bytes | <!-- metric:u32_and_drop_stack -->268<!-- /metric:u32_and_drop_stack --> items; <!-- metric:u32_and_drop_opcodes -->142<!-- /metric:u32_and_drop_opcodes --> static non-push opcodes |
+| `u32_or_drop(0, 1, 3)` | <!-- metric:u32_or_drop -->326<!-- /metric:u32_or_drop --> bytes | 0 bytes | <!-- metric:u32_or_drop_stack -->268<!-- /metric:u32_or_drop_stack --> items; <!-- metric:u32_or_drop_opcodes -->242<!-- /metric:u32_or_drop_opcodes --> static non-push opcodes |
 | `u8_push_xor_table()` | <!-- metric:u8_logic_table_push -->236<!-- /metric:u8_logic_table_push --> bytes | 0 bytes | 256 table items |
 | `u8_drop_xor_table()` | <!-- metric:u8_logic_table_drop -->128<!-- /metric:u8_logic_table_drop --> bytes | 0 bytes | consumes 256 table items |
 | `u32_uncompress_canonical()` | <!-- metric:u32_uncompress_canonical -->431<!-- /metric:u32_uncompress_canonical --> bytes | <!-- metric:u32_uncompress_canonical_witness -->7<!-- /metric:u32_uncompress_canonical_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_stack -->7<!-- /metric:u32_uncompress_canonical_stack --> items |
@@ -91,6 +96,12 @@ operation-specific hint is needed. The conditional selector uses one condition
 item plus two four-byte words, for nine witness items when all inputs come from
 the witness. Its maximum canonical witness uses a four-byte ScriptNum condition and eight two-byte ScriptNum limbs. The logic table can be shared by any number of XOR, AND, and OR
 operations in one script.
+
+The consuming `u32_{xor,and,or}_drop()` variants use the same table and
+standalone fragment sizes as their preserving counterparts, but consume both
+input words. Their representative combined peak is 268 items, four below the
+preserving OR profile; callers that otherwise discard the preserved word also
+avoid the extra word-routing fragment.
 
 The canonical compressed-u32 row uses the maximum five-byte witness item for
 `-2^31`. It is a raw-encoding boundary: `u32_uncompress()` remains available

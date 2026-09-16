@@ -586,6 +586,81 @@
           ]
         },
         {
+          "id": "xor-drop",
+          "label": "u32_xor_drop(0,1,3)",
+          "parameters": {
+            "a_depth": 0,
+            "b_depth": 1,
+            "consumes_both": true,
+            "table_items": 256
+          },
+          "includes": "fragment-only: destructive two-word routing and XOR lookup; excludes table setup, operand pushes, output check, and transaction context",
+          "script_bytes": 202,
+          "witness_bytes": 0,
+          "witness_bytes_max": 0,
+          "max_stack_items": 268,
+          "executed_opcodes": null,
+          "static_non_push_opcodes": 174,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 202,
+          "metric_keys": [
+            "u32_xor_drop",
+            "u32_xor_drop_stack",
+            "u32_xor_drop_opcodes"
+          ]
+        },
+        {
+          "id": "and-drop",
+          "label": "u32_and_drop(0,1,3)",
+          "parameters": {
+            "a_depth": 0,
+            "b_depth": 1,
+            "consumes_both": true,
+            "table_items": 256
+          },
+          "includes": "fragment-only: destructive two-word routing and AND lookup; excludes table setup, operand pushes, output check, and transaction context",
+          "script_bytes": 169,
+          "witness_bytes": 0,
+          "witness_bytes_max": 0,
+          "max_stack_items": 268,
+          "executed_opcodes": null,
+          "static_non_push_opcodes": 142,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 169,
+          "metric_keys": [
+            "u32_and_drop",
+            "u32_and_drop_stack",
+            "u32_and_drop_opcodes"
+          ]
+        },
+        {
+          "id": "or-drop",
+          "label": "u32_or_drop(0,1,3)",
+          "parameters": {
+            "a_depth": 0,
+            "b_depth": 1,
+            "consumes_both": true,
+            "table_items": 256
+          },
+          "includes": "fragment-only: destructive two-word routing and OR lookup; excludes table setup, operand pushes, output check, and transaction context",
+          "script_bytes": 326,
+          "witness_bytes": 0,
+          "witness_bytes_max": 0,
+          "max_stack_items": 268,
+          "executed_opcodes": null,
+          "static_non_push_opcodes": 242,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 326,
+          "metric_keys": [
+            "u32_or_drop",
+            "u32_or_drop_stack",
+            "u32_or_drop_opcodes"
+          ]
+        },
+        {
           "id": "conditional-select",
           "label": "u32_conditional_select()",
           "parameters": {

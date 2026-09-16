@@ -4105,6 +4105,7 @@ fn metrics() -> Vec<Metric> {
     .chain(u32_le_bits_metrics())
     .chain(u32_conditional_select_metrics())
     .chain(u32_conditional_negate_metrics())
+    .chain(u32_consuming_bitwise_metrics())
     .chain(u4_le_bits_metrics())
     .chain(u32_iszero_metrics())
     .collect()
@@ -5347,7 +5348,79 @@ fn u32_iszero_metrics() -> Vec<Metric> {
     ]
 }
 
+fn u32_consuming_bitwise_metrics() -> Vec<Metric> {
+    let stack = |fragment: bitcoin_script::Script| {
+        max_stack_items_strict(
+            script! {
+                { u32::xor::u8_push_xor_table() }
+                { u32::stack::u32_push(0x0123_4567) }
+                { u32::stack::u32_push(0x89ab_cdef) }
+                { fragment }
+                { u32::stack::u32_drop() }
+                { u32::xor::u8_drop_xor_table() }
+                OP_1
+            },
+            vec![],
+        )
+    };
+    let xor = u32::xor::u32_xor_drop(0, 1, 3);
+    let and = u32::and::u32_and_drop(0, 1, 3);
+    let or = u32::or::u32_or_drop(0, 1, 3);
+    vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_xor_drop",
+            value: script_len(xor.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_xor_drop_stack",
+            value: stack(xor.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_xor_drop_opcodes",
+            value: static_non_push_opcodes(xor),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_and_drop",
+            value: script_len(and.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_and_drop_stack",
+            value: stack(and.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_and_drop_opcodes",
+            value: static_non_push_opcodes(and),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_or_drop",
+            value: script_len(or.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_or_drop_stack",
+            value: stack(or.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_or_drop_opcodes",
+            value: static_non_push_opcodes(or),
+        },
+    ]
+}
+
 #[test]
 fn u32_iszero_metrics_are_current() {
     check_readme_metrics(u32_iszero_metrics());
+}
+
+#[test]
+fn u32_consuming_bitwise_metrics_are_current() {
+    check_readme_metrics(u32_consuming_bitwise_metrics());
 }

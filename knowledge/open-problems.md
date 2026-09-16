@@ -929,3 +929,10 @@ schedule with its existing point state, or a measured curve-level comparison
 shows the composed layout is dominated. The current result does not close this
 problem because the repository's curve schedules use width-8/9 windows and no
 Bitcoin Core differential validation has been performed.
+
+The current CSFS curve-level probe is a negative result: parameterizing its
+fixed-base generator MSM for width 5 uses 52 windows and is 4,880,087 bytes,
+versus 3,557,157 bytes for width 8. It also grows from 16,129 to 25,489
+witness items. This makes the present CSFS target a no-go for radix-32
+integration; OP-020 remains open only for a different curve schedule whose
+window width and point-table costs are compatible.

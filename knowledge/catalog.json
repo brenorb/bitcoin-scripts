@@ -4902,7 +4902,7 @@
       "status": "experimental",
       "evidence": "differentially-validated",
       "execution": "research-unlimited",
-      "as_of": "2026-09-03",
+      "as_of": "2026-09-16",
       "knowledge_page": "knowledge/primitives/secp256k1-schnorr.md",
       "implementation": "src/signatures/schnorr/csfs.rs",
       "documentation": "src/signatures/schnorr/README.md",
@@ -8890,7 +8890,7 @@
         "No elliptic-curve scalar multiplication schedule, Bitcoin Core differential validation, consensus validation, or relay-policy validation"
       ],
       "open_problems": [
-        "OP-020"
+        "OP-027"
       ]
     },
     {

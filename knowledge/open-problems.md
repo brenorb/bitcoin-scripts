@@ -915,3 +915,17 @@ digest. **Complete when:** a generation-time output length supports at least a
 64-byte XOF vector, matches the independent BLAKE3 implementation, records the
 additional output-block compression/routing/cleanup and witness shape, and
 passes the combined 1,000-item stack check for the documented composition.
+
+## OP-027 — Integrate signed-window decoding into a complete scalar schedule
+
+The signed radix-32 decoder is only a representation bridge. A deterministic
+composition now consumes its sign/magnitude output in a high-to-low U256 Horner
+reconstruction, checks the exact scalar, and leaves a clean terminal result.
+It is `locally-reproduced` under the strict combined stack limit: the table
+loses through eight digits, then saves 166 bytes at 16 digits and 598 bytes at
+32, while using 136 more peak items at both boundaries. **Accept when:** the
+decoder is integrated into an actual elliptic-curve scalar multiplication
+schedule with its existing point state, or a measured curve-level comparison
+shows the composed layout is dominated. The current result does not close this
+problem because the repository's curve schedules use width-8/9 windows and no
+Bitcoin Core differential validation has been performed.

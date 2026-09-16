@@ -19,7 +19,28 @@ operation and operand placement.
 | Fragment | Script size |
 | --- | ---: |
 | `U254::add(1, 0)` | <!-- metric:u254_add -->176<!-- /metric:u254_add --> bytes |
+| `U254::sub(1, 0)` | <!-- metric:u254_sub -->190<!-- /metric:u254_sub --> bytes |
+| `U254::sub_noborrow(1, 0)` | <!-- metric:u254_sub_noborrow -->107<!-- /metric:u254_sub_noborrow --> bytes |
 | `U254::mul()` | <!-- metric:u254_mul -->111466<!-- /metric:u254_mul --> bytes |
+
+`U254::sub_noborrow(1, 0)` is a borrow-free fragment: each corresponding
+canonical limb of the first operand must be at least the limb of the second.
+It rejects a per-limb underflow and returns the exact difference in the same
+layout. With two zero-valued U254 vectors as the complete eighteen-item data
+witness, it uses
+<!-- metric:u254_sub_noborrow_witness -->19<!-- /metric:u254_sub_noborrow_witness --> witness bytes,
+<!-- metric:u254_sub_noborrow_hints -->0<!-- /metric:u254_sub_noborrow_hints --> auxiliary hint items,
+and reaches a combined main-plus-alt-stack peak of
+<!-- metric:u254_sub_noborrow_stack -->19<!-- /metric:u254_sub_noborrow_stack --> items.
+The tapscript interpreter counts
+<!-- metric:u254_sub_noborrow_opcodes -->97<!-- /metric:u254_sub_noborrow_opcodes --> fragment instructions;
+the terminal truthy opcode is excluded.
+
+The underflow check does not independently prove canonical non-negative input
+limbs. Callers handling hostile witnesses must compose `check_validity()` on
+both operands first. Unlike `U254::sub(1, 0)`, which propagates borrows and
+returns modulo `2^254`, this operation requires every limb comparison to hold
+and returns the exact wide difference.
 
 The 176-byte addition uses the repository's general optimizer. The 111,466-byte
 multiplication exceeds its 32 KiB input cutoff and is reported unoptimized.

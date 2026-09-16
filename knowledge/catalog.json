@@ -1651,6 +1651,34 @@
       "stack_contract": "Little-endian limb sequence, with the least-significant limb nearest the top as documented by stack helpers.",
       "configurations": [
         {
+          "id": "u254-sub-noborrow",
+          "label": "U254 borrow-free subtraction",
+          "parameters": {
+            "bits": 254,
+            "limb_bits": 29,
+            "limbs": 9,
+            "operands": 2
+          },
+          "includes": "fragment-only: subtraction fragment; excludes operand pushes, hints, and output verification",
+          "evidence": "locally-reproduced",
+          "execution": "unclassified",
+          "script_bytes": 107,
+          "witness_bytes": 19,
+          "witness_bytes_max": 19,
+          "max_stack_items": 19,
+          "executed_opcodes": 97,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 107,
+          "metric_keys": [
+            "u254_sub_noborrow",
+            "u254_sub_noborrow_witness",
+            "u254_sub_noborrow_hints",
+            "u254_sub_noborrow_stack",
+            "u254_sub_noborrow_opcodes"
+          ]
+        },
+        {
           "id": "u254-mul",
           "label": "U254 full multiplication",
           "parameters": {

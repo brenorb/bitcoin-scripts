@@ -4113,6 +4113,7 @@ fn metrics() -> Vec<Metric> {
     .chain(u32_conditional_negate_metrics())
     .chain(u4_le_bits_metrics())
     .chain(u32_iszero_metrics())
+    .chain(u254_sub_noborrow_metrics())
     .collect()
 }
 
@@ -4332,6 +4333,61 @@ fn check_readme_metrics(metrics: Vec<Metric>) {
             );
         }
     }
+}
+
+fn u254_sub_noborrow_metrics() -> Vec<Metric> {
+    let fragment = U254::sub_noborrow(1, 0);
+    let witness = vec![Vec::new(); (2 * U254::N_LIMBS) as usize];
+    let execution = execute_script_with_inputs_strict(
+        script! {
+            { fragment.clone() }
+            { U254::drop() }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    assert!(execution.success);
+    vec![
+        Metric {
+            readme: "src/arithmetic/bigint/README.md",
+            key: "u254_sub",
+            value: script_len(U254::sub(1, 0)),
+        },
+        Metric {
+            readme: "src/arithmetic/bigint/README.md",
+            key: "u254_sub_noborrow",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/bigint/README.md",
+            key: "u254_sub_noborrow_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/bigint/README.md",
+            key: "u254_sub_noborrow_hints",
+            value: 0,
+        },
+        Metric {
+            readme: "src/arithmetic/bigint/README.md",
+            key: "u254_sub_noborrow_stack",
+            value: execution.stats.max_nb_stack_items,
+        },
+        Metric {
+            readme: "src/arithmetic/bigint/README.md",
+            key: "u254_sub_noborrow_opcodes",
+            value: execution
+                .stats
+                .opcode_count
+                .checked_sub(U254::drop().compile_with_policy().instructions().count() + 1)
+                .expect("cleanup and terminator must be counted"),
+        },
+    ]
+}
+
+#[test]
+fn u254_sub_noborrow_metrics_are_current() {
+    check_readme_metrics(u254_sub_noborrow_metrics());
 }
 
 #[test]

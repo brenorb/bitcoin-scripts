@@ -31,6 +31,8 @@ differ. Follow each catalog configuration before comparing numbers.
 | 32 checked nibbles to 128 little-endian bits | u4 mirrored staggered table | 924 | 65-byte witness; 189-item peak; same table cost, no per-nibble reversal |
 | u32 zero predicate | direct four-limb `OP_0NOTEQUAL`/`OP_BOOLAND` fold | 4 | 5-byte four-limb witness; 4-item peak; canonical byte limbs required |
 | Wide add | U254 add | 176 | Nine limbs |
+| Wide subtract | U254 sub | 190 | Nine limbs; propagates borrows |
+| Wide subtract with bounded limbs | U254 borrow-free sub | 107 | Nine limbs; each minuend limb must be at least its subtrahend |
 | Wide multiply | U254 multiply | 111,466 | Above optimizer cutoff; unoptimized |
 | Ed25519 ordinary-domain multiply | 51 biased centered radix-32 digits, 13 signed tables | <!-- metric:ed25519_field_mul -->9893<!-- /metric:ed25519_field_mul --> | 245-byte/51-item incremental hint; certified operands; 523-item strict peak |
 | Ed25519 factor-8 multiply | `E(x)=x/8`, folded normalized Karatsuba | 19,903 | 31-byte/29-item incremental hint; certified encoded operands; 719-item strict peak |

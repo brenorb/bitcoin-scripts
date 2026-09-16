@@ -4,7 +4,8 @@ Measured fragments exclude input pushes and output comparison.
 
 | Construction | Configuration | Script bytes | Evidence | Principal limitation |
 | --- | --- | ---: | --- | --- |
-| BLAKE3 sparse direct u4 | 32-byte input | 59,529 | differentially-validated | Fixed length at generation time; at most 32 bytes |
+| BLAKE3 sparse direct u4 | 32-byte input | 59,534 | differentially-validated | Fixed length at generation time; at most 32 bytes |
+| BLAKE3 sparse direct u4, low 128 bits | 32-byte input | 59,105 | differentially-validated | Fixed length at generation time; standard digest prefix only |
 | BLAKE3 limb29 | 64-byte input | 72,293 | differentially-validated | Single 1,024-byte chunk only; includes table memory |
 | SHA-1 u32 | 32-byte input | 209,726 | differentially-validated | Collision-broken compatibility hash |
 | RIPEMD-160 u32 | 32-byte input | 244,063 | differentially-validated | 160-bit output |

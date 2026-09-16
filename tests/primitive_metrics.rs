@@ -4178,6 +4178,42 @@ fn shake256_prefix_metrics_are_current() {
     ]);
 }
 
+#[test]
+fn blake3_short_truncated_128_metrics_are_current() {
+    let message: [u8; 32] = std::array::from_fn(|index| index as u8);
+    let expected = *::blake3::hash(&message).as_bytes();
+    let compute = blake3::blake3_short_compute_script_truncated_128(32);
+    let complete = script! {
+        { blake3::blake3_push_short_message_script(&message) }
+        { compute.clone() }
+        { blake3::blake3_verify_output_prefix_script(expected[..16].try_into().unwrap()) }
+    };
+    let full = blake3::blake3_short_compute_script(32);
+    assert_eq!(script_len(full) - script_len(compute.clone()), 429);
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/hashes/blake3/README.md",
+            key: "blake3_short_truncated_128_32",
+            value: script_len(compute.clone()),
+        },
+        Metric {
+            readme: "src/hashes/blake3/README.md",
+            key: "blake3_short_truncated_128_32_compute",
+            value: script_len(compute.clone()),
+        },
+        Metric {
+            readme: "src/hashes/blake3/README.md",
+            key: "blake3_short_truncated_128_32_opcodes",
+            value: static_non_push_opcodes(compute),
+        },
+        Metric {
+            readme: "src/hashes/blake3/README.md",
+            key: "blake3_short_truncated_128_32_stack",
+            value: max_stack_items_strict(complete, vec![]),
+        },
+    ]);
+}
+
 /// Check or intentionally refresh only the PRINCEv2 metric markers, without
 /// generating scripts for the full-repository metric suite.
 #[test]

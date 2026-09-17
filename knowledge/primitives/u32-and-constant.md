@@ -29,7 +29,7 @@ framing.
 
 | Construction | Locking script | Representative witness | Maximum witness | Data items | Hint items | Peak items | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Embedded mask `0x89abcdef` | 628 | 13 bytes | 13 bytes | 4 | 0 | 272 | 460 |
+| Embedded mask `0x89abcdef` | 612 | 13 bytes | 13 bytes | 4 | 0 | 272 | 460 |
 | Generic `u32_and` with runtime mask | 326 operation bytes plus table setup/cleanup | 21 bytes | 21 bytes | 8 | 0 | table-dependent | not measured here |
 
 The embedded form removes four witness data items and saves the second word's

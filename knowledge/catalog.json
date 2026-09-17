@@ -824,14 +824,14 @@
             "complete_input_items": 4
           },
           "includes": "fragment-with-memory: four canonical byte checks, generated shared Boolean table, four AND queries, table cleanup, and output routing; excludes input pushes, terminal predicate, unrelated live state, and transaction context",
-          "script_bytes": 628,
+          "script_bytes": 612,
           "witness_bytes": 13,
           "witness_bytes_max": 13,
           "max_stack_items": 272,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": null,
-          "per_use_script_bytes": 628,
+          "per_use_script_bytes": 612,
           "metric_keys": [
             "u32_and_constant",
             "u32_and_constant_witness",

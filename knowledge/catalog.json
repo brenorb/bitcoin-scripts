@@ -544,14 +544,18 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-16",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u32.md",
       "implementation": "src/arithmetic/u32/mod.rs",
       "documentation": "src/arithmetic/u32/README.md",
       "tests": [
         "src/arithmetic/u32",
         "arithmetic::u32::stack::tests::test_u32_iszero",
-        "arithmetic::u32::stack::tests::test_u32_iszero_does_not_treat_invalid_nonzero_limbs_as_zero"
+        "arithmetic::u32::stack::tests::test_u32_iszero_does_not_treat_invalid_nonzero_limbs_as_zero",
+        "arithmetic::u32::shift::tests::checked_shift_accepts_boundaries",
+        "arithmetic::u32::shift::tests::checked_shift_rejects_malformed_bytes",
+        "arithmetic::u32::shift::tests::checked_shift_preserves_surrounding_stacks",
+        "primitive_metrics::u32_rshift8_checked_metrics_are_current"
       ],
       "references": [
         "bitcoin-script-locked",
@@ -693,6 +697,35 @@
             "u32_canonical_byte_witness",
             "u32_canonical_byte_stack"
           ]
+        },
+        {
+          "id": "rshift8-checked-canonical",
+          "label": "Canonical checked u32 logical right shift by 8 bits",
+          "parameters": {
+            "shift": 8,
+            "word_width_bits": 32,
+            "input_bytes": 4,
+            "canonical_input_check": true,
+            "data_items": 4,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: four canonical byte checks, direct three-byte stack transport, inserted zero most-significant byte, and output restoration; excludes input pushes, terminal predicate, unrelated live state, and transaction context; static non-push opcode count is measured separately",
+          "script_bytes": 62,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 7,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u32_rshift8_checked",
+            "u32_rshift8_checked_witness",
+            "u32_rshift8_checked_witness_max",
+            "u32_rshift8_checked_stack",
+            "u32_rshift8_checked_opcodes"
+          ],
+          "static_non_push_opcodes": 41
         },
         {
           "id": "u32-le-bits",

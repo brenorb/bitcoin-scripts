@@ -4190,6 +4190,47 @@ fn prince_checked_metrics_are_current() {
     check_readme_metrics(prince_checked_metrics());
 }
 
+/// This isolated fixture measures the checked AES AddRoundKey boundary.
+#[test]
+fn aes_add_round_key_metrics_are_current() {
+    let fragment = aes::aes128_add_round_key([0; 16]);
+    let witness = vec![scriptnum(15); 32];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            for _ in 0..32 {
+                OP_DROP
+            }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    assert_eq!(witness.len(), 32);
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_add_round_key",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_add_round_key_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_add_round_key_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_add_round_key_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
 /// This isolated fixture exercises only the two small packed decoders. It
 /// stays runnable without enabling the ignored repository-wide metric suite.
 #[test]

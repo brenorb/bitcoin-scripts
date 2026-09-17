@@ -4,6 +4,7 @@
 | --- | --- | ---: | ---: | ---: |
 | PRINCEv2 u4 | 64-bit block / embedded 128-bit key | 6,136 | 17–33 | 633 |
 | AES-128 u4 | 128-bit block / embedded 128-bit key | 25,388 | 33–65 | 908 |
+| Checked AES-128 AddRoundKey | 32 checked u4 state nibbles / embedded 128-bit key | <!-- metric:aes128_add_round_key -->1874<!-- /metric:aes128_add_round_key --> | <!-- metric:aes128_add_round_key_witness -->65<!-- /metric:aes128_add_round_key_witness --> | <!-- metric:aes128_add_round_key_stack -->899<!-- /metric:aes128_add_round_key_stack --> |
 
 PRINCEv2 is smaller locally but is not a semantic replacement for AES-128.
 

@@ -12,6 +12,8 @@ a generation-time key.
 - Encryption only. No public decryption or block-cipher mode is exposed.
 - `aes128_expand_key`, `aes128_encrypt_ref`, and `bytes_to_nibbles` are provided
   for key expansion, native reference checks, and stack encoding.
+- `aes128_add_round_key` exposes one checked keyed-XOR boundary with the same
+  32-nibble state layout; its 128-bit key is embedded at generation time.
 
 ## Script metrics
 
@@ -25,12 +27,22 @@ and Script-number push widths vary.
 | Plaintext witness, all-zero block | <!-- metric:aes128_witness_min -->33<!-- /metric:aes128_witness_min --> bytes |
 | Plaintext witness, no zero nibbles | <!-- metric:aes128_witness_max -->65<!-- /metric:aes128_witness_max --> bytes |
 | Maximum combined main/alt-stack depth | <!-- metric:aes128_stack -->908<!-- /metric:aes128_stack --> items |
+| `aes128_add_round_key([0; 16])` | <!-- metric:aes128_add_round_key -->1874<!-- /metric:aes128_add_round_key --> bytes |
+| AddRoundKey witness, 32 canonical nibbles | <!-- metric:aes128_add_round_key_witness -->65<!-- /metric:aes128_add_round_key_witness --> bytes |
+| AddRoundKey maximum combined depth | <!-- metric:aes128_add_round_key_stack -->899<!-- /metric:aes128_add_round_key_stack --> items |
+| AddRoundKey static non-push opcodes | <!-- metric:aes128_add_round_key_opcodes -->887<!-- /metric:aes128_add_round_key_opcodes --> |
 
 The generator uses one 832-item shared lookup memory. It fuses the initial
 AddRoundKey into the first SubBytes pass, SubBytes with ShiftRows, and
 MixColumns with each following AddRoundKey. Each column's `xtime` values are
 computed once and reused by adjacent output rows. The most frequently accessed
 tables occupy the shallowest stack positions.
+
+`aes128_add_round_key` uses the same 832-item memory and returns the state after
+XORing each canonical nibble with a generation-time round key. It is a
+composition boundary, not a smaller AES encryption path: the full encryptor
+continues to fuse AddRoundKey into SubBytes/ShiftRows and MixColumns to avoid
+repeating setup and cleanup.
 
 Tests execute the FIPS-197 known-answer vector and the all-zero vector, compare
 the native reference against three published vectors, and pin the zero-key
@@ -54,9 +66,10 @@ the 1,000-item combined-stack limit, which this implementation satisfies.
 
 The fragment alone does not satisfy Tapscript's cleanstack rule because it
 intentionally returns 32 ciphertext nibbles. A caller must compare or consume
-all outputs and leave exactly one truthy stack item. Inputs must already be
-canonical integers in `0..=15`; this fragment does not independently range-check
-them.
+all outputs and leave exactly one truthy stack item. The full encryption
+fragment expects canonical integers in `0..=15`; the standalone AddRoundKey
+fragment validates both that range and minimal ScriptNum encoding before table
+lookup.
 
 ## Witness and hints
 

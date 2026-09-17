@@ -1,3 +1,4 @@
+use super::stack::verify_canonical_byte;
 use crate::support::script::*;
 
 /// Right rotation of an u32 element by 16 bits
@@ -80,6 +81,20 @@ pub fn u32_rrot7() -> Script {
         OP_SWAP
         OP_2SWAP
         OP_SWAP
+    }
+}
+
+/// Checked right rotation of a four-byte u32 word by seven bits.
+pub fn u32_rrot7_checked() -> Script {
+    script! {
+        for _ in 0..4 {
+            { verify_canonical_byte() }
+            OP_TOALTSTACK
+        }
+        for _ in 0..4 {
+            OP_FROMALTSTACK
+        }
+        { u32_rrot7() }
     }
 }
 
@@ -302,5 +317,57 @@ mod tests {
                 assert!(!result.success, "accepted non-byte x={x}, h={h}");
             }
         }
+    }
+
+    #[test]
+    fn test_checked_rrot7() {
+        let script = script! {
+            { u32_rrot7_checked() }
+            { u32_equal() }
+        }
+        .compile_with_policy()
+        .to_bytes();
+        let mut rng = StdRng::seed_from_u64(0x7533325f726f745f);
+        for _ in 0..1000 {
+            let x: u32 = rng.gen();
+            run_with_witness(&script, word_witness(rrot(x, 7)).chain(word_witness(x)));
+        }
+    }
+
+    #[test]
+    fn test_checked_rrot7_rejects_malformed_bytes() {
+        let script = script! {
+            { u32_rrot7_checked() }
+            for _ in 0..4 { OP_DROP }
+            OP_TRUE
+        };
+        for position in 0..4 {
+            for replacement in [vec![1, 0], vec![0, 1], vec![0x80]] {
+                let mut witness = vec![vec![1]; 4];
+                witness[position] = replacement.clone();
+                let result =
+                    crate::support::execution::execute_script_with_inputs(script.clone(), witness);
+                assert!(
+                    !result.success,
+                    "accepted malformed byte at {position} ({replacement:?}): {result}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_checked_rrot7_preserves_surrounding_stacks() {
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                99 OP_TOALTSTACK
+                { u32_rrot7_checked() }
+                for _ in 0..4 { OP_DROP }
+                77 OP_EQUALVERIFY
+                OP_FROMALTSTACK 99 OP_EQUALVERIFY
+                OP_TRUE
+            },
+            vec![vec![77], vec![1], vec![2], vec![3], vec![4]],
+        );
+        assert!(result.success, "{result}");
     }
 }

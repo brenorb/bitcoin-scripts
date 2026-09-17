@@ -13,7 +13,7 @@ the source. Read a page together with its comparison page and evidence record.
 - [Fixed-width u4 lexicographic comparison](u4-lexicographic.md)
 - [Checked u4 parity projection](u4-parity.md)
 - [Checked u4 least-significant-bit projection](u4-lsb.md)
-- [u32 word arithmetic](u32.md)
+- [u32 word arithmetic](u32.md) — includes the checked seven-bit rotation boundary
 - [Compressed total-domain u32 addition](u32-compressed-add.md)
 - [Compressed total-domain u32 equality](u32-compressed-equal.md)
 - [Compressed total-domain u32 unsigned less-than](u32-compressed-lessthan.md)

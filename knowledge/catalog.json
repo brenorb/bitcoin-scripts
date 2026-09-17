@@ -544,7 +544,7 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-16",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u32.md",
       "implementation": "src/arithmetic/u32/mod.rs",
       "documentation": "src/arithmetic/u32/README.md",
@@ -562,7 +562,7 @@
         "lookup-table"
       ],
       "security": "No independent cryptographic claim; every byte item must be canonical and in range.",
-      "stack_contract": "A u32 occupies four byte-valued items; ordering varies only through documented stack helpers. The zero predicate consumes four limbs and returns one boolean.",
+      "stack_contract": "A u32 occupies four byte-valued items; ordering varies only through documented stack helpers. The zero predicate consumes four limbs and returns one boolean. The checked byte-equality mask consumes two words and returns one four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane.",
       "configurations": [
         {
           "id": "add-drop",
@@ -777,6 +777,73 @@
         "Not validated against Bitcoin Core"
       ],
       "open_problems": [
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u32-byte-eq-mask",
+      "name": "Checked u32 byte-equality mask",
+      "class": "arithmetic/word",
+      "summary": "Two checked u32 byte words reduced to a four-bit per-lane equality mask.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-byte-eq-mask.md",
+      "implementation": "src/arithmetic/u32/byte_eq_mask.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "src/arithmetic/u32/byte_eq_mask.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "digit-arithmetic"
+      ],
+      "security": "All eight hostile byte limbs are checked for 0..=255 range and minimal ScriptNum encoding before comparison. The result is a routing mask, not a cryptographic claim; no hints are used and no terminal predicate is included.",
+      "stack_contract": "Consumes the top two four-byte words in most-significant-byte-first order and returns one numeric mask in 0..=15, preserving unrelated items below them. Bit 3 compares byte 0 and bit 0 compares byte 3. Temporary altstack values are restored.",
+      "configurations": [
+        {
+          "id": "checked-two-word-mask",
+          "label": "u32_byte_eq_mask()",
+          "parameters": {
+            "word_width_bytes": 4,
+            "data_items": 8,
+            "hint_items": 0,
+            "representative_words": "0x42424242 and 0x42424242",
+            "mask_bits": "bit 3 compares byte 0; bit 0 compares byte 3"
+          },
+          "includes": "fragment-only: byte-pair routing, eight canonical-byte checks, four equality predicates, and packed mask accumulation; representative witness has eight data items; excludes input pushes, terminal predicate, unrelated live state, and transaction context; static non-push opcode count is 100, dynamic count is unavailable",
+          "script_bytes": 149,
+          "witness_bytes": 17,
+          "witness_bytes_max": 25,
+          "max_stack_items": 11,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 149,
+          "metric_keys": [
+            "u32_byte_eq_mask",
+            "u32_byte_eq_mask_witness",
+            "u32_byte_eq_mask_witness_max",
+            "u32_byte_eq_mask_stack",
+            "u32_byte_eq_mask_opcodes"
+          ],
+          "static_non_push_opcodes": 100
+        }
+      ],
+      "limitations": [
+        "The mask is more expensive than whole-word equality and is useful only when lane predicates are consumed separately",
+        "Static non-push opcode count is not a dynamic execution measurement",
+        "No Bitcoin Core consensus or relay-policy differential validation",
+        "The fragment does not provide a terminal clean-stack predicate"
+      ],
+      "open_problems": [
+        "OP-001",
         "OP-002",
         "OP-003"
       ]

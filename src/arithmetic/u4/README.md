@@ -21,6 +21,8 @@ these operations, but this module contains no hash-specific round logic.
 - `bits::u4_nibbles_to_be_bits[_toaltstack](nibble_count, check_inputs)` and
   `bits::u4_nibbles_to_le_bits[_toaltstack](nibble_count, check_inputs)` take
   an explicit batch size in `1..=234` and have no default for input checking.
+- `bits::u4_nibbles_to_be_bits_canonical(nibble_count)` additionally rejects
+  non-minimal ScriptNum encodings before big-endian decomposition.
 
 ## Script metrics
 
@@ -38,6 +40,7 @@ each input with the same output-restoration boundary.
 | One checked table query, output on altstack | <!-- metric:u4_bits_checked_query -->22<!-- /metric:u4_bits_checked_query --> bytes | composition-dependent | not recorded |
 | Little-endian staggered bit-table setup | <!-- metric:u4_bits_le_table_push -->61<!-- /metric:u4_bits_le_table_push --> bytes | 61 table items | not recorded |
 | Checked table batch, 32 nibbles | <!-- metric:u4_bits_checked_batch32 -->924<!-- /metric:u4_bits_checked_batch32 --> bytes | <!-- metric:u4_bits_checked_batch32_stack -->189<!-- /metric:u4_bits_checked_batch32_stack --> items | <!-- metric:u4_bits_checked_batch32_opcodes -->735<!-- /metric:u4_bits_checked_batch32_opcodes --> |
+| Canonical checked table batch, 32 nibbles | <!-- metric:u4_bits_canonical_batch32 -->1306<!-- /metric:u4_bits_canonical_batch32 --> bytes | <!-- metric:u4_bits_canonical_batch32_stack -->189<!-- /metric:u4_bits_canonical_batch32_stack --> items | <!-- metric:u4_bits_canonical_batch32_opcodes -->1021<!-- /metric:u4_bits_canonical_batch32_opcodes --> |
 | Checked little-endian table batch, 32 nibbles | <!-- metric:u4_bits_le_checked_batch32 -->924<!-- /metric:u4_bits_le_checked_batch32 --> bytes | <!-- metric:u4_bits_le_checked_batch32_stack -->189<!-- /metric:u4_bits_le_checked_batch32_stack --> items | <!-- metric:u4_bits_le_checked_batch32_opcodes -->735<!-- /metric:u4_bits_le_checked_batch32_opcodes --> |
 | Unchecked table batch, 32 nibbles | <!-- metric:u4_bits_unchecked_batch32 -->764<!-- /metric:u4_bits_unchecked_batch32 --> bytes | 189 items | not recorded |
 | Existing branch splitter, 32 four-bit limbs | <!-- metric:u4_bits_branch_batch32 -->1374<!-- /metric:u4_bits_branch_batch32 --> bytes | <!-- metric:u4_bits_branch_batch32_stack -->130<!-- /metric:u4_bits_branch_batch32_stack --> items | not recorded |
@@ -53,6 +56,8 @@ each input with the same output-restoration boundary.
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
 
 <!-- metric:u4_lsb_batch32_witness -->65<!-- /metric:u4_lsb_batch32_witness --> serialized witness bytes for the representative LSB batch.
+
+<!-- metric:u4_bits_canonical_batch32_witness -->65<!-- /metric:u4_bits_canonical_batch32_witness --> serialized witness bytes for the representative canonical big-endian batch.
 
 The staggered table has 61 setup items and costs 31 bytes to remove. A checked
 query costs 22 bytes and restoring its four bits costs another four, so the

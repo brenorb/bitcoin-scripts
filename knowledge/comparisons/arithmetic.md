@@ -29,6 +29,7 @@ differ. Follow each catalog configuration before comparing numbers.
 | One checked u32 word to little-endian bits | u32 byte splitter | 514 | 9-byte witness; 35-item peak; numeric byte range only |
 | u32 conditional word selection | u32 normalized truthy selector | 9 | 10–30-byte witness; 9-item peak |
 | 32 checked nibbles to 128 little-endian bits | u4 mirrored staggered table | 924 | 65-byte witness; 189-item peak; same table cost, no per-nibble reversal |
+| 32 canonical checked nibbles to 128 little-endian bits on altstack | u4 canonical little-endian altstack adapter | 1,178 | 189-item peak; 65-byte witness; rejects raw aliases |
 | u32 zero predicate | direct four-limb `OP_0NOTEQUAL`/`OP_BOOLAND` fold | 4 | 5-byte four-limb witness; 4-item peak; canonical byte limbs required |
 | Wide add | U254 add | 176 | Nine limbs |
 | Wide multiply | U254 multiply | 111,466 | Above optimizer cutoff; unoptimized |

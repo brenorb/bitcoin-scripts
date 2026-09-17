@@ -8,8 +8,8 @@
 use bitcoin::{
     opcodes::{
         all::{
-            OP_2DROP, OP_2DUP, OP_2OVER, OP_3DUP, OP_ADD, OP_DUP, OP_FROMALTSTACK, OP_GREATERTHAN,
-            OP_OVER, OP_PICK, OP_SUB, OP_SWAP, OP_TOALTSTACK,
+            OP_2DROP, OP_2DUP, OP_2OVER, OP_3DUP, OP_ADD, OP_DUP, OP_EQUALVERIFY, OP_FROMALTSTACK,
+            OP_GREATERTHAN, OP_OVER, OP_PICK, OP_SUB, OP_SWAP, OP_TOALTSTACK, OP_VERIFY, OP_WITHIN,
         },
         Opcode,
     },
@@ -400,6 +400,40 @@ impl AesScript {
         out
     }
 
+    fn initialize_checked_tables() -> Program {
+        let mut out = Program::default();
+        for _ in 0..STATE_NIBBLES {
+            out.op(OP_DUP);
+            out.push(0);
+            out.push(16);
+            out.op(OP_WITHIN);
+            out.op(OP_VERIFY);
+            out.op(OP_DUP);
+            out.op(OP_DUP);
+            out.push(0);
+            out.op(OP_ADD);
+            out.op(OP_EQUALVERIFY);
+            out.op(OP_TOALTSTACK);
+        }
+        out.extend(table_pushes());
+        for _ in 0..STATE_NIBBLES {
+            out.op(OP_FROMALTSTACK);
+        }
+        out
+    }
+
+    fn cleanup_tables(out: &mut Program) {
+        for _ in 0..STATE_NIBBLES {
+            out.op(OP_TOALTSTACK);
+        }
+        for _ in 0..TABLE_ITEMS / 2 {
+            out.op(OP_2DROP);
+        }
+        for _ in 0..STATE_NIBBLES {
+            out.op(OP_FROMALTSTACK);
+        }
+    }
+
     /// Fused AddRoundKey(input) + SubBytes + ShiftRows + AddRoundKey(output).
     /// Only the first invocation has an input key and only the final one has
     /// an output key.
@@ -468,11 +502,10 @@ impl AesScript {
     }
 
     fn mix_output_from_xtimes(
-        &self,
         column: usize,
         row: usize,
         high: bool,
-        key_nibble: u8,
+        key_nibble: Option<u8>,
     ) -> Program {
         let byte = |row: usize| 4 * column + (row & 3);
         let current = byte(row);
@@ -493,13 +526,13 @@ impl AesScript {
         out.extend(Self::xor_top_two(10));
         out.extend(Self::copy_scratch(if high { 10 } else { 9 }));
         out.extend(Self::xor_top_two(10));
-        out.extend(Self::xor_constant(key_nibble, 10));
+        if let Some(key_nibble) = key_nibble {
+            out.extend(Self::xor_constant(key_nibble, 10));
+        }
         out
     }
 
-    /// Fused MixColumns + AddRoundKey for a full AES round.
-    fn mix_columns_add_key(&self, round: usize) -> Program {
-        let key = bytes_to_nibbles(self.round_keys[round]);
+    fn mix_columns(key: Option<&[u8; STATE_NIBBLES]>) -> Program {
         let mut out = Program::default();
         for column in 0..4 {
             // t = a ^ b ^ c ^ d, once for each nibble.
@@ -525,9 +558,19 @@ impl AesScript {
             }
             for row in 0..4 {
                 let byte = 4 * column + row;
-                out.extend(self.mix_output_from_xtimes(column, row, true, key[2 * byte]));
+                out.extend(Self::mix_output_from_xtimes(
+                    column,
+                    row,
+                    true,
+                    key.map(|key| key[2 * byte]),
+                ));
                 out.op(OP_TOALTSTACK);
-                out.extend(self.mix_output_from_xtimes(column, row, false, key[2 * byte + 1]));
+                out.extend(Self::mix_output_from_xtimes(
+                    column,
+                    row,
+                    false,
+                    key.map(|key| key[2 * byte + 1]),
+                ));
                 out.op(OP_TOALTSTACK);
             }
             for _ in 0..5 {
@@ -535,6 +578,19 @@ impl AesScript {
             }
         }
         Self::finish_state_transform(&mut out);
+        out
+    }
+
+    /// Fused MixColumns + AddRoundKey for a full AES round.
+    fn mix_columns_add_key(&self, round: usize) -> Program {
+        let key = bytes_to_nibbles(self.round_keys[round]);
+        Self::mix_columns(Some(&key))
+    }
+
+    fn mix_columns_only() -> Program {
+        let mut out = Self::initialize_checked_tables();
+        out.extend(Self::mix_columns(None));
+        Self::cleanup_tables(&mut out);
         out
     }
 
@@ -573,13 +629,59 @@ pub fn aes128_encrypt(key: [u8; 16]) -> Script {
     .into_script("AES-128 encryption")
 }
 
+/// Checked AES MixColumns for one 128-bit block.
+///
+/// Input and output are 32 canonical nibbles in AES state order. The key is
+/// not involved; the shared AES lookup memory is initialized and removed by
+/// this fragment.
+pub fn aes128_mix_columns() -> Script {
+    AesScript::mix_columns_only().into_script("AES-128 MixColumns")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::support::{
-        execution::execute_script,
+        execution::{
+            execute_script, execute_script_with_inputs, execute_script_with_inputs_strict,
+        },
         script::{script, ScriptCompilation},
     };
+
+    fn mix_columns_witness(bytes: [u8; 16]) -> Vec<Vec<u8>> {
+        bytes_to_nibbles(bytes)
+            .into_iter()
+            .rev()
+            .map(|nibble| {
+                if nibble == 0 {
+                    Vec::new()
+                } else {
+                    vec![nibble]
+                }
+            })
+            .collect()
+    }
+
+    fn mix_columns_expected(bytes: [u8; 16]) -> [u8; 16] {
+        let mut state = bytes;
+        mix_columns(&mut state);
+        state
+    }
+
+    fn execute_mix_columns(bytes: [u8; 16]) -> crate::support::execution::ExecuteInfo {
+        let expected = bytes_to_nibbles(mix_columns_expected(bytes));
+        execute_script(script! {
+            for i in (0..STATE_NIBBLES).rev() {
+                { bytes_to_nibbles(bytes)[i] as u32 }
+            }
+            { aes128_mix_columns() }
+            for expected_nibble in expected {
+                { expected_nibble as u32 }
+                OP_EQUALVERIFY
+            }
+            OP_TRUE
+        })
+    }
 
     fn execute_vector(key: [u8; 16], plaintext: [u8; 16], ciphertext: [u8; 16]) -> usize {
         let plaintext = bytes_to_nibbles(plaintext);
@@ -643,6 +745,64 @@ mod tests {
         for (key, plaintext, expected) in vectors {
             assert_eq!(aes128_encrypt_ref(key, plaintext), expected);
         }
+    }
+
+    #[test]
+    fn mix_columns_matches_reference_vectors() {
+        let vectors = [
+            [0; 16],
+            [
+                0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+                0x0e, 0x0f,
+            ],
+            [0xff; 16],
+            std::array::from_fn(|index| (index as u8).wrapping_mul(37).wrapping_add(11)),
+        ];
+
+        for bytes in vectors {
+            let result = execute_mix_columns(bytes);
+            assert!(result.success, "AES-128 MixColumns failed: {result}");
+        }
+    }
+
+    #[test]
+    fn mix_columns_rejects_noncanonical_and_out_of_range_nibbles() {
+        let script = script! {
+            { aes128_mix_columns() }
+            for _ in 0..STATE_NIBBLES { OP_DROP }
+            OP_TRUE
+        };
+
+        for (position, replacement) in [(0, vec![0, 0]), (7, vec![0x10]), (31, vec![0x81])] {
+            let mut witness = mix_columns_witness([0; 16]);
+            witness[position] = replacement;
+            let result = execute_script_with_inputs(script.clone(), witness);
+            assert!(
+                !result.success,
+                "hostile nibble at position {position} was accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn mix_columns_preserves_surrounding_stack_state() {
+        let mut witness = vec![vec![42]];
+        witness.extend(mix_columns_witness([0; 16]));
+        let result = execute_script_with_inputs_strict(
+            script! {
+                { 99 } OP_TOALTSTACK
+                { aes128_mix_columns() }
+                for _ in 0..STATE_NIBBLES { OP_DROP }
+                { 42 } OP_EQUALVERIFY
+                OP_FROMALTSTACK { 99 } OP_EQUALVERIFY
+                OP_TRUE
+            },
+            witness,
+        );
+        assert!(
+            result.success,
+            "AES-128 MixColumns changed surrounding state: {result}"
+        );
     }
 
     #[test]

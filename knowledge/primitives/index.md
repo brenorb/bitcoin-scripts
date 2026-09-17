@@ -50,6 +50,7 @@ the source. Read a page together with its comparison page and evidence record.
 - [SHAKE256 over byte lanes](shake256-byte.md)
 - [SHAKE256 byte-lane output prefixes](shake256-prefix.md)
 - [AES-128 over u4 digits](aes128-u4.md)
+- [Checked AES-128 MixColumns](aes-mixcolumns.md)
 - [PRINCEv2 over u4 digits](princev2-u4.md)
 
 ## Signatures and one-time authentication

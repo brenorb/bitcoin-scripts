@@ -5060,6 +5060,46 @@ fn u4_bit_reverse_metrics_are_current() {
 }
 
 #[test]
+fn u32_rrot8_checked_metrics_are_current() {
+    let fragment = u32::rotate::u32_rrot8_checked();
+    let witness = vec![scriptnum(7); 4];
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_rrot8_checked",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_rrot8_checked_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_rrot8_checked_witness_max",
+            value: witness_size(&vec![scriptnum(255); 4]),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_rrot8_checked_stack",
+            value: max_stack_items_strict(
+                script! {
+                    { fragment.clone() }
+                    for _ in 0..4 { OP_DROP }
+                    OP_TRUE
+                },
+                witness,
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_rrot8_checked_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
+#[test]
 fn hash160_metrics_are_current() {
     check_readme_metrics(hash160_composition_metrics());
 }

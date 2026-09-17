@@ -825,14 +825,14 @@
             "complete_input_items": 4
           },
           "includes": "fragment-with-memory: four canonical byte checks, public constant push, modulo-2^32 borrow chain, and temporary borrow cleanup; excludes witness pushes, terminal predicate, transaction framing, and unrelated live state",
-          "script_bytes": 141,
+          "script_bytes": 149,
           "witness_bytes": 9,
           "witness_bytes_max": 13,
           "max_stack_items": 9,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": 0,
-          "per_use_script_bytes": 141,
+          "per_use_script_bytes": 149,
           "metric_keys": [
             "u32_sub_constant",
             "u32_sub_constant_witness",
@@ -840,7 +840,7 @@
             "u32_sub_constant_stack",
             "u32_sub_constant_static_opcodes"
           ],
-          "static_non_push_opcodes": 81
+          "static_non_push_opcodes": 83
         }
       ],
       "limitations": [

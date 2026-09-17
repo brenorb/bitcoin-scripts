@@ -8,8 +8,9 @@ items required by the generic two-word borrow chain?
 
 ## Construction and threat model
 
-`u32_sub_constant(value)` consumes the top four canonical byte limbs, checks
-each hostile limb with `verify_canonical_byte()`, pushes the public
+`u32_sub_constant(value)` consumes the top four canonical byte limbs, validates
+each original hostile limb with `verify_canonical_byte()` before stack
+rearrangement, and pushes the public
 compile-time `value`, and reuses `u32_sub_drop(0, 1)` for subtraction modulo
 `2^32`. It returns the four most-significant-byte-first result limbs. The
 constant is script data, not a secret. Temporary borrow values use the
@@ -30,7 +31,7 @@ predicates, unrelated live state, and transaction framing.
 
 | Construction | Locking script | Representative witness | Maximum witness | Data items | Hint items | Peak items | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Embedded constant `0x89abcdef` | 141 | 9 bytes | 13 bytes | 4 | 0 | 9 | 81 |
+| Embedded constant `0x89abcdef` | 149 | 9 bytes | 13 bytes | 4 | 0 | 9 | 83 |
 | Generic two-word subtract, same values | 77 | 21 bytes | — | 8 | 0 | 9 | — |
 
 The embedded form saves 12 representative witness bytes and four entry items,
@@ -45,12 +46,13 @@ Evidence is `locally-reproduced`; deployment is `unclassified`. The measured
 fixture uses `value = 0x12345678` and `constant = 0x89abcdef`. Correctness
 tests cover zero, maximum values, underflow, borrow propagation, wraparound,
 and a mixed pair. Adversarial tests cover negative, out-of-range, and
-non-minimal raw limb encodings, plus surrounding main- and alt-stack state.
+non-minimal raw limb encodings at every position, canonical 128 and 255
+boundary limbs at every position, plus surrounding main- and alt-stack state.
 
 The strict metric fixture executes through the repository's locked
 `bitcoin-scriptexec` dependency in a tapscript context with the combined
 main-plus-alt-stack limit. The executor does not provide a useful dynamic
-opcode count, so 81 is a static non-push opcode count, not an execution or
+opcode count, so 83 is a static non-push opcode count, not an execution or
 validation-weight claim. No Bitcoin Core differential, complete-transaction,
 relay-policy, or cryptographic claim is made.
 

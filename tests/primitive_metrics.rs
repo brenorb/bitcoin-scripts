@@ -141,6 +141,51 @@ fn prince_metrics() -> Vec<Metric> {
     ]
 }
 
+fn aes_sub_bytes_metrics() -> Vec<Metric> {
+    let fragment = aes::aes128_sub_bytes();
+    let witness = vec![scriptnum(7); 32];
+    let stack = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            for _ in 0..32 { OP_DROP }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    vec![
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_sub_bytes",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_sub_bytes_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_sub_bytes_witness_max",
+            value: witness_size(&vec![scriptnum(15); 32]),
+        },
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_sub_bytes_stack",
+            value: stack,
+        },
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_sub_bytes_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+        Metric {
+            readme: "src/ciphers/aes/README.md",
+            key: "aes128_sub_bytes_table_items",
+            value: 832,
+        },
+    ]
+}
+
 fn prince_checked_metrics() -> Vec<Metric> {
     use bitcoin::{
         secp256k1::{Keypair, Secp256k1, SecretKey},
@@ -4095,6 +4140,7 @@ fn metrics() -> Vec<Metric> {
     .into_iter()
     .chain(commitment_metrics())
     .chain(prince_metrics())
+    .chain(aes_sub_bytes_metrics())
     .chain(winternitz_metrics())
     .chain(winternitz_sha256_metrics())
     .chain(winternitz_preimage16_metrics())
@@ -4183,6 +4229,11 @@ fn shake256_prefix_metrics_are_current() {
 #[test]
 fn prince_metrics_are_current() {
     check_readme_metrics(prince_metrics());
+}
+
+#[test]
+fn aes_sub_bytes_metrics_are_current() {
+    check_readme_metrics(aes_sub_bytes_metrics());
 }
 
 #[test]

@@ -8,8 +8,8 @@
 use bitcoin::{
     opcodes::{
         all::{
-            OP_2DROP, OP_2DUP, OP_2OVER, OP_3DUP, OP_ADD, OP_DUP, OP_FROMALTSTACK, OP_GREATERTHAN,
-            OP_OVER, OP_PICK, OP_SUB, OP_SWAP, OP_TOALTSTACK,
+            OP_2DROP, OP_2DUP, OP_2OVER, OP_3DUP, OP_ADD, OP_DUP, OP_EQUALVERIFY, OP_FROMALTSTACK,
+            OP_GREATERTHAN, OP_OVER, OP_PICK, OP_SUB, OP_SWAP, OP_TOALTSTACK, OP_VERIFY, OP_WITHIN,
         },
         Opcode,
     },
@@ -400,6 +400,28 @@ impl AesScript {
         out
     }
 
+    fn initialize_checked_tables() -> Program {
+        let mut out = Program::default();
+        for _ in 0..STATE_NIBBLES {
+            out.op(OP_DUP);
+            out.push(0);
+            out.push(16);
+            out.op(OP_WITHIN);
+            out.op(OP_VERIFY);
+            out.op(OP_DUP);
+            out.op(OP_DUP);
+            out.push(0);
+            out.op(OP_ADD);
+            out.op(OP_EQUALVERIFY);
+            out.op(OP_TOALTSTACK);
+        }
+        out.extend(table_pushes());
+        for _ in 0..STATE_NIBBLES {
+            out.op(OP_FROMALTSTACK);
+        }
+        out
+    }
+
     /// Fused AddRoundKey(input) + SubBytes + ShiftRows + AddRoundKey(output).
     /// Only the first invocation has an input key and only the final one has
     /// an output key.
@@ -445,6 +467,39 @@ impl AesScript {
         }
 
         Self::finish_state_transform(&mut out);
+        out
+    }
+
+    fn sub_bytes_only() -> Program {
+        let mut out = Self::initialize_checked_tables();
+        for byte in 0..BLOCK_BYTES {
+            out.extend(Self::copy_state(2 * byte, 0));
+            out.extend(Self::copy_state(2 * byte + 1, 1));
+            out.op(OP_SWAP);
+            out.extend(Self::lookup(XOR_SHIFT_ADDR, 1));
+            out.op(OP_ADD);
+            out.op(OP_DUP);
+
+            out.push(XOR_ADDR - (SBOX_HI_ADDR + 1));
+            out.op(OP_SUB);
+            out.op(OP_PICK);
+            out.op(OP_TOALTSTACK);
+
+            out.push(XOR_ADDR - SBOX_LO_ADDR);
+            out.op(OP_SUB);
+            out.op(OP_PICK);
+            out.op(OP_TOALTSTACK);
+        }
+        Self::finish_state_transform(&mut out);
+        for _ in 0..STATE_NIBBLES {
+            out.op(OP_TOALTSTACK);
+        }
+        for _ in 0..TABLE_ITEMS / 2 {
+            out.op(OP_2DROP);
+        }
+        for _ in 0..STATE_NIBBLES {
+            out.op(OP_FROMALTSTACK);
+        }
         out
     }
 
@@ -573,13 +628,57 @@ pub fn aes128_encrypt(key: [u8; 16]) -> Script {
     .into_script("AES-128 encryption")
 }
 
+/// Checked AES S-box substitution for one 128-bit block.
+///
+/// Input and output are 32 canonical nibbles in AES state order. The key is
+/// not involved; the shared AES lookup memory is initialized and removed by
+/// this fragment.
+pub fn aes128_sub_bytes() -> Script {
+    AesScript::sub_bytes_only().into_script("AES-128 SubBytes")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::support::{
-        execution::execute_script,
+        execution::{
+            execute_script, execute_script_with_inputs, execute_script_with_inputs_strict,
+        },
         script::{script, ScriptCompilation},
     };
+
+    fn sub_bytes_witness(bytes: [u8; 16]) -> Vec<Vec<u8>> {
+        bytes_to_nibbles(bytes)
+            .into_iter()
+            .rev()
+            .map(|nibble| {
+                if nibble == 0 {
+                    Vec::new()
+                } else {
+                    vec![nibble]
+                }
+            })
+            .collect()
+    }
+
+    fn sub_bytes_expected(bytes: [u8; 16]) -> [u8; 16] {
+        std::array::from_fn(|index| SBOX[bytes[index] as usize])
+    }
+
+    fn execute_sub_bytes(bytes: [u8; 16]) -> crate::support::execution::ExecuteInfo {
+        let expected = bytes_to_nibbles(sub_bytes_expected(bytes));
+        execute_script(script! {
+            for i in (0..STATE_NIBBLES).rev() {
+                { bytes_to_nibbles(bytes)[i] as u32 }
+            }
+            { aes128_sub_bytes() }
+            for expected_nibble in expected {
+                { expected_nibble as u32 }
+                OP_EQUALVERIFY
+            }
+            OP_TRUE
+        })
+    }
 
     fn execute_vector(key: [u8; 16], plaintext: [u8; 16], ciphertext: [u8; 16]) -> usize {
         let plaintext = bytes_to_nibbles(plaintext);
@@ -643,6 +742,64 @@ mod tests {
         for (key, plaintext, expected) in vectors {
             assert_eq!(aes128_encrypt_ref(key, plaintext), expected);
         }
+    }
+
+    #[test]
+    fn sub_bytes_matches_reference_vectors() {
+        let vectors = [
+            [0; 16],
+            [
+                0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+                0x0e, 0x0f,
+            ],
+            [0xff; 16],
+            std::array::from_fn(|index| (index as u8).wrapping_mul(37).wrapping_add(11)),
+        ];
+
+        for bytes in vectors {
+            let result = execute_sub_bytes(bytes);
+            assert!(result.success, "AES-128 SubBytes failed: {result}");
+        }
+    }
+
+    #[test]
+    fn sub_bytes_rejects_noncanonical_and_out_of_range_nibbles() {
+        let script = script! {
+            { aes128_sub_bytes() }
+            for _ in 0..STATE_NIBBLES { OP_DROP }
+            OP_TRUE
+        };
+
+        for (position, replacement) in [(0, vec![0, 0]), (7, vec![0x10]), (31, vec![0x81])] {
+            let mut witness = sub_bytes_witness([0; 16]);
+            witness[position] = replacement;
+            let result = execute_script_with_inputs(script.clone(), witness);
+            assert!(
+                !result.success,
+                "hostile nibble at position {position} was accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn sub_bytes_preserves_surrounding_stack_state() {
+        let mut witness = vec![vec![42]];
+        witness.extend(sub_bytes_witness([0; 16]));
+        let result = execute_script_with_inputs_strict(
+            script! {
+                { 99 } OP_TOALTSTACK
+                { aes128_sub_bytes() }
+                for _ in 0..STATE_NIBBLES { OP_DROP }
+                { 42 } OP_EQUALVERIFY
+                OP_FROMALTSTACK { 99 } OP_EQUALVERIFY
+                OP_TRUE
+            },
+            witness,
+        );
+        assert!(
+            result.success,
+            "AES-128 SubBytes changed surrounding state: {result}"
+        );
     }
 
     #[test]

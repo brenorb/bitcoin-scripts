@@ -2969,6 +2969,72 @@
       ]
     },
     {
+      "id": "cipher/aes128-subbytes",
+      "name": "Checked AES-128 SubBytes",
+      "class": "cipher/block",
+      "summary": "Checked standalone AES S-box substitution for one 128-bit state represented as 32 u4 nibbles.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/aes-subbytes.md",
+      "implementation": "src/ciphers/aes/mod.rs",
+      "documentation": "src/ciphers/aes/README.md",
+      "tests": [
+        "ciphers::aes::tests::sub_bytes_matches_reference_vectors",
+        "ciphers::aes::tests::sub_bytes_rejects_noncanonical_and_out_of_range_nibbles",
+        "ciphers::aes::tests::sub_bytes_preserves_surrounding_stack_state",
+        "primitive_metrics::aes_sub_bytes_metrics_are_current"
+      ],
+      "references": [
+        "fips-197",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "lookup-table",
+        "stack-routing",
+        "digit-arithmetic"
+      ],
+      "security": "The AES S-box is public; this fragment provides no key secrecy or authentication and makes no side-channel claim.",
+      "stack_contract": "Consumes exactly 32 canonical nibbles in AES state order and returns 32 substituted nibbles in the same order; preserves surrounding main-stack and altstack state.",
+      "configurations": [
+        {
+          "id": "checked-canonical-7",
+          "label": "Checked SubBytes with canonical 7 nibbles",
+          "parameters": {
+            "input_nibble": 7,
+            "table_items": 832
+          },
+          "includes": "fragment-with-memory: checked input boundary, shared S-box/XOR lookup memory, 16 substitutions and table cleanup; excludes input pushes and output comparison; zero hints",
+          "script_bytes": 2147,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 897,
+          "executed_opcodes": null,
+          "static_non_push_opcodes": 1031,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 2147,
+          "metric_keys": [
+            "aes128_sub_bytes",
+            "aes128_sub_bytes_witness",
+            "aes128_sub_bytes_witness_max",
+            "aes128_sub_bytes_stack",
+            "aes128_sub_bytes_opcodes"
+          ]
+        }
+      ],
+      "limitations": [
+        "897-item measured combined-stack peak leaves limited composition headroom",
+        "Static opcode count exceeds the legacy 201-non-push limit",
+        "Public S-box layer only; not complete AES encryption"
+      ],
+      "open_problems": [
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
       "id": "cipher/aes128-u4",
       "name": "AES-128 u4 encryption",
       "class": "cipher/block",

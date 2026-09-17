@@ -537,6 +537,72 @@
       ]
     },
     {
+      "id": "arithmetic/u4-triplet",
+      "name": "Checked u4 triplet-to-u12 packing",
+      "class": "arithmetic/word",
+      "summary": "Checked base-16 packing of three u4 limbs into one 12-bit ScriptNum.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u4-triplet.md",
+      "implementation": "src/arithmetic/u4/stack.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "arithmetic::u4::stack::tests::checked_triplet_packs_boundaries_and_preserves_state",
+        "arithmetic::u4::stack::tests::unchecked_triplet_requires_the_caller_invariant",
+        "primitive_metrics::u4_triplet_to_u12_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "digit-arithmetic",
+        "representation-bridge",
+        "range-check",
+        "stack-scheduling"
+      ],
+      "security": "Checked mode range-checks all three hostile nibbles before Horner accumulation; unchecked mode requires a caller-supplied nibble invariant, and no terminal predicate is supplied.",
+      "stack_contract": "Consumes high | middle | low and returns 256*high + 16*middle + low; checked mode preserves unrelated lower main-stack and alt-stack state.",
+      "configurations": [
+        {
+          "id": "checked-triplet",
+          "label": "u4_triplet_to_u12(true)",
+          "parameters": {
+            "check_inputs": true,
+            "data_items": 3,
+            "hint_items": 0,
+            "limb_width": 4
+          },
+          "includes": "fragment-only: three numeric range checks and base-16 accumulation; excludes input pushes, witness serialization, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 44,
+          "witness_bytes": 7,
+          "witness_bytes_max": 7,
+          "max_stack_items": 6,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 44,
+          "metric_keys": [
+            "u4_triplet_to_u12_checked",
+            "u4_triplet_to_u12_checked_witness",
+            "u4_triplet_to_u12_checked_stack"
+          ]
+        }
+      ],
+      "limitations": [
+        "The packed result is a numeric ScriptNum rather than three independent limbs",
+        "Unchecked mode is safe only after the caller establishes the nibble invariant",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
       "id": "arithmetic/u32",
       "name": "u32 byte-word arithmetic",
       "class": "arithmetic/word",

@@ -809,14 +809,14 @@
           "label": "Embedded public mask",
           "parameters": {"mask": "0x89abcdef", "byte_count": 4, "table_items": 256, "data_items": 4, "hint_items_per_invocation": 0, "complete_input_items": 4},
           "includes": "fragment-with-memory: canonical checks, Boolean table, XOR queries, byte complements, cleanup, and routing; excludes pushes, terminal predicate, unrelated state, and transaction context",
-          "script_bytes": 672,
+          "script_bytes": 678,
           "witness_bytes": 13,
           "witness_bytes_max": 13,
           "max_stack_items": 272,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": null,
-          "per_use_script_bytes": 672,
+          "per_use_script_bytes": 678,
           "metric_keys": ["u32_xnor_constant", "u32_xnor_constant_witness", "u32_xnor_constant_stack", "u32_xnor_constant_opcodes"],
           "static_non_push_opcodes": 492
         }

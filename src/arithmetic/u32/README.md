@@ -46,7 +46,7 @@ as less-than-or-equal.
 | Fragment | Locking script | Witness bytes (see boundary below) | Combined stack peak |
 | --- | ---: | ---: | ---: |
 | `u32_add_drop(0, 1)` | <!-- metric:u32_add_drop -->78<!-- /metric:u32_add_drop --> bytes | 0 bytes | <!-- metric:u32_add_drop_stack -->10<!-- /metric:u32_add_drop_stack --> items |
-| `u32_xnor_constant(0x89abcdef)` | <!-- metric:u32_xnor_constant -->672<!-- /metric:u32_xnor_constant --> bytes | <!-- metric:u32_xnor_constant_witness -->13<!-- /metric:u32_xnor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xnor_constant_stack -->272<!-- /metric:u32_xnor_constant_stack --> items; <!-- metric:u32_xnor_constant_opcodes -->492<!-- /metric:u32_xnor_constant_opcodes --> static non-push opcodes |
+| `u32_xnor_constant(0x89abcdef)` | <!-- metric:u32_xnor_constant -->678<!-- /metric:u32_xnor_constant --> bytes | <!-- metric:u32_xnor_constant_witness -->13<!-- /metric:u32_xnor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xnor_constant_stack -->272<!-- /metric:u32_xnor_constant_stack --> items; <!-- metric:u32_xnor_constant_opcodes -->492<!-- /metric:u32_xnor_constant_opcodes --> static non-push opcodes |
 | `u32_compressed_add()` | <!-- metric:u32_compressed_add -->1016<!-- /metric:u32_compressed_add --> bytes | <!-- metric:u32_compressed_add_witness -->11<!-- /metric:u32_compressed_add_witness --> bytes (<!-- metric:u32_compressed_add_witness_max -->13<!-- /metric:u32_compressed_add_witness_max --> max) | <!-- metric:u32_compressed_add_stack -->11<!-- /metric:u32_compressed_add_stack --> items |
 | `u32_sub_drop(0, 1)` | <!-- metric:u32_sub_drop -->77<!-- /metric:u32_sub_drop --> bytes | 0 bytes | <!-- metric:u32_sub_drop_stack -->9<!-- /metric:u32_sub_drop_stack --> items |
 | `u32_conditional_negate()` | <!-- metric:u32_conditional_negate -->83<!-- /metric:u32_conditional_negate --> bytes | 0 bytes | <!-- metric:u32_conditional_negate_stack -->9<!-- /metric:u32_conditional_negate_stack --> items |
@@ -70,7 +70,7 @@ as less-than-or-equal.
 four-limb word, uses the shared XOR table for the embedded public mask, and
 complements each output byte before cleaning up the table. The representative
 fixture uses mask `0x89abcdef`, four data items, and zero hints. Its estimated
-672-byte fragment peaks at 272 combined main-plus-alt-stack items and has 492
+678-byte fragment peaks at 272 combined main-plus-alt-stack items and has 492
 static non-push opcodes; CI is the authoritative metric reproduction.
 
 `u32_compressed_add()` is a checked wire adapter: it accepts two canonical

@@ -24,6 +24,11 @@ The u4 bit-reversal adapter is a checked per-nibble representation change. It
 preserves lane order, uses a 16-item table, and costs 344 bytes for 32 input
 nibbles with a 51-item combined peak and zero incremental hints.
 
+The checked u4 modulo-16 sum is an accumulator boundary rather than a
+per-nibble projection. It uses a 31-item table for the `0..30` intermediate
+sum, folds an arbitrary checked batch to one nibble, and costs 592 bytes for
+32 inputs with a 66-item peak and zero hints.
+
 For terminal one-time authentication, the host may instead encode an unchanged
 message as a fixed-sum vector. The
 [20-byte Winternitz construction](../primitives/winternitz-constant-sum20.md)

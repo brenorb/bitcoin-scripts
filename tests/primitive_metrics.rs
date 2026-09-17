@@ -4111,6 +4111,7 @@ fn metrics() -> Vec<Metric> {
     .chain(u32_le_bits_metrics())
     .chain(u32_conditional_select_metrics())
     .chain(u32_conditional_negate_metrics())
+    .chain(u4_sum_metrics())
     .chain(u4_le_bits_metrics())
     .chain(u32_iszero_metrics())
     .collect()
@@ -5266,6 +5267,50 @@ fn u32_conditional_negate_metrics() -> Vec<Metric> {
 #[test]
 fn u32_conditional_negate_metrics_are_current() {
     check_readme_metrics(u32_conditional_negate_metrics());
+}
+
+fn u4_sum_metrics() -> Vec<Metric> {
+    let fragment = u4::sum::u4_nibbles_to_sum_mod16(32);
+    let witness = vec![scriptnum(7); 32];
+    vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_sum_mod16_batch32",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_sum_mod16_batch32_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_sum_mod16_batch32_stack",
+            value: max_stack_items_strict(
+                script! {
+                    { fragment }
+                    OP_DROP
+                    OP_TRUE
+                },
+                witness,
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_sum_mod16_batch32_opcodes",
+            value: static_non_push_opcodes(u4::sum::u4_nibbles_to_sum_mod16(32)),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_sum_mod16_table_items",
+            value: u4::sum::U4_SUM_TABLE_ITEMS as usize,
+        },
+    ]
+}
+
+#[test]
+fn u4_sum_metrics_are_current() {
+    check_readme_metrics(u4_sum_metrics());
 }
 
 fn u4_le_bits_metrics() -> Vec<Metric> {

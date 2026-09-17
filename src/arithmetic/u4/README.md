@@ -14,6 +14,8 @@ these operations, but this module contains no hash-specific round logic.
   `1..=982`.
 - `lsb::u4_nibbles_to_lsb(nibble_count)` takes a checked batch size in
   `1..=982` and returns one bit per input nibble.
+- `sum::u4_nibbles_to_sum_mod16(nibble_count)` takes a checked batch size in
+  `1..=965` and returns the batch sum modulo 16.
 - `bit_planes::u4_nibbles_to_bit_planes(nibble_count, check_inputs)` reuses
   checked nibble decomposition and transposes batches up to 234 nibbles.
 - `bit_reverse::u4_nibbles_to_bit_reverse(nibble_count)` checks and reverses
@@ -49,10 +51,13 @@ each input with the same output-restoration boundary.
 | Checked LSB batch, 32 nibbles | <!-- metric:u4_lsb_batch32 -->440<!-- /metric:u4_lsb_batch32 --> bytes | <!-- metric:u4_lsb_batch32_stack -->50<!-- /metric:u4_lsb_batch32_stack --> items | <!-- metric:u4_lsb_batch32_opcodes -->328<!-- /metric:u4_lsb_batch32_opcodes --> |
 | Checked 16-nibble bit-plane transpose | <!-- metric:u4_bit_planes_batch16 -->776<!-- /metric:u4_bit_planes_batch16 --> bytes | <!-- metric:u4_bit_planes_batch16_stack -->125<!-- /metric:u4_bit_planes_batch16_stack --> items | <!-- metric:u4_bit_planes_batch16_opcodes -->573<!-- /metric:u4_bit_planes_batch16_opcodes --> |
 | Checked 32-nibble bit reversal | <!-- metric:u4_bit_reverse_batch32 -->344<!-- /metric:u4_bit_reverse_batch32 --> bytes | <!-- metric:u4_bit_reverse_batch32_stack -->51<!-- /metric:u4_bit_reverse_batch32_stack --> items | <!-- metric:u4_bit_reverse_batch32_opcodes -->232<!-- /metric:u4_bit_reverse_batch32_opcodes --> |
+| Checked modulo-16 sum, 32 nibbles | <!-- metric:u4_sum_mod16_batch32 -->592<!-- /metric:u4_sum_mod16_batch32 --> bytes | <!-- metric:u4_sum_mod16_batch32_stack -->66<!-- /metric:u4_sum_mod16_batch32_stack --> items | <!-- metric:u4_sum_mod16_batch32_opcodes -->400<!-- /metric:u4_sum_mod16_batch32_opcodes --> |
 
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
 
 <!-- metric:u4_lsb_batch32_witness -->65<!-- /metric:u4_lsb_batch32_witness --> serialized witness bytes for the representative LSB batch.
+
+<!-- metric:u4_sum_mod16_batch32_witness -->65<!-- /metric:u4_sum_mod16_batch32_witness --> serialized witness bytes for the representative modulo-16 sum batch; its lookup table has <!-- metric:u4_sum_mod16_table_items -->31<!-- /metric:u4_sum_mod16_table_items --> persistent items.
 
 The staggered table has 61 setup items and costs 31 bytes to remove. A checked
 query costs 22 bytes and restoring its four bits costs another four, so the
@@ -60,6 +65,14 @@ complete checked batch is `92 + 26*n` bytes. The existing branch splitter is
 `43*n` bytes on the same boundary; the checked table wins from six nibbles.
 Unchecked lookup is `92 + 21*n` and wins from five, but is safe only for
 previously certified nibbles.
+
+The modulo-16 sum reducer uses a 31-item table for intermediate sums from 0
+through 30. It validates each nibble's numeric range and canonical ScriptNum
+encoding, folds the result into one accumulator, and removes the table before
+returning. For 32 nibbles it measures 592 bytes, 400 static non-push opcodes,
+a 66-item combined peak, and a 65-byte witness with zero hints. Its conservative
+standalone batch bound is 965 nibbles; callers must subtract unrelated live
+state from that limit. This is a checksum fragment, not a terminal predicate.
 
 `u4_pair_to_u8(check_inputs)` is the small runtime bridge from nibble-oriented
 state to byte-oriented state. It consumes `high | low` and returns

@@ -247,7 +247,7 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-16",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u4.md",
       "implementation": "src/arithmetic/u4/mod.rs",
       "documentation": "src/arithmetic/u4/README.md",
@@ -266,7 +266,7 @@
         "tracked-stack"
       ],
       "security": "No independent cryptographic claim. Checked bit conversion, bit-plane transposition, and bit reversal enforce numeric nibble range before table indexing; unchecked conversion and other u4 operations require callers to supply certified canonical nibbles. Byte-unique ScriptNum encoding remains a protocol obligation where applicable.",
-      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal.",
+      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table.",
       "configurations": [
         {
           "id": "addition-memory",
@@ -466,6 +466,78 @@
         "Numeric range checks do not establish byte-unique ScriptNum encoding"
       ],
       "open_problems": [
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-sum-mod16",
+      "name": "Checked u4 modulo-16 sum",
+      "class": "arithmetic/word",
+      "summary": "Checked arbitrary-batch u4 reduction to one modulo-16 checksum.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u4-sum-mod16.md",
+      "implementation": "src/arithmetic/u4/sum.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "src/arithmetic/u4/sum.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "batch-lookup",
+        "digit-arithmetic",
+        "lookup-table",
+        "stack-routing"
+      ],
+      "security": "All hostile nibble inputs are checked for 0..=15 range and minimal ScriptNum encoding before table lookup. The result is a checksum value, not a cryptographic claim; no hints are used and no terminal predicate is included.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1], with the last nibble on top, and returns preserved | sum(nibbles) mod 16. A 31-item table is resident during the batch and is removed before the result returns; unrelated main and altstack items are preserved.",
+      "configurations": [
+        {
+          "id": "checked-batch32",
+          "label": "u4_nibbles_to_sum_mod16(32)",
+          "parameters": {
+            "nibble_count": 32,
+            "table_items": 31,
+            "check_inputs": true,
+            "data_items": 32,
+            "hint_items": 0
+          },
+          "includes": "fragment-with-memory: 31-item table for intermediate sums 0..30, 32 canonical-nibble checks and reductions, table cleanup, and one numeric checksum output; representative witness has 32 hostile nibble data items; excludes terminal predicate, unrelated live state, and transaction context; static non-push opcode count is 400, dynamic count unavailable",
+          "script_bytes": 592,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 66,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 31,
+          "per_use_script_bytes": null,
+          "hint_items": 0,
+          "metric_keys": [
+            "u4_sum_mod16_batch32",
+            "u4_sum_mod16_batch32_witness",
+            "u4_sum_mod16_batch32_stack",
+            "u4_sum_mod16_batch32_opcodes",
+            "u4_sum_mod16_table_items"
+          ],
+          "static_non_push_opcodes": 400
+        }
+      ],
+      "limitations": [
+        "The 31-item table remains resident during the batch",
+        "The output is only a modulo-16 checksum and does not authenticate inputs",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy differential validation",
+        "The fragment does not provide a terminal clean-stack predicate"
+      ],
+      "open_problems": [
+        "OP-001",
         "OP-002",
         "OP-003"
       ]

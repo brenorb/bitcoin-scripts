@@ -5312,6 +5312,43 @@ fn u4_le_bits_metrics_are_current() {
     check_readme_metrics(u4_le_bits_metrics());
 }
 
+#[test]
+fn u4_le_bits_canonical_metrics_are_current() {
+    const U4_BITS_BATCH: u32 = 32;
+    let fragment = u4::bits::u4_nibbles_to_le_bits_canonical(U4_BITS_BATCH);
+    let witness = vec![scriptnum(15); U4_BITS_BATCH as usize];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            { u4::stack::u4_drop(4 * U4_BITS_BATCH - 1) }
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_le_canonical_batch32",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_le_canonical_batch32_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_le_canonical_batch32_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_le_canonical_batch32_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
 fn u32_iszero_metrics() -> Vec<Metric> {
     vec![
         Metric {

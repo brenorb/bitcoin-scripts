@@ -21,6 +21,8 @@ these operations, but this module contains no hash-specific round logic.
 - `bits::u4_nibbles_to_be_bits[_toaltstack](nibble_count, check_inputs)` and
   `bits::u4_nibbles_to_le_bits[_toaltstack](nibble_count, check_inputs)` take
   an explicit batch size in `1..=234` and have no default for input checking.
+- `bits::u4_nibbles_to_le_bits_canonical(nibble_count)` additionally rejects
+  non-minimal ScriptNum encodings before little-endian decomposition.
 
 ## Script metrics
 
@@ -39,6 +41,7 @@ each input with the same output-restoration boundary.
 | Little-endian staggered bit-table setup | <!-- metric:u4_bits_le_table_push -->61<!-- /metric:u4_bits_le_table_push --> bytes | 61 table items | not recorded |
 | Checked table batch, 32 nibbles | <!-- metric:u4_bits_checked_batch32 -->924<!-- /metric:u4_bits_checked_batch32 --> bytes | <!-- metric:u4_bits_checked_batch32_stack -->189<!-- /metric:u4_bits_checked_batch32_stack --> items | <!-- metric:u4_bits_checked_batch32_opcodes -->735<!-- /metric:u4_bits_checked_batch32_opcodes --> |
 | Checked little-endian table batch, 32 nibbles | <!-- metric:u4_bits_le_checked_batch32 -->924<!-- /metric:u4_bits_le_checked_batch32 --> bytes | <!-- metric:u4_bits_le_checked_batch32_stack -->189<!-- /metric:u4_bits_le_checked_batch32_stack --> items | <!-- metric:u4_bits_le_checked_batch32_opcodes -->735<!-- /metric:u4_bits_le_checked_batch32_opcodes --> |
+| Canonical checked little-endian table batch, 32 nibbles | <!-- metric:u4_bits_le_canonical_batch32 -->1306<!-- /metric:u4_bits_le_canonical_batch32 --> bytes | <!-- metric:u4_bits_le_canonical_batch32_stack -->189<!-- /metric:u4_bits_le_canonical_batch32_stack --> items | <!-- metric:u4_bits_le_canonical_batch32_opcodes -->1021<!-- /metric:u4_bits_le_canonical_batch32_opcodes --> |
 | Unchecked table batch, 32 nibbles | <!-- metric:u4_bits_unchecked_batch32 -->764<!-- /metric:u4_bits_unchecked_batch32 --> bytes | 189 items | not recorded |
 | Existing branch splitter, 32 four-bit limbs | <!-- metric:u4_bits_branch_batch32 -->1374<!-- /metric:u4_bits_branch_batch32 --> bytes | <!-- metric:u4_bits_branch_batch32_stack -->130<!-- /metric:u4_bits_branch_batch32_stack --> items | not recorded |
 | Checked high/low nibble pair to one byte | <!-- metric:u4_pair_to_u8_checked -->20<!-- /metric:u4_pair_to_u8_checked --> bytes | <!-- metric:u4_pair_to_u8_checked_stack -->5<!-- /metric:u4_pair_to_u8_checked_stack --> items | not recorded |
@@ -86,6 +89,9 @@ that consume each nibble least-significant-bit first; reversing four output
 bits per nibble after the big-endian adapter is a separate composition cost.
 The representative little-endian witness is 32 canonical `0x0f` stack items,
 serialized as <!-- metric:u4_bits_le_checked_batch32_witness -->65<!-- /metric:u4_bits_le_checked_batch32_witness --> bytes.
+The canonical little-endian row uses the same 32-item, 65-byte representative
+witness and adds one raw ScriptNum boundary check per nibble.
+<!-- metric:u4_bits_le_canonical_batch32_witness -->65<!-- /metric:u4_bits_le_canonical_batch32_witness -->
 
 ## Security
 
@@ -97,6 +103,9 @@ before using a value as an `OP_PICK` index. `check_inputs=false` must be used
 only when a surrounding fragment already established that range: an invalid
 index can otherwise address below the table. The numeric range check does not
 by itself prove a byte-unique ScriptNum encoding.
+The canonical little-endian adapter performs `verify_canonical_nibble()` on
+each hostile input before invoking the checked table path; it rejects negative,
+oversized, and non-minimal raw encodings while preserving the same bit order.
 
 `compare::lexicographic_le(n)` range-checks two `n`-nibble big-endian vectors,
 compares the first differing nibble, consumes both vectors, and returns one

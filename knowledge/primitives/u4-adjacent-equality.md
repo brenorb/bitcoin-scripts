@@ -10,7 +10,8 @@ expanding the inputs into bits or installing a lookup table?
 `u4_adjacent_equal_mask(n)` consumes `n` numeric nibbles in input order and
 returns `n-1` ScriptNum booleans. Output `i` is true exactly when
 `nibble[i] == nibble[i+1]`. Inputs are range-checked as `0..=15`; non-minimal
-raw ScriptNum encodings remain a caller-level canonicality concern.
+raw ScriptNum encodings remain a caller-level canonicality concern, but equal
+numeric aliases compare equal.
 
 The fragment keeps the original inputs on the main stack while it computes
 pairs from the end toward the beginning and stores only the boolean results on

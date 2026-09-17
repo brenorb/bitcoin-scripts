@@ -247,7 +247,7 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-16",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u4.md",
       "implementation": "src/arithmetic/u4/mod.rs",
       "documentation": "src/arithmetic/u4/README.md",
@@ -428,6 +428,33 @@
             "u4_bit_reverse_batch32_opcodes"
           ],
           "static_non_push_opcodes": 232
+        },
+        {
+          "id": "nibble-to-bit-planes-batch16-canonical",
+          "label": "Canonical checked 16-nibble bit-plane transpose",
+          "parameters": {
+            "nibble_count": 16,
+            "canonical_input_check": true,
+            "table_items": 61,
+            "data_items": 16,
+            "hint_items": 0
+          },
+          "includes": "fragment-with-memory: four canonical-nibble checks per input, the checked 61-item nibble-to-bit table, restoration of 64 bits, static bit-plane permutation, and output restoration; the canonical checks reject numeric aliases before the table path, which repeats the numeric range checks; representative witness size records 16 hostile nibble data items; excludes terminal predicate, unrelated live state, and transaction context; static non-push opcode count is 715, dynamic count is unavailable",
+          "script_bytes": 966,
+          "witness_bytes": 33,
+          "witness_bytes_max": 33,
+          "max_stack_items": 125,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 61,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u4_bit_planes_canonical_batch16",
+            "u4_bit_planes_canonical_batch16_witness",
+            "u4_bit_planes_canonical_batch16_stack",
+            "u4_bit_planes_canonical_batch16_opcodes"
+          ],
+          "static_non_push_opcodes": 715
         },
         {
           "id": "nibble-to-le-bits-batch32-checked",

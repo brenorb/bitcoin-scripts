@@ -5027,6 +5027,44 @@ fn u4_bit_planes_metrics_are_current() {
 }
 
 #[test]
+fn u4_bit_planes_canonical_metrics_are_current() {
+    const NIBBLE_COUNT: u32 = 16;
+    let fragment = u4::bit_planes::u4_nibbles_to_bit_planes_canonical(NIBBLE_COUNT);
+    let witness = vec![scriptnum(15); NIBBLE_COUNT as usize];
+    let stack = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            { u4::stack::u4_drop(4 * NIBBLE_COUNT) }
+            OP_1
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bit_planes_canonical_batch16",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bit_planes_canonical_batch16_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bit_planes_canonical_batch16_stack",
+            value: stack,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bit_planes_canonical_batch16_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
+#[test]
 fn u4_bit_reverse_metrics_are_current() {
     const NIBBLE_COUNT: u32 = 32;
     let fragment = u4::bit_reverse::u4_nibbles_to_bit_reverse(NIBBLE_COUNT);

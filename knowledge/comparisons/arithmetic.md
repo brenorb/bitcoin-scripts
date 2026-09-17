@@ -14,6 +14,7 @@ differ. Follow each catalog configuration before comparing numbers.
 | 32 checked nibbles to 128 bits | u4 staggered batch table | 924 | 189-item peak; tapscript-oriented |
 | Canonical compressed-u32 decode | u32 raw-encoding boundary | 431 | 7-item peak; 7-byte maximum witness; rejects aliases |
 | Checked u31 width-9 decomposition | u31 range boundary | 85 | 10-item peak; 4-byte representative witness; numeric `0..=511` check |
+| Canonical checked u31 width-9 decomposition | u31 range plus raw ScriptNum boundary | <!-- metric:u31_bits_canonical_width9 -->90<!-- /metric:u31_bits_canonical_width9 --> | <!-- metric:u31_bits_canonical_width9_stack -->10<!-- /metric:u31_bits_canonical_width9_stack -->-item peak; 4-byte witness; rejects aliases; 0 hints |
 | Checked u4 nibble pair to byte | `u4_pair_to_u8(true)` | 20 | 5-item peak; 2 data items; 5-byte witness |
 | Checked u8 byte to nibble pair | `u8_to_u4_pair(true)` | 62 | 4-item peak; 4-byte witness; two nibble outputs |
 | Checked u8 high-bit extraction | `u8_extract_hbit_checked(4)` | 73 | 5-item peak; 4-byte witness; rejects non-byte ScriptNums |

@@ -4367,6 +4367,42 @@ fn u31_checked_bits_metrics_are_current() {
 }
 
 #[test]
+fn u31_canonical_bits_metrics_are_current() {
+    let fragment = u31::u31_to_bits_with_width_canonical(9);
+    let witness = vec![scriptnum(511)];
+    let stack = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            for _ in 0..9 { OP_DROP }
+            OP_1
+        },
+        witness.clone(),
+    );
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u31/README.md",
+            key: "u31_bits_canonical_width9",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u31/README.md",
+            key: "u31_bits_canonical_width9_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u31/README.md",
+            key: "u31_bits_canonical_width9_stack",
+            value: stack,
+        },
+        Metric {
+            readme: "src/arithmetic/u31/README.md",
+            key: "u31_bits_canonical_width9_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
+#[test]
 fn scriptint_canonical_metrics_are_current() {
     let fragment = scriptint::verify_canonical();
     let witness = vec![scriptnum(2_147_483_647)];

@@ -855,12 +855,15 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-01",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u31.md",
       "implementation": "src/arithmetic/u31/mod.rs",
       "documentation": "src/fields/m31/README.md",
       "tests": [
-        "arithmetic::u31::tests"
+        "arithmetic::u31::tests",
+        "arithmetic::u31::tests::canonical_bit_decomposition_rejects_raw_aliases",
+        "arithmetic::u31::tests::canonical_bit_decomposition_preserves_state_and_outputs_bits",
+        "primitive_metrics::u31_canonical_bits_metrics_are_current"
       ],
       "references": [
         "u31-bitvm-source",
@@ -933,6 +936,33 @@
             "u31_bits_checked_width9_witness",
             "u31_bits_checked_width9_stack"
           ]
+        },
+        {
+          "id": "canonical-bits-width9",
+          "label": "Canonical checked u31 9-bit decomposition",
+          "parameters": {
+            "bit_width": 9,
+            "maximum_value": 511,
+            "canonical_scriptnum": true,
+            "data_items": 1,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: minimal ScriptNum reserialization check, nonnegative and upper-bound checks, and nine-bit decomposition; representative witness is one canonical two-byte ScriptNum; excludes terminal predicate, input/output checks, and transaction context",
+          "script_bytes": 90,
+          "witness_bytes": 4,
+          "witness_bytes_max": 4,
+          "max_stack_items": 10,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u31_bits_canonical_width9",
+            "u31_bits_canonical_width9_witness",
+            "u31_bits_canonical_width9_stack",
+            "u31_bits_canonical_width9_opcodes"
+          ],
+          "static_non_push_opcodes": 58
         }
       ],
       "limitations": [

@@ -31,6 +31,8 @@ they do not use BN254 or any other field modulus.
 - `u32_uncompress_canonical()` consumes one minimally encoded signed ScriptNum
   representing a u32 and returns its four MSB-first bytes. It rejects raw
   aliases and accepts five bytes only for `-2^31`.
+- `u32_lshift8_checked()` validates four canonical byte limbs before the
+  direct byte-aligned logical left shift.
 
 ## Script metrics
 
@@ -59,6 +61,7 @@ as less-than-or-equal.
 | `u32_uncompress_canonical()` | <!-- metric:u32_uncompress_canonical -->431<!-- /metric:u32_uncompress_canonical --> bytes | <!-- metric:u32_uncompress_canonical_witness -->7<!-- /metric:u32_uncompress_canonical_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_stack -->7<!-- /metric:u32_uncompress_canonical_stack --> items |
 | `u8_extract_hbit_checked(4)` | <!-- metric:u8_extract_hbit_checked -->73<!-- /metric:u8_extract_hbit_checked --> bytes | <!-- metric:u8_extract_hbit_checked_witness -->4<!-- /metric:u8_extract_hbit_checked_witness --> bytes, 1 data item | <!-- metric:u8_extract_hbit_checked_stack -->5<!-- /metric:u8_extract_hbit_checked_stack --> items |
 | `verify_canonical_byte()` | <!-- metric:u32_canonical_byte -->12<!-- /metric:u32_canonical_byte --> bytes | <!-- metric:u32_canonical_byte_witness -->4<!-- /metric:u32_canonical_byte_witness --> bytes, 1 data item | <!-- metric:u32_canonical_byte_stack -->4<!-- /metric:u32_canonical_byte_stack --> items |
+| `u32_lshift8_checked()` | <!-- metric:u32_lshift8_checked -->56<!-- /metric:u32_lshift8_checked --> bytes | <!-- metric:u32_lshift8_checked_witness -->9<!-- /metric:u32_lshift8_checked_witness --> bytes (<!-- metric:u32_lshift8_checked_witness_max -->13<!-- /metric:u32_lshift8_checked_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_lshift8_checked_stack -->7<!-- /metric:u32_lshift8_checked_stack --> items; <!-- metric:u32_lshift8_checked_opcodes -->35<!-- /metric:u32_lshift8_checked_opcodes --> static non-push opcodes |
 | `u32_popcount()` | <!-- metric:u32_popcount -->455<!-- /metric:u32_popcount --> bytes | <!-- metric:u32_popcount_witness -->13<!-- /metric:u32_popcount_witness --> bytes | <!-- metric:u32_popcount_stack -->262<!-- /metric:u32_popcount_stack --> items; <!-- metric:u32_popcount_opcodes -->171<!-- /metric:u32_popcount_opcodes --> static non-push opcodes |
 | `u32_to_le_bits()` | <!-- metric:u32_le_bits -->514<!-- /metric:u32_le_bits --> bytes | <!-- metric:u32_le_bits_witness -->9<!-- /metric:u32_le_bits_witness --> bytes | <!-- metric:u32_le_bits_stack -->35<!-- /metric:u32_le_bits_stack --> items |
 
@@ -111,6 +114,11 @@ The conditional selector normalizes any numeric truthy/falsy condition before
 `u32_popcount` performs the byte range checks itself because unchecked values
 would address outside the popcount table. Its output is a numeric ScriptNum,
 not a four-byte word or a terminal predicate.
+
+`u32_lshift8_checked()` is the byte-aligned left-shift counterpart to the
+generic bitwise shift family. It drops the most-significant byte, inserts zero
+at the least-significant end, and preserves unrelated stack state. It has no
+auxiliary hints and remains a fragment rather than a complete locking script.
 
 ## Script compatibility and standardness
 

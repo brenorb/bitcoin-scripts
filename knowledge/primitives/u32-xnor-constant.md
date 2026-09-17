@@ -28,7 +28,7 @@ transaction framing.
 
 | Construction | Locking script | Representative witness | Maximum witness | Data items | Hint items | Peak items | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Embedded mask `0x89abcdef` | 678 | 13 bytes | 13 bytes | 4 | 0 | 272 | 492 |
+| Embedded mask `0x89abcdef` | 678 | 13 bytes | 13 bytes | 4 | 0 | 272 | 498 |
 | Generic XNOR with runtime mask | 566 plus complement and table routing | 21 bytes | 21 bytes | 8 | 0 | table-dependent | not measured here |
 
 The embedded form removes four witness data items and saves the second word's

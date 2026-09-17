@@ -818,7 +818,7 @@
           "setup_script_bytes": null,
           "per_use_script_bytes": 678,
           "metric_keys": ["u32_xnor_constant", "u32_xnor_constant_witness", "u32_xnor_constant_stack", "u32_xnor_constant_opcodes"],
-          "static_non_push_opcodes": 492
+            "static_non_push_opcodes": 498
         }
       ],
       "limitations": ["The 256-item table makes this unsuitable as a standalone legacy P2SH/P2WSH fragment", "Useful only when the mask is public and witness width matters", "Static opcode count is not a dynamic execution measurement", "Bitcoin Core consensus and relay-policy validation remain open"],

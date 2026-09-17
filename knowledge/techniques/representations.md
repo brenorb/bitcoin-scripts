@@ -24,6 +24,12 @@ The u4 bit-reversal adapter is a checked per-nibble representation change. It
 preserves lane order, uses a 16-item table, and costs 344 bytes for 32 input
 nibbles with a 51-item combined peak and zero incremental hints.
 
+The checked u32 byte high-bit mask is a compact projection boundary: it keeps
+one selected bit from each byte as a four-bit numeric mask. Its 133-byte
+fragment validates four canonical byte limbs, uses no table or hints, and is
+smaller than the 514-byte full 32-bit splitter when the remaining bit lanes
+are irrelevant.
+
 For terminal one-time authentication, the host may instead encode an unchanged
 message as a fixed-sum vector. The
 [20-byte Winternitz construction](../primitives/winternitz-constant-sum20.md)

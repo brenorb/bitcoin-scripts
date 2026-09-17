@@ -4109,6 +4109,7 @@ fn metrics() -> Vec<Metric> {
     .chain(hash_path_chain_metrics())
     .chain(hash160_composition_metrics())
     .chain(u32_le_bits_metrics())
+    .chain(u32_msb_mask_metrics())
     .chain(u32_conditional_select_metrics())
     .chain(u32_conditional_negate_metrics())
     .chain(u4_le_bits_metrics())
@@ -5186,6 +5187,55 @@ fn u32_le_bits_metrics() -> Vec<Metric> {
 #[test]
 fn u32_le_bits_metrics_are_current() {
     check_readme_metrics(u32_le_bits_metrics());
+}
+
+fn u32_msb_mask_metrics() -> Vec<Metric> {
+    let fragment = u32::msb_mask::u32_msb_mask();
+    let representative = vec![vec![0x42]; 4];
+    vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_msb_mask",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_msb_mask_witness",
+            value: witness_size(&representative),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_msb_mask_witness_max",
+            value: witness_size(&vec![scriptnum(255); 4]),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_msb_mask_stack",
+            value: max_stack_items_strict(
+                script! {
+                    { fragment }
+                    OP_DROP
+                    OP_TRUE
+                },
+                representative,
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_msb_mask_opcodes",
+            value: static_non_push_opcodes(u32::msb_mask::u32_msb_mask()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_msb_mask_bit_projection_baseline",
+            value: script_len(u32::bits::u32_to_le_bits()),
+        },
+    ]
+}
+
+#[test]
+fn u32_msb_mask_metrics_are_current() {
+    check_readme_metrics(u32_msb_mask_metrics());
 }
 
 fn u32_conditional_select_metrics() -> Vec<Metric> {

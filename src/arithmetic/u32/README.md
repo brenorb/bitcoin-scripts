@@ -19,6 +19,9 @@ they do not use BN254 or any other field modulus.
   integers and consumes both.
 - `u32_iszero()` consumes the top word and returns whether all four limbs are
   numerically zero.
+- `u32_msb_mask()` consumes one canonical u32 word and returns a four-bit mask
+  whose bit 3 is the most-significant byte's high bit and bit 0 is the
+  least-significant byte's high bit.
 - `u32_or(a, b, stack_size)`, like XOR and AND, takes distinct word offsets.
   `stack_size` is one plus the number of u32 words above the shared byte-logic
   table. With exactly two working words, the usual value is `3`.
@@ -54,6 +57,7 @@ as less-than-or-equal.
 | `u32_compressed_equal()` | <!-- metric:u32_compressed_equal -->37<!-- /metric:u32_compressed_equal --> bytes | <!-- metric:u32_compressed_equal_witness -->11<!-- /metric:u32_compressed_equal_witness --> bytes | <!-- metric:u32_compressed_equal_stack -->5<!-- /metric:u32_compressed_equal_stack --> items |
 | `u32_conditional_select()` | <!-- metric:u32_conditional_select -->9<!-- /metric:u32_conditional_select --> bytes | <!-- metric:u32_conditional_select_witness_min -->10<!-- /metric:u32_conditional_select_witness_min -->–<!-- metric:u32_conditional_select_witness_max -->30<!-- /metric:u32_conditional_select_witness_max --> bytes | <!-- metric:u32_conditional_select_stack -->9<!-- /metric:u32_conditional_select_stack --> items |
 | `u32_iszero()` | <!-- metric:u32_iszero -->4<!-- /metric:u32_iszero --> bytes | <!-- metric:u32_iszero_witness -->5<!-- /metric:u32_iszero_witness --> bytes | <!-- metric:u32_iszero_stack -->4<!-- /metric:u32_iszero_stack --> items |
+| `u32_msb_mask()` | <!-- metric:u32_msb_mask -->133<!-- /metric:u32_msb_mask --> bytes | <!-- metric:u32_msb_mask_witness -->9<!-- /metric:u32_msb_mask_witness --> bytes (<!-- metric:u32_msb_mask_witness_max -->13<!-- /metric:u32_msb_mask_witness_max --> max) | <!-- metric:u32_msb_mask_stack -->8<!-- /metric:u32_msb_mask_stack --> items; <!-- metric:u32_msb_mask_opcodes -->92<!-- /metric:u32_msb_mask_opcodes --> static non-push opcodes |
 | `u8_push_xor_table()` | <!-- metric:u8_logic_table_push -->236<!-- /metric:u8_logic_table_push --> bytes | 0 bytes | 256 table items |
 | `u8_drop_xor_table()` | <!-- metric:u8_logic_table_drop -->128<!-- /metric:u8_logic_table_drop --> bytes | 0 bytes | consumes 256 table items |
 | `u32_uncompress_canonical()` | <!-- metric:u32_uncompress_canonical -->431<!-- /metric:u32_uncompress_canonical --> bytes | <!-- metric:u32_uncompress_canonical_witness -->7<!-- /metric:u32_uncompress_canonical_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_stack -->7<!-- /metric:u32_uncompress_canonical_stack --> items |
@@ -171,3 +175,10 @@ zero predicate contains <!-- metric:u32_iszero_opcodes -->4<!-- /metric:u32_isze
 static non-push opcodes; the baseline measures <!-- metric:u32_iszero_equal_baseline -->21<!-- /metric:u32_iszero_equal_baseline --> bytes.
 
 The zero-word fixture uses 5 serialized witness bytes; the maximum canonical byte-word witness is <!-- metric:u32_iszero_witness_max -->13<!-- /metric:u32_iszero_witness_max --> bytes. The little-endian bit fixture uses four `0x42` limbs (9 bytes), with a maximum canonical witness of <!-- metric:u32_le_bits_witness_max -->13<!-- /metric:u32_le_bits_witness_max --> bytes. These focused metrics use strict local tapscript execution; deployment remains `unclassified`.
+
+`u32_msb_mask()` checks all four canonical byte limbs, extracts their high
+bits, and packs them as `8*msb(byte[0]) + 4*msb(byte[1]) +
+2*msb(byte[2]) + msb(byte[3])`. The representative fixture uses four
+`0x42` data items and zero hints. Unlike `u32_to_le_bits()`, it materializes
+only the four routing bits; the bit-expansion baseline is
+<!-- metric:u32_msb_mask_bit_projection_baseline -->514<!-- /metric:u32_msb_mask_bit_projection_baseline --> bytes.

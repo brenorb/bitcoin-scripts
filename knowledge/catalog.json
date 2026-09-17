@@ -544,7 +544,7 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-16",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u32.md",
       "implementation": "src/arithmetic/u32/mod.rs",
       "documentation": "src/arithmetic/u32/README.md",
@@ -562,7 +562,7 @@
         "lookup-table"
       ],
       "security": "No independent cryptographic claim; every byte item must be canonical and in range.",
-      "stack_contract": "A u32 occupies four byte-valued items; ordering varies only through documented stack helpers. The zero predicate consumes four limbs and returns one boolean.",
+      "stack_contract": "A u32 occupies four byte-valued items; ordering varies only through documented stack helpers. The zero predicate consumes four limbs and returns one boolean. The checked MSB mask consumes one word and returns a four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane.",
       "configurations": [
         {
           "id": "add-drop",
@@ -777,6 +777,74 @@
         "Not validated against Bitcoin Core"
       ],
       "open_problems": [
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u32-msb-mask",
+      "name": "Checked u32 byte high-bit mask",
+      "class": "arithmetic/word",
+      "summary": "One checked u32 word reduced to a four-bit mask of byte high bits.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-msb-mask.md",
+      "implementation": "src/arithmetic/u32/msb_mask.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "src/arithmetic/u32/msb_mask.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "digit-arithmetic",
+        "stack-routing"
+      ],
+      "security": "All four hostile byte limbs are checked for 0..=255 range and minimal ScriptNum encoding before high-bit extraction. The result is a routing mask, not a cryptographic claim; no hints are used and no terminal predicate is included.",
+      "stack_contract": "Consumes one four-byte word in most-significant-byte-first order and returns one numeric mask in 0..=15. Bit 3 describes byte 0 and bit 0 describes byte 3. Unrelated main and altstack items are preserved.",
+      "configurations": [
+        {
+          "id": "checked-word-mask",
+          "label": "u32_msb_mask()",
+          "parameters": {
+            "word_width_bytes": 4,
+            "data_items": 4,
+            "hint_items": 0,
+            "mask_bits": "bit 3 is byte 0 MSB; bit 0 is byte 3 MSB"
+          },
+          "includes": "fragment-only: four canonical-byte checks, four high-bit extractions, and packed mask accumulation; representative witness has four data items; excludes input pushes, terminal predicate, unrelated live state, and transaction context; static non-push opcode count is 92, dynamic count is unavailable",
+          "script_bytes": 133,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 8,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 133,
+          "hint_items": 0,
+          "metric_keys": [
+            "u32_msb_mask",
+            "u32_msb_mask_witness",
+            "u32_msb_mask_witness_max",
+            "u32_msb_mask_stack",
+            "u32_msb_mask_opcodes"
+          ],
+          "static_non_push_opcodes": 92
+        }
+      ],
+      "limitations": [
+        "The mask exposes only byte high bits; callers needing all bit lanes should use the full splitter",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy differential validation",
+        "The fragment does not provide a terminal clean-stack predicate"
+      ],
+      "open_problems": [
+        "OP-001",
         "OP-002",
         "OP-003"
       ]

@@ -2,6 +2,7 @@ pub mod add;
 pub mod and;
 pub mod bits;
 pub mod cmp;
+pub mod msb_mask;
 pub mod or;
 pub mod popcount;
 pub mod rotate;

@@ -782,6 +782,74 @@
       ]
     },
     {
+      "id": "arithmetic/u32-leading-zero-bytes",
+      "name": "Checked u32 leading zero-byte count",
+      "class": "arithmetic/word",
+      "summary": "Table-free checked count of the most-significant zero byte limbs in a u32 word.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-leading-zero-bytes.md",
+      "implementation": "src/arithmetic/u32/stack.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "src/arithmetic/u32/stack.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "branching",
+        "byte-arithmetic",
+        "stack-routing"
+      ],
+      "security": "Every hostile byte limb is range-checked numerically, including limbs dropped after the first nonzero byte; the check does not establish byte-unique ScriptNum encoding or a terminal predicate.",
+      "stack_contract": "Consumes four canonical byte-valued limbs in most-significant-byte-first order and replaces them with one numeric ScriptNum in 0..=4; all four limbs are validated and the altstack is cleaned.",
+      "configurations": [
+        {
+          "id": "checked-word",
+          "label": "u32_leading_zero_bytes()",
+          "parameters": {
+            "byte_count": 4,
+            "input_check": true,
+            "data_items": 4,
+            "hint_items": 0,
+            "output_items": 1
+          },
+          "includes": "fragment-only: four checked byte limbs, first-nonzero branching, and cleanup of all remaining limbs; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 159,
+          "witness_bytes": 13,
+          "witness_bytes_max": 13,
+          "max_stack_items": 7,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u32_leading_zero_bytes",
+            "u32_leading_zero_bytes_witness",
+            "u32_leading_zero_bytes_stack",
+            "u32_leading_zero_bytes_opcodes"
+          ],
+          "static_non_push_opcodes": 104
+        }
+      ],
+      "limitations": [
+        "Branch depth grows with the fixed four-byte word and no lookup table is shared",
+        "Numeric range checks do not prove byte-unique ScriptNum encoding",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
       "id": "arithmetic/u32-popcount",
       "name": "Checked u32 population count",
       "class": "arithmetic/word",

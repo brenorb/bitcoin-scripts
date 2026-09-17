@@ -23,6 +23,7 @@ differ. Follow each catalog configuration before comparing numbers.
 | Fixed-width u4 ordering | `lexicographic_le(128)` | 7,500 | 256 data items; 4,354 non-push opcodes |
 | 32 checked nibbles to parity bits | `u4_nibbles_to_parity(32)` | 440 | 50-item peak; one output bit per input |
 | u32 population count | `u32_popcount()` | 455 | 262-item peak; 256-item byte table |
+| u32 leading zero-byte count | `u32_leading_zero_bytes()` | 159 | 7-item peak; table-free; validates all four byte limbs |
 | 32 checked nibbles to LSB bits | `u4_nibbles_to_lsb(32)` | 440 | 50-item peak; one output bit per input |
 | 16 checked nibbles to four bit planes | u4 table plus stack transpose | 776 | 125-item peak; 33-byte witness |
 | 32 checked nibble bit reversals | u4 16-item reversal table | 344 | 51-item peak; 65-byte witness |
@@ -68,6 +69,12 @@ saves nine representative witness bytes and six entry items, but expands to
 the byte carry chain and costs 1,016 locking bytes versus 78 for the ordinary
 adder. It is retained for witness-constrained composition, not as a general
 locking-byte winner.
+
+The leading-zero-byte count is a fixed-width prefix classifier rather than a
+zero predicate: `u32_iszero()` is only 4 bytes because it discards position,
+while this construction spends 159 bytes to preserve the first nonzero index
+and validate limbs that are dropped after the decision. It also avoids the
+256-item table resident in the population-count construction.
 
 The 9,893-byte Ed25519 row is the current locking-script-size winner for this
 field. It keeps host values in the ordinary field domain but uses a unique

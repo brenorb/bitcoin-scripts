@@ -46,7 +46,7 @@ as less-than-or-equal.
 | Fragment | Locking script | Witness bytes (see boundary below) | Combined stack peak |
 | --- | ---: | ---: | ---: |
 | `u32_add_drop(0, 1)` | <!-- metric:u32_add_drop -->78<!-- /metric:u32_add_drop --> bytes | 0 bytes | <!-- metric:u32_add_drop_stack -->10<!-- /metric:u32_add_drop_stack --> items |
-| `u32_sub_constant(value)` | <!-- metric:u32_sub_constant -->137<!-- /metric:u32_sub_constant --> bytes | <!-- metric:u32_sub_constant_witness -->9<!-- /metric:u32_sub_constant_witness --> bytes (<!-- metric:u32_sub_constant_witness_max -->13<!-- /metric:u32_sub_constant_witness_max --> max) | <!-- metric:u32_sub_constant_stack -->10<!-- /metric:u32_sub_constant_stack --> items |
+| `u32_sub_constant(value)` | <!-- metric:u32_sub_constant -->141<!-- /metric:u32_sub_constant --> bytes | <!-- metric:u32_sub_constant_witness -->9<!-- /metric:u32_sub_constant_witness --> bytes (<!-- metric:u32_sub_constant_witness_max -->13<!-- /metric:u32_sub_constant_witness_max --> max) | <!-- metric:u32_sub_constant_stack -->10<!-- /metric:u32_sub_constant_stack --> items |
 | `u32_compressed_add()` | <!-- metric:u32_compressed_add -->1016<!-- /metric:u32_compressed_add --> bytes | <!-- metric:u32_compressed_add_witness -->11<!-- /metric:u32_compressed_add_witness --> bytes (<!-- metric:u32_compressed_add_witness_max -->13<!-- /metric:u32_compressed_add_witness_max --> max) | <!-- metric:u32_compressed_add_stack -->11<!-- /metric:u32_compressed_add_stack --> items |
 | `u32_sub_drop(0, 1)` | <!-- metric:u32_sub_drop -->77<!-- /metric:u32_sub_drop --> bytes | 0 bytes | <!-- metric:u32_sub_drop_stack -->9<!-- /metric:u32_sub_drop_stack --> items |
 | `u32_conditional_negate()` | <!-- metric:u32_conditional_negate -->83<!-- /metric:u32_conditional_negate --> bytes | 0 bytes | <!-- metric:u32_conditional_negate_stack -->9<!-- /metric:u32_conditional_negate_stack --> items |
@@ -72,7 +72,7 @@ four limbs. The representative fixture embeds `0x89abcdef` and supplies
 `0x12345678` as four data items. It requires no hints and preserves unrelated
 main- and alt-stack state. The fragment is
 <!-- metric:u32_sub_constant_static_opcodes -->81<!-- /metric:u32_sub_constant_static_opcodes --> static
-non-push opcodes, with 137 locking-script bytes, 9 serialized
+non-push opcodes, with 141 locking-script bytes, 9 serialized
 witness bytes (13 at the maximum canonical byte fixture), and a strict
 combined peak of 10 items. The closest
 generic two-word baseline uses

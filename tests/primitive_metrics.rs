@@ -5358,6 +5358,45 @@ fn u32_iszero_metrics_are_current() {
     check_readme_metrics(u32_iszero_metrics());
 }
 
+fn u32_extract_byte_metrics() -> Vec<Metric> {
+    let fragment = u32::stack::u32_extract_byte(0);
+    let witness = vec![scriptnum(255); 4];
+    vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_extract_byte",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_extract_byte_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_extract_byte_stack",
+            value: max_stack_items_strict(
+                script! {
+                    { fragment.clone() }
+                    OP_DROP
+                    OP_TRUE
+                },
+                witness,
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_extract_byte_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]
+}
+
+#[test]
+fn u32_extract_byte_metrics_are_current() {
+    check_readme_metrics(u32_extract_byte_metrics());
+}
+
 #[test]
 fn commitment_metrics_are_current() {
     check_readme_metrics(commitment_metrics());

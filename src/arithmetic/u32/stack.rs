@@ -129,6 +129,48 @@ pub fn u32_iszero() -> Script {
     }
 }
 
+/// Extract one checked byte from the top u32 word and consume the other bytes.
+///
+/// `byte_index` is zero-based from the most significant byte. All four byte
+/// limbs must be canonical values in `0..=255`.
+pub fn u32_extract_byte(byte_index: usize) -> Script {
+    assert!(byte_index < 4);
+    let select = match byte_index {
+        0 => script! {
+            OP_2DROP
+            OP_DROP
+        },
+        1 => script! {
+            OP_2DROP
+            OP_TOALTSTACK
+            OP_DROP
+            OP_FROMALTSTACK
+        },
+        2 => script! {
+            OP_DROP
+            OP_TOALTSTACK
+            OP_2DROP
+            OP_FROMALTSTACK
+        },
+        3 => script! {
+            OP_TOALTSTACK
+            OP_2DROP
+            OP_DROP
+            OP_FROMALTSTACK
+        },
+        _ => unreachable!(),
+    };
+
+    script! {
+        { u32_toaltstack() }
+        OP_FROMALTSTACK { verify_canonical_byte() }
+        OP_FROMALTSTACK { verify_canonical_byte() }
+        OP_FROMALTSTACK { verify_canonical_byte() }
+        OP_FROMALTSTACK { verify_canonical_byte() }
+        { select }
+    }
+}
+
 pub fn u32_toaltstack() -> Script {
     script! {
         OP_TOALTSTACK
@@ -470,6 +512,45 @@ mod tests {
         for index in 0..256u32 {
             let value = index.wrapping_mul(0x9e37_79b9).wrapping_add(0x243f_6a88);
             check_u32_iszero(value);
+        }
+    }
+
+    #[test]
+    fn test_u32_extract_byte() {
+        let value = 0x1122_3344;
+        for (byte_index, expected) in [0x11, 0x22, 0x33, 0x44].into_iter().enumerate() {
+            run(script! {
+                { u32_push(value) }
+                { u32_extract_byte(byte_index) }
+                { expected } OP_EQUAL
+            });
+        }
+    }
+
+    #[test]
+    fn test_u32_extract_byte_rejects_invalid_limbs() {
+        for limbs in [[-1, 0, 0, 0], [0, 256, 0, 0], [0, 0, -1, 0], [0, 0, 0, 256]] {
+            let result = execute_raw_script_with_inputs_strict(
+                script! {
+                    { u32_extract_byte(0) }
+                    OP_DROP
+                    OP_TRUE
+                }
+                .compile_with_policy()
+                .to_bytes(),
+                limbs
+                    .into_iter()
+                    .map(|limb| {
+                        let mut bytes = [0u8; 8];
+                        let length = bitcoin::script::write_scriptint(&mut bytes, limb);
+                        bytes[..length].to_vec()
+                    })
+                    .collect(),
+            );
+            assert!(
+                !result.success,
+                "accepted invalid limbs {limbs:?}: {result}"
+            );
         }
     }
 

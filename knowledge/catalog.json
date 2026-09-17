@@ -782,6 +782,77 @@
       ]
     },
     {
+      "id": "arithmetic/u32-extract-byte",
+      "name": "Checked u32 byte extraction",
+      "class": "arithmetic/word",
+      "summary": "Fixed-index checked extraction of one byte lane from a four-byte u32 word.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-extract-byte.md",
+      "implementation": "src/arithmetic/u32/stack.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "src/arithmetic/u32/stack.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "branching",
+        "byte-arithmetic",
+        "stack-routing"
+      ],
+      "security": "Every hostile byte limb is range-checked numerically before fixed-index routing; the check does not establish byte-unique ScriptNum encoding or a terminal predicate.",
+      "stack_contract": "Consumes four canonical byte-valued limbs in most-significant-byte-first order and replaces them with the selected numeric byte; the index is fixed at compile time and the other three limbs are consumed.",
+      "configurations": [
+        {
+          "id": "index-zero",
+          "label": "u32_extract_byte(0)",
+          "parameters": {
+            "byte_count": 4,
+            "byte_index": 0,
+            "index_order": "most-significant byte is zero",
+            "input_check": true,
+            "data_items": 4,
+            "hint_items": 0,
+            "output_items": 1
+          },
+          "includes": "fragment-only: four checked byte limbs and fixed routing for the selected lane; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 56,
+          "witness_bytes": 13,
+          "witness_bytes_max": 13,
+          "max_stack_items": 7,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u32_extract_byte",
+            "u32_extract_byte_witness",
+            "u32_extract_byte_stack",
+            "u32_extract_byte_opcodes"
+          ],
+          "static_non_push_opcodes": 36
+        }
+      ],
+      "limitations": [
+        "The index is fixed at construction time; dynamic selection is not implemented",
+        "A lookup table is dominated for this fixed four-way routing boundary",
+        "Numeric range checks do not prove byte-unique ScriptNum encoding",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
       "id": "arithmetic/u32-popcount",
       "name": "Checked u32 population count",
       "class": "arithmetic/word",

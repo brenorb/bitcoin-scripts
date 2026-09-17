@@ -44,6 +44,28 @@ pub fn u32_popcount() -> Script {
     }
 }
 
+/// Count the set bits in each byte of the top u32 word.
+///
+/// The input is `byte[0] | byte[1] | byte[2] | byte[3]`, with the least
+/// significant byte on top. The output has the same byte order and contains
+/// four numeric counts in `0..=8`.
+pub fn u32_byte_popcounts() -> Script {
+    script! {
+        { push_popcount_table() }
+        for _ in 0..4 {
+            { U8_POPCOUNT_TABLE_ITEMS } OP_ROLL
+            OP_DUP OP_0 OP_GREATERTHANOREQUAL OP_VERIFY
+            OP_DUP { U8_POPCOUNT_TABLE_ITEMS } OP_LESSTHAN OP_VERIFY
+            OP_PICK OP_TOALTSTACK
+        }
+        { drop_popcount_table() }
+        OP_FROMALTSTACK
+        OP_FROMALTSTACK
+        OP_FROMALTSTACK
+        OP_FROMALTSTACK
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,6 +98,46 @@ mod tests {
             let result = execute_script(script! {
                 0 0 0 { invalid }
                 { u32_popcount() }
+                OP_TRUE
+            });
+            assert!(!result.success, "accepted invalid byte {invalid}");
+        }
+    }
+
+    #[test]
+    fn returns_per_byte_counts_in_word_order() {
+        let result = execute_script(script! {
+            0x80 0x03 0xf0 0xff
+            { u32_byte_popcounts() }
+            8 OP_EQUALVERIFY
+            4 OP_EQUALVERIFY
+            2 OP_EQUALVERIFY
+            1 OP_EQUAL
+        });
+        assert!(result.success, "per-byte popcount failed: {result}");
+    }
+
+    #[test]
+    fn handles_zero_and_full_byte_boundaries() {
+        for (value, expected) in [(0, 0), (255, 8)] {
+            let result = execute_script(script! {
+                { value } { value } { value } { value }
+                { u32_byte_popcounts() }
+                { expected } OP_EQUALVERIFY
+                { expected } OP_EQUALVERIFY
+                { expected } OP_EQUALVERIFY
+                { expected } OP_EQUAL
+            });
+            assert!(result.success, "value={value}: {result}");
+        }
+    }
+
+    #[test]
+    fn rejects_non_byte_limbs_for_per_byte_counts() {
+        for invalid in [-1, 256] {
+            let result = execute_script(script! {
+                0 0 0 { invalid }
+                { u32_byte_popcounts() }
                 OP_TRUE
             });
             assert!(!result.success, "accepted invalid byte {invalid}");

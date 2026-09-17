@@ -4951,6 +4951,46 @@ fn u32_popcount_metrics_are_current() {
     ]);
 }
 
+/// This isolated fixture measures the checked per-byte u32 population count.
+#[test]
+fn u32_byte_popcounts_metrics_are_current() {
+    let fragment = u32::popcount::u32_byte_popcounts();
+    let witness = vec![scriptnum(255); 4];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            OP_2DROP
+            OP_2DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    assert_eq!(witness.len(), 4);
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_byte_popcounts",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_byte_popcounts_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_byte_popcounts_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_byte_popcounts_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
 /// This isolated fixture measures only the checked u4 LSB projection.
 #[test]
 fn u4_lsb_metrics_are_current() {

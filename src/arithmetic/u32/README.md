@@ -24,6 +24,8 @@ they do not use BN254 or any other field modulus.
   table. With exactly two working words, the usual value is `3`.
 - `popcount::u32_popcount()` consumes one four-byte word, range-checks every
   byte, and returns its set-bit count in `0..=32`.
+- `popcount::u32_byte_popcounts()` consumes one four-byte word, range-checks
+  every byte, and returns four per-byte counts in the same word order.
 - `u32_conditional_select()` consumes `condition | when_true | when_false`,
   normalizes the condition with `OP_0NOTEQUAL`, and returns one complete word.
 - Stack helpers use whole-word offsets. Rotation helpers additionally take a
@@ -60,6 +62,7 @@ as less-than-or-equal.
 | `u8_extract_hbit_checked(4)` | <!-- metric:u8_extract_hbit_checked -->73<!-- /metric:u8_extract_hbit_checked --> bytes | <!-- metric:u8_extract_hbit_checked_witness -->4<!-- /metric:u8_extract_hbit_checked_witness --> bytes, 1 data item | <!-- metric:u8_extract_hbit_checked_stack -->5<!-- /metric:u8_extract_hbit_checked_stack --> items |
 | `verify_canonical_byte()` | <!-- metric:u32_canonical_byte -->12<!-- /metric:u32_canonical_byte --> bytes | <!-- metric:u32_canonical_byte_witness -->4<!-- /metric:u32_canonical_byte_witness --> bytes, 1 data item | <!-- metric:u32_canonical_byte_stack -->4<!-- /metric:u32_canonical_byte_stack --> items |
 | `u32_popcount()` | <!-- metric:u32_popcount -->455<!-- /metric:u32_popcount --> bytes | <!-- metric:u32_popcount_witness -->13<!-- /metric:u32_popcount_witness --> bytes | <!-- metric:u32_popcount_stack -->262<!-- /metric:u32_popcount_stack --> items; <!-- metric:u32_popcount_opcodes -->171<!-- /metric:u32_popcount_opcodes --> static non-push opcodes |
+| `u32_byte_popcounts()` | <!-- metric:u32_byte_popcounts -->452<!-- /metric:u32_byte_popcounts --> bytes | <!-- metric:u32_byte_popcounts_witness -->13<!-- /metric:u32_byte_popcounts_witness --> bytes | <!-- metric:u32_byte_popcounts_stack -->262<!-- /metric:u32_byte_popcounts_stack --> items; <!-- metric:u32_byte_popcounts_opcodes -->168<!-- /metric:u32_byte_popcounts_opcodes --> static non-push opcodes |
 | `u32_to_le_bits()` | <!-- metric:u32_le_bits -->514<!-- /metric:u32_le_bits --> bytes | <!-- metric:u32_le_bits_witness -->9<!-- /metric:u32_le_bits_witness --> bytes | <!-- metric:u32_le_bits_stack -->35<!-- /metric:u32_le_bits_stack --> items |
 
 `u32_compressed_add()` is a checked wire adapter: it accepts two canonical
@@ -99,6 +102,12 @@ The popcount table is separate from the Boolean XOR table. Its representative
 32-bit all-ones witness uses four data items and serializes to 13 bytes; the
 strict combined peak is 262 items. The table is generated once per fragment
 and removed before the single numeric result is returned.
+
+`u32_byte_popcounts()` keeps the four table results instead of adding them. It
+is useful when a caller needs lane-local Hamming weights; use `u32_popcount()`
+when only the total is needed. Its output preserves the four-byte word order
+and remains a fragment rather than a terminal predicate. It uses the same
+256-item table and strict 262-item peak, but omits the three final additions.
 
 ## Security
 

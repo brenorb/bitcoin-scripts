@@ -544,7 +544,7 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-16",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u32.md",
       "implementation": "src/arithmetic/u32/mod.rs",
       "documentation": "src/arithmetic/u32/README.md",
@@ -693,6 +693,36 @@
             "u32_canonical_byte_witness",
             "u32_canonical_byte_stack"
           ]
+        },
+        {
+          "id": "compress-canonical",
+          "label": "Canonical u32 byte-word compression",
+          "parameters": {
+            "byte_count": 4,
+            "input_range": "0..=255 per limb",
+            "encoding": "minimal ScriptNum per limb",
+            "output": "signed canonical ScriptNum representing u32",
+            "data_items": 4,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: four canonical-byte checks, temporary four-item alt-stack routing, and u32 compression including the 0x80000000 signed boundary; excludes witness pushes, output check, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 130,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 7,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 130,
+          "hint_items": 0,
+          "metric_keys": [
+            "u32_compress_canonical",
+            "u32_compress_canonical_witness",
+            "u32_compress_canonical_witness_max",
+            "u32_compress_canonical_stack",
+            "u32_compress_canonical_opcodes"
+          ],
+          "static_non_push_opcodes": 102
         },
         {
           "id": "u32-le-bits",

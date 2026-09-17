@@ -212,6 +212,20 @@ pub fn u32_compress() -> Script {
     }
 }
 
+/// Compress a minimally encoded four-byte u32 word into one ScriptNum.
+pub fn u32_compress_canonical() -> Script {
+    script! {
+        for _ in 0..4 {
+            { verify_canonical_byte() }
+            OP_TOALTSTACK
+        }
+        for _ in 0..4 {
+            OP_FROMALTSTACK
+        }
+        { u32_compress() }
+    }
+}
+
 pub fn u32_uncompress() -> Script {
     script! {
         OP_SIZE OP_5 OP_EQUAL
@@ -266,7 +280,9 @@ pub fn u32_uncompress_canonical() -> Script {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::support::execution::{execute_raw_script_with_inputs_strict, run};
+    use crate::support::execution::{
+        execute_raw_script_with_inputs_strict, execute_script_with_inputs_strict, run,
+    };
 
     fn scriptnum(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
@@ -372,8 +388,63 @@ mod tests {
             assert!(!result.success, "accepted malformed byte: {result}");
         }
     }
-    use crate::support::execution::execute_script_with_inputs_strict;
 
+    #[test]
+    fn canonical_compress_accepts_signed_u32_boundaries() {
+        for value in [0, 1, 127, 128, 0x7fff_ffff, 0x8000_0000, u32::MAX] {
+            let result = execute_raw_script_with_inputs_strict(
+                script! {
+                    { u32_compress_canonical() }
+                    { i64::from(value as i32) } OP_EQUAL
+                }
+                .compile_with_policy()
+                .to_bytes(),
+                vec![
+                    scriptnum(i64::from((value >> 24) as u8)),
+                    scriptnum(i64::from((value >> 16) as u8)),
+                    scriptnum(i64::from((value >> 8) as u8)),
+                    scriptnum(i64::from(value as u8)),
+                ],
+            );
+            assert!(result.success, "failed to compress {value:#x}: {result}");
+        }
+    }
+
+    #[test]
+    fn canonical_compress_rejects_malformed_limbs() {
+        let script = script! {
+            { u32_compress_canonical() }
+            OP_DROP OP_TRUE
+        };
+        for position in 0..4 {
+            for replacement in [vec![1, 0], vec![0, 1], vec![0x80], vec![0xff]] {
+                let mut witness = vec![vec![1]; 4];
+                witness[position] = replacement;
+                let result =
+                    crate::support::execution::execute_script_with_inputs(script.clone(), witness);
+                assert!(
+                    !result.success,
+                    "accepted malformed limb at {position}: {result}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn canonical_compress_preserves_surrounding_stacks() {
+        let result = execute_script_with_inputs_strict(
+            script! {
+                99 OP_TOALTSTACK
+                { u32_compress_canonical() }
+                OP_DROP
+                77 OP_EQUALVERIFY
+                OP_FROMALTSTACK 99 OP_EQUALVERIFY
+                OP_TRUE
+            },
+            vec![vec![77], vec![1], vec![2], vec![3], vec![4]],
+        );
+        assert!(result.success, "{result}");
+    }
     fn compressed_scriptnum(value: u32) -> Vec<u8> {
         let mut bytes = [0u8; 8];
         let length = bitcoin::script::write_scriptint(&mut bytes, i64::from(value as i32));

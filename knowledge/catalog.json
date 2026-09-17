@@ -573,14 +573,14 @@
             "hint_items": 0
           },
           "includes": "fragment-only: 32 numeric range checks, 31 direct adjacent comparisons, result storage on the altstack, and input cleanup; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
-          "script_bytes": 472,
+          "script_bytes": 558,
           "witness_bytes": 65,
           "witness_bytes_max": 65,
           "max_stack_items": 64,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": 0,
-          "per_use_script_bytes": 472,
+          "per_use_script_bytes": 558,
           "metric_keys": [
             "u4_adjacent_equal_batch32",
             "u4_adjacent_equal_batch32_witness",

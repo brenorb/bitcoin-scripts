@@ -537,6 +537,71 @@
       ]
     },
     {
+      "id": "arithmetic/u4-quad",
+      "name": "Checked u4 quad-to-u16 packing",
+      "class": "arithmetic/word",
+      "summary": "Checked base-16 packing of four u4 limbs into one 16-bit ScriptNum.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u4-quad.md",
+      "implementation": "src/arithmetic/u4/stack.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "arithmetic::u4::stack::tests::checked_quad_packs_boundaries_and_preserves_state",
+        "primitive_metrics::u4_quad_to_u16_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "digit-arithmetic",
+        "representation-bridge",
+        "range-check",
+        "stack-scheduling"
+      ],
+      "security": "Checked mode range-checks all four hostile nibbles before Horner accumulation; unchecked caller invariants are not established by this fragment, and no terminal predicate is supplied.",
+      "stack_contract": "Consumes high | high_middle | low_middle | low and returns 4096*high + 256*high_middle + 16*low_middle + low; checked mode preserves unrelated lower main-stack and alt-stack state.",
+      "configurations": [
+        {
+          "id": "checked-quad",
+          "label": "u4_quad_to_u16(true)",
+          "parameters": {
+            "check_inputs": true,
+            "data_items": 4,
+            "hint_items": 0,
+            "limb_width": 4
+          },
+          "includes": "fragment-only: four numeric range checks and base-16 accumulation; excludes input pushes, witness serialization, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 76,
+          "witness_bytes": 9,
+          "witness_bytes_max": 9,
+          "max_stack_items": 7,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 76,
+          "metric_keys": [
+            "u4_quad_to_u16_checked",
+            "u4_quad_to_u16_checked_witness",
+            "u4_quad_to_u16_checked_stack"
+          ]
+        }
+      ],
+      "limitations": [
+        "The packed result is a numeric ScriptNum rather than four independent limbs",
+        "The 16-bit result may exceed byte-oriented consumer domains",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
       "id": "arithmetic/u32",
       "name": "u32 byte-word arithmetic",
       "class": "arithmetic/word",

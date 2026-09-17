@@ -15,6 +15,7 @@ differ. Follow each catalog configuration before comparing numbers.
 | Canonical compressed-u32 decode | u32 raw-encoding boundary | 431 | 7-item peak; 7-byte maximum witness; rejects aliases |
 | Checked u31 width-9 decomposition | u31 range boundary | 85 | 10-item peak; 4-byte representative witness; numeric `0..=511` check |
 | Checked u4 nibble pair to byte | `u4_pair_to_u8(true)` | 20 | 5-item peak; 2 data items; 5-byte witness |
+| Checked u4 nibble quad to u16 | `u4_quad_to_u16(true)` | <!-- metric:u4_quad_to_u16_checked -->76<!-- /metric:u4_quad_to_u16_checked --> | <!-- metric:u4_quad_to_u16_checked_stack -->7<!-- /metric:u4_quad_to_u16_checked_stack -->-item peak; 4 data items; 16-bit ScriptNum |
 | Checked u8 byte to nibble pair | `u8_to_u4_pair(true)` | 62 | 4-item peak; 4-byte witness; two nibble outputs |
 | Checked u8 high-bit extraction | `u8_extract_hbit_checked(4)` | 73 | 5-item peak; 4-byte witness; rejects non-byte ScriptNums |
 | Canonical checked nibble boundary | `verify_canonical_nibble()` | 10 | 4-item peak; 3-byte witness; rejects noncanonical ScriptNums |

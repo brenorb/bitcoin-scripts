@@ -109,6 +109,51 @@ pub fn u4_pair_to_u8(check_inputs: bool) -> Script {
         OP_ADD
     }
 }
+
+/// Pack `high | high_middle | low_middle | low` into one 16-bit ScriptNum.
+///
+/// With `check_inputs`, all four inputs are constrained to `0..=15`. Without
+/// it, the caller must already have established that invariant.
+pub fn u4_quad_to_u16(check_inputs: bool) -> Script {
+    script! {
+        if check_inputs {
+            OP_DUP 0 16 OP_WITHIN OP_VERIFY
+            1 OP_PICK 0 16 OP_WITHIN OP_VERIFY
+            2 OP_PICK 0 16 OP_WITHIN OP_VERIFY
+            3 OP_PICK 0 16 OP_WITHIN OP_VERIFY
+        }
+        OP_SWAP
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_ADD
+        OP_SWAP
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_ADD
+        OP_SWAP
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_DUP OP_ADD
+        OP_ADD
+    }
+}
 /// Split one byte-valued ScriptNum into `high | low` nibbles.
 ///
 /// With `check_inputs`, the byte is constrained to `0..=255`. Without it,
@@ -285,6 +330,61 @@ mod tests {
         assert!(
             result.success,
             "pair packing changed preserved state: {result}"
+        );
+    }
+
+    #[test]
+    fn checked_quad_packs_boundaries_and_preserves_state() {
+        for (high, high_middle, low_middle, low, expected) in [
+            (0, 0, 0, 0, 0),
+            (1, 2, 3, 4, 0x1234),
+            (15, 0, 1, 2, 0xf012),
+            (15, 15, 15, 15, 0xffff),
+        ] {
+            let result = crate::support::execution::execute_script(script! {
+                { high }
+                { high_middle }
+                { low_middle }
+                { low }
+                { u4_quad_to_u16(true) }
+                { expected } OP_EQUAL
+            });
+            assert!(
+                result.success,
+                "failed to pack quad {high:x}{high_middle:x}{low_middle:x}{low:x}: {result}"
+            );
+        }
+
+        for (high, high_middle, low_middle, low) in
+            [(-1, 0, 0, 0), (0, 16, 0, 0), (0, 0, 16, 0), (0, 0, 0, 16)]
+        {
+            let result = crate::support::execution::execute_script(script! {
+                { high }
+                { high_middle }
+                { low_middle }
+                { low }
+                { u4_quad_to_u16(true) }
+                OP_TRUE
+            });
+            assert!(
+                !result.success,
+                "accepted malformed quad {high}, {high_middle}, {low_middle}, {low}"
+            );
+        }
+
+        let result = crate::support::execution::execute_script(script! {
+            77 OP_TOALTSTACK
+            99
+            1 2 3 4
+            { u4_quad_to_u16(true) }
+            0x1234 OP_EQUALVERIFY
+            99 OP_EQUALVERIFY
+            OP_FROMALTSTACK 77 OP_EQUALVERIFY
+            OP_TRUE
+        });
+        assert!(
+            result.success,
+            "quad packing changed preserved state: {result}"
         );
     }
 

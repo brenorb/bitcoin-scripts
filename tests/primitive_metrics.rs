@@ -4428,6 +4428,37 @@ fn u4_pair_to_u8_metrics_are_current() {
 }
 
 #[test]
+fn u4_quad_to_u16_metrics_are_current() {
+    let fragment = u4::stack::u4_quad_to_u16(true);
+    let witness = vec![scriptnum(15); 4];
+    let stack = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            OP_DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_quad_to_u16_checked_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_quad_to_u16_checked",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_quad_to_u16_checked_stack",
+            value: stack,
+        },
+    ]);
+}
+
+#[test]
 fn u8_to_u4_pair_metrics_are_current() {
     let fragment = u4::stack::u8_to_u4_pair(true);
     let witness = vec![scriptnum(255)];

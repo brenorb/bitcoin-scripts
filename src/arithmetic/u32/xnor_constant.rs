@@ -19,6 +19,7 @@ pub fn u32_xnor_constant(value: u32) -> Script {
         { u32_push(value) }
         { u32_toaltstack() }
         for _ in 0..4 {
+            3 OP_ROLL
             { verify_canonical_byte() }
         }
         { u32_fromaltstack() }
@@ -40,8 +41,9 @@ pub fn u32_xnor_constant(value: u32) -> Script {
 mod tests {
     use super::*;
     use crate::arithmetic::u32::stack::{u32_equal, u32_equalverify, u32_push};
-    use crate::support::execution::{execute_raw_script_with_inputs_strict, execute_script};
+    use crate::support::execution::{execute_script, execute_script_buf_with_options};
     use crate::support::script::ScriptCompilation;
+    use bitcoin_scriptexec::Options;
 
     fn scriptnum(value: u32) -> Vec<u8> {
         let mut bytes = [0u8; 8];
@@ -85,21 +87,62 @@ mod tests {
 
     #[test]
     fn rejects_malformed_and_nonminimal_limbs() {
+        let options = Options {
+            require_minimal: false,
+            enforce_stack_limit: true,
+            ..Default::default()
+        };
+        let xnor_script = u32_xnor_constant(0x89ab_cdef)
+            .compile_with_policy()
+            .to_bytes();
         for (index, raw) in [
             (0, vec![0x80]),
             (1, vec![0, 1]),
             (2, vec![1, 0]),
-            (3, vec![0xff, 0]),
+            (3, vec![0, 1]),
         ] {
             let mut witness = byte_word(0x1234_5678).to_vec();
             witness[index] = raw;
-            let result = execute_raw_script_with_inputs_strict(
-                u32_xnor_constant(0x89ab_cdef)
-                    .compile_with_policy()
-                    .to_bytes(),
+            let result = execute_script_buf_with_options(
+                bitcoin::ScriptBuf::from_bytes(xnor_script.clone()),
                 witness,
+                options.clone(),
+            )
+            .expect("malformed limb execution");
+            assert!(
+                result.error.is_some(),
+                "accepted malformed limb {index}: {result}"
             );
-            assert!(!result.success, "accepted malformed limb {index}: {result}");
+        }
+        for index in 0..4 {
+            let mut witness = byte_word(0x1234_5678).to_vec();
+            witness[index] = vec![1, 0];
+            let result = execute_script_buf_with_options(
+                bitcoin::ScriptBuf::from_bytes(xnor_script.clone()),
+                witness,
+                options.clone(),
+            )
+            .expect("nonminimal limb execution");
+            assert!(
+                result.error.is_some(),
+                "accepted nonminimal limb {index}: {result}"
+            );
+        }
+        for value in [128, 255] {
+            for index in 0..4 {
+                let mut witness = byte_word(0x1234_5678).to_vec();
+                witness[index] = scriptnum(value);
+                let result = execute_script_buf_with_options(
+                    bitcoin::ScriptBuf::from_bytes(xnor_script.clone()),
+                    witness,
+                    options.clone(),
+                )
+                .expect("canonical boundary limb execution");
+                assert!(
+                    result.error.is_none(),
+                    "rejected canonical limb {value} at {index}: {result}"
+                );
+            }
         }
     }
 

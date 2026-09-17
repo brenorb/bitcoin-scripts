@@ -787,7 +787,7 @@
       "class": "arithmetic/word",
       "summary": "Checked four-byte u32 bitwise XNOR with one public compile-time mask embedded in the locking script.",
       "status": "experimental",
-      "evidence": "inspected",
+      "evidence": "locally-reproduced",
       "execution": "unclassified",
       "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u32-xnor-constant.md",
@@ -809,16 +809,16 @@
           "label": "Embedded public mask",
           "parameters": {"mask": "0x89abcdef", "byte_count": 4, "table_items": 256, "data_items": 4, "hint_items_per_invocation": 0, "complete_input_items": 4},
           "includes": "fragment-with-memory: canonical checks, Boolean table, XOR queries, byte complements, cleanup, and routing; excludes pushes, terminal predicate, unrelated state, and transaction context",
-          "script_bytes": 678,
+          "script_bytes": 686,
           "witness_bytes": 13,
           "witness_bytes_max": 13,
           "max_stack_items": 272,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": null,
-          "per_use_script_bytes": 678,
+          "per_use_script_bytes": 686,
           "metric_keys": ["u32_xnor_constant", "u32_xnor_constant_witness", "u32_xnor_constant_stack", "u32_xnor_constant_opcodes"],
-            "static_non_push_opcodes": 498
+            "static_non_push_opcodes": 502
         }
       ],
       "limitations": ["The 256-item table makes this unsuitable as a standalone legacy P2SH/P2WSH fragment", "Useful only when the mask is public and witness width matters", "Static opcode count is not a dynamic execution measurement", "Bitcoin Core consensus and relay-policy validation remain open"],

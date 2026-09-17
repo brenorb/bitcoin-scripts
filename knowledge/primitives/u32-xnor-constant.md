@@ -28,8 +28,8 @@ transaction framing.
 
 | Construction | Locking script | Representative witness | Maximum witness | Data items | Hint items | Peak items | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Embedded mask `0x89abcdef` | 678 | 13 bytes | 13 bytes | 4 | 0 | 272 | 498 |
-| Generic XNOR with runtime mask | 566 plus complement and table routing | 21 bytes | 21 bytes | 8 | 0 | table-dependent | not measured here |
+| Embedded mask `0x89abcdef` | 686 | 13 bytes | 13 bytes | 4 | 0 | 272 | 502 |
+| Generic XNOR with runtime mask | unmeasured | 25 bytes | 25 bytes | 8 | 0 | table-dependent | not measured here |
 
 The embedded form removes four witness data items and saves the second word's
 serialized witness bytes, but retains the 256-item table and adds one
@@ -39,13 +39,13 @@ locking-script bytes.
 
 ## Evidence and execution class
 
-The implementation and metric boundary are currently `inspected`; CI is the
-executable reproduction gate. Deployment is `unclassified`. The fixture uses
+The implementation and metric boundary are `locally-reproduced` by focused CI.
+Deployment is `unclassified`. The fixture uses
 mask `0x89abcdef` and four canonical `0xff` data limbs. Correctness tests cover
 boundary masks, malformed and non-minimal limbs, and surrounding main- and
 alt-stack state.
 
-The 492 figure is a static non-push opcode count, not a dynamic execution or
+The 502 figure is a static non-push opcode count, not a dynamic execution or
 validation-weight claim. No Bitcoin Core differential, complete-transaction,
 relay-policy, or cryptographic claim is made.
 

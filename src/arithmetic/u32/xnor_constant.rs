@@ -13,21 +13,23 @@ use crate::support::script::{script, Script};
 /// Boolean table is generated and removed within the fragment.
 pub fn u32_xnor_constant(value: u32) -> Script {
     script! {
-        for _ in 0..4 {
-            { verify_canonical_byte() }
-        }
         { u32_toaltstack() }
         { u8_push_xor_table() }
         { u32_fromaltstack() }
         { u32_push(value) }
-        { u32_xor(0, 1, 3) }
+        { u32_toaltstack() }
         for _ in 0..4 {
-            255 OP_SWAP OP_SUB
+            { verify_canonical_byte() }
         }
+        { u32_fromaltstack() }
+        { u32_xor(0, 1, 3) }
         { u32_toaltstack() }
         { u32_drop() }
         { u8_drop_xor_table() }
         { u32_fromaltstack() }
+        for _ in 0..4 {
+            255 OP_SWAP OP_SUB
+        }
     }
 }
 

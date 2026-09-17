@@ -5188,6 +5188,52 @@ fn u32_le_bits_metrics_are_current() {
     check_readme_metrics(u32_le_bits_metrics());
 }
 
+fn u32_bit_planes_metrics() -> Vec<Metric> {
+    let fragment = u32::bits::u32_to_bit_planes();
+    let witness = vec![scriptnum(0x42); 4];
+    vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_bit_planes",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_bit_planes_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_bit_planes_witness_max",
+            value: witness_size(&vec![scriptnum(255); 4]),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_bit_planes_stack",
+            value: max_stack_items_strict(
+                script! {
+                    { fragment.clone() }
+                    for _ in 0..8 {
+                        OP_DROP
+                    }
+                    OP_TRUE
+                },
+                witness,
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_bit_planes_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]
+}
+
+#[test]
+fn u32_bit_planes_metrics_are_current() {
+    check_readme_metrics(u32_bit_planes_metrics());
+}
+
 fn u32_conditional_select_metrics() -> Vec<Metric> {
     let mut maximum = vec![scriptnum(i64::from(i32::MAX))];
     maximum.extend((0..8).map(|_| scriptnum(255)));

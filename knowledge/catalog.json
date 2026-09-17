@@ -782,6 +782,77 @@
       ]
     },
     {
+      "id": "arithmetic/u32-bit-planes",
+      "name": "Checked u32 bit-plane transpose",
+      "class": "arithmetic/word",
+      "summary": "Canonical-byte u32 transpose into eight composable four-bit planes.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-bit-planes.md",
+      "implementation": "src/arithmetic/u32/bits.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "src/arithmetic/u32/bits.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "composition",
+        "range-check",
+        "limb-arithmetic"
+      ],
+      "security": "All four hostile byte limbs are checked for canonical byte encoding before conversion; generated plane nibbles do not establish a terminal predicate or protocol authorization.",
+      "stack_contract": "Consumes four canonical byte-valued limbs in most-significant-byte-first order and returns eight numeric 4-bit planes, with plane zero deepest and plane seven on top; no hints are used.",
+      "configurations": [
+        {
+          "id": "checked-word",
+          "label": "u32_to_bit_planes()",
+          "parameters": {
+            "byte_count": 4,
+            "plane_count": 8,
+            "plane_width": 4,
+            "input_check": true,
+            "data_items": 4,
+            "hint_items": 0,
+            "output_items": 8
+          },
+          "includes": "fragment-only: canonical byte validation, byte-to-bit conversion, fixed-depth lane copies, and plane output; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 877,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 45,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u32_bit_planes",
+            "u32_bit_planes_witness",
+            "u32_bit_planes_witness_max",
+            "u32_bit_planes_stack",
+            "u32_bit_planes_opcodes"
+          ],
+          "static_non_push_opcodes": 628
+        }
+      ],
+      "limitations": [
+        "The transpose costs more locking bytes and peak items than the 32-item bit adapter",
+        "Output plane order is fixed and must be bound by the caller",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
       "id": "arithmetic/u32-popcount",
       "name": "Checked u32 population count",
       "class": "arithmetic/word",

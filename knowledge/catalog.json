@@ -544,7 +544,7 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-16",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u32.md",
       "implementation": "src/arithmetic/u32/mod.rs",
       "documentation": "src/arithmetic/u32/README.md",
@@ -720,6 +720,37 @@
             "u32_le_bits_witness_max"
           ],
           "static_non_push_opcodes": 338
+        },
+        {
+          "id": "u32-le-bits-canonical",
+          "label": "Canonical checked u32 word to little-endian bits",
+          "parameters": {
+            "input_bytes": 4,
+            "output_bits": 32,
+            "encoding": "minimal ScriptNum per byte limb",
+            "byte_range_check": true,
+            "canonical_encoding_check": true,
+            "data_items": 4,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: four canonical-byte checks, numeric byte range checks, and bit extraction; excludes input pushes, output check, unrelated live state, and transaction context",
+          "script_bytes": 562,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 35,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 562,
+          "hint_items": 0,
+          "metric_keys": [
+            "u32_le_bits_canonical",
+            "u32_le_bits_canonical_witness",
+            "u32_le_bits_canonical_witness_max",
+            "u32_le_bits_canonical_stack",
+            "u32_le_bits_canonical_opcodes"
+          ],
+          "static_non_push_opcodes": 366
         },
         {
           "id": "conditional-negate",

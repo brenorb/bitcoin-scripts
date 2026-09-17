@@ -1,6 +1,7 @@
 //! Conversion from a byte-oriented u32 word to a little-endian bit stack.
 
 use super::rotate::u8_extract_1bit;
+use super::stack::verify_canonical_byte;
 use crate::support::script::{script, Script};
 
 /// Converts one byte-oriented u32 word to 32 little-endian bit items.
@@ -34,6 +35,20 @@ pub fn u32_to_le_bits() -> Script {
             }
             OP_DROP
         }
+    }
+}
+
+/// Converts a canonical byte-oriented u32 word to 32 little-endian bit items.
+pub fn u32_to_le_bits_canonical() -> Script {
+    script! {
+        for _ in 0..4 {
+            { verify_canonical_byte() }
+            OP_TOALTSTACK
+        }
+        for _ in 0..4 {
+            OP_FROMALTSTACK
+        }
+        { u32_to_le_bits() }
     }
 }
 
@@ -81,5 +96,64 @@ mod tests {
             });
             assert!(!result.success, "accepted invalid byte {invalid}");
         }
+    }
+
+    #[test]
+    fn canonical_bits_match_reference_vectors() {
+        for bytes in [
+            [0, 0, 0, 0],
+            [0xff, 0xff, 0xff, 0xff],
+            [0x80, 0x01, 0xaa, 0x55],
+        ] {
+            let result = execute_script(script! {
+                for byte in bytes {
+                    { byte }
+                }
+                { u32_to_le_bits_canonical() }
+                for byte in bytes.iter().rev() {
+                    for bit in 0..8 {
+                        { (byte >> bit) & 1 }
+                        OP_EQUALVERIFY
+                    }
+                }
+                OP_TRUE
+            });
+            assert!(result.success, "canonical bit conversion failed: {result}");
+        }
+    }
+
+    #[test]
+    fn canonical_bits_reject_malformed_witness_limbs() {
+        let script = script! {
+            { u32_to_le_bits_canonical() }
+        };
+        for position in 0..4 {
+            for replacement in [vec![1, 0], vec![0, 1], vec![0x80], vec![0xff]] {
+                let mut witness = vec![vec![1]; 4];
+                witness[position] = replacement;
+                let result =
+                    crate::support::execution::execute_script_with_inputs(script.clone(), witness);
+                assert!(
+                    !result.success,
+                    "accepted malformed limb at {position}: {result}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn canonical_bits_preserve_surrounding_stacks() {
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                99 OP_TOALTSTACK
+                { u32_to_le_bits_canonical() }
+                for _ in 0..32 { OP_DROP }
+                77 OP_EQUALVERIFY
+                OP_FROMALTSTACK 99 OP_EQUALVERIFY
+                OP_TRUE
+            },
+            vec![vec![77], vec![1], vec![2], vec![3], vec![4]],
+        );
+        assert!(result.success, "{result}");
     }
 }

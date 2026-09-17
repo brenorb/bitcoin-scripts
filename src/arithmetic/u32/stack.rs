@@ -64,6 +64,35 @@ pub fn u32_notequal() -> Script {
     }
 }
 
+/// Replaces the top four-byte word with its bytewise complement.
+///
+/// The input and output use the module's most-significant-byte-first word
+/// layout. Inputs must already be minimally encoded numeric bytes in `0..=255`.
+pub fn u32_not() -> Script {
+    script! {
+        for _ in 0..4 {
+            3 OP_ROLL
+            { verify_canonical_byte() }
+            255 OP_SWAP OP_SUB
+        }
+    }
+}
+
+pub(crate) fn u32_not_unchecked() -> Script {
+    script! {
+        for _ in 0..4 {
+            { u32_not_step() }
+        }
+    }
+}
+
+fn u32_not_step() -> Script {
+    script! {
+        0xff
+        4 OP_ROLL OP_SUB
+    }
+}
+
 fn certify_compressed_word() -> Script {
     script! {
         OP_DUP
@@ -266,7 +295,10 @@ pub fn u32_uncompress_canonical() -> Script {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::support::execution::{execute_raw_script_with_inputs_strict, run};
+    use crate::support::execution::{
+        execute_raw_script_with_inputs_strict, execute_script_buf_with_options, run,
+    };
+    use bitcoin_scriptexec::Options;
 
     fn scriptnum(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
@@ -323,6 +355,104 @@ mod tests {
             };
             run(script);
         }
+    }
+
+    #[test]
+    fn complements_boundary_and_pattern_words() {
+        for value in [0, 1, 0x0102_0304, 0x8000_0000, u32::MAX] {
+            let script = script! {
+                { u32_push(value) }
+                { u32_not() }
+                { u32_push(!value) }
+                { u32_equal() }
+                OP_VERIFY
+                OP_TRUE
+            };
+            run(script);
+        }
+    }
+
+    #[test]
+    fn checked_complement_rejects_non_byte_limbs() {
+        for invalid_index in 0..4 {
+            let mut limbs = [1i64, 2, 3, 4];
+            limbs[invalid_index] = if invalid_index % 2 == 0 { -1 } else { 256 };
+            let result = crate::support::execution::execute_script(script! {
+                for limb in limbs {
+                    { limb }
+                }
+                { u32_not() }
+            });
+            assert!(
+                !result.success,
+                "accepted invalid limb {invalid_index}: {result}"
+            );
+        }
+
+        let checked_script = script! {
+            { u32_not() }
+            OP_2DROP OP_2DROP OP_TRUE
+        }
+        .compile_with_policy()
+        .to_bytes();
+        let options = Options {
+            require_minimal: false,
+            enforce_stack_limit: true,
+            ..Default::default()
+        };
+        let valid = execute_script_buf_with_options(
+            bitcoin::ScriptBuf::from_bytes(checked_script.clone()),
+            vec![vec![1u8]; 4],
+            options.clone(),
+        )
+        .expect("valid checked complement execution");
+        assert!(valid.success, "rejected valid byte word: {valid}");
+
+        for invalid in [vec![1, 0], vec![0x80], vec![0xff], vec![0, 1]] {
+            for invalid_index in 0..4 {
+                let mut witness = vec![vec![1u8]; 4];
+                witness[invalid_index] = invalid.clone();
+                let result = execute_script_buf_with_options(
+                    bitcoin::ScriptBuf::from_bytes(checked_script.clone()),
+                    witness,
+                    options.clone(),
+                )
+                .expect("malformed checked complement execution");
+                assert!(
+                    !result.success,
+                    "malformed byte at position {invalid_index} was not rejected: {result}"
+                );
+            }
+        }
+
+        let short = execute_script_buf_with_options(
+            bitcoin::ScriptBuf::from_bytes(checked_script),
+            vec![vec![1u8]; 3],
+            options,
+        )
+        .expect("short checked complement execution");
+        assert_eq!(
+            short.error,
+            Some(bitcoin_scriptexec::ExecError::InvalidStackOperation)
+        );
+    }
+
+    #[test]
+    fn checked_complement_preserves_surrounding_stacks() {
+        let value = 0x1020_3040;
+        let result = crate::support::execution::execute_script(script! {
+            77 OP_TOALTSTACK
+            { u32_push(value) }
+            { u32_not() }
+            { u32_push(!value) }
+            { u32_equalverify() }
+            OP_FROMALTSTACK 77 OP_EQUALVERIFY
+            OP_TRUE
+        });
+        assert!(
+            result.success,
+            "stack-preserving complement failed: {result}"
+        );
     }
 
     #[test]

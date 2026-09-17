@@ -129,6 +129,42 @@ pub fn u32_iszero() -> Script {
     }
 }
 
+/// Count the trailing zero bytes in the top u32 word.
+///
+/// The four byte limbs must be canonical values in `0..=255`. The result is
+/// in `0..=4`; all four limbs are consumed.
+pub fn u32_trailing_zero_bytes() -> Script {
+    script! {
+        { verify_canonical_byte() } OP_0NOTEQUAL
+        OP_IF
+            { verify_canonical_byte() } OP_DROP
+            { verify_canonical_byte() } OP_DROP
+            { verify_canonical_byte() } OP_DROP
+            0
+        OP_ELSE
+            { verify_canonical_byte() } OP_0NOTEQUAL
+            OP_IF
+                { verify_canonical_byte() } OP_DROP
+                { verify_canonical_byte() } OP_DROP
+                1
+            OP_ELSE
+                { verify_canonical_byte() } OP_0NOTEQUAL
+                OP_IF
+                    { verify_canonical_byte() } OP_DROP
+                    2
+                OP_ELSE
+                    { verify_canonical_byte() } OP_0NOTEQUAL
+                    OP_IF
+                        3
+                    OP_ELSE
+                        4
+                    OP_ENDIF
+                OP_ENDIF
+            OP_ENDIF
+        OP_ENDIF
+    }
+}
+
 pub fn u32_toaltstack() -> Script {
     script! {
         OP_TOALTSTACK
@@ -266,7 +302,7 @@ pub fn u32_uncompress_canonical() -> Script {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::support::execution::{execute_raw_script_with_inputs_strict, run};
+    use crate::support::execution::{execute_raw_script_with_inputs_strict, execute_script, run};
 
     fn scriptnum(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
@@ -470,6 +506,76 @@ mod tests {
         for index in 0..256u32 {
             let value = index.wrapping_mul(0x9e37_79b9).wrapping_add(0x243f_6a88);
             check_u32_iszero(value);
+        }
+    }
+
+    #[test]
+    fn test_u32_trailing_zero_bytes() {
+        for (value, expected) in [
+            (0, 4),
+            (0x0100_0000, 3),
+            (0x0001_0000, 2),
+            (0x0000_0100, 1),
+            (1, 0),
+            (u32::MAX, 0),
+        ] {
+            let script = script! {
+                { u32_push(value) }
+                { u32_trailing_zero_bytes() }
+                { expected } OP_EQUAL
+            };
+            let result = execute_script(script.clone());
+            assert!(
+                result.success,
+                "value {value:#x}: {result:?}\n{}",
+                script.compile_with_policy().to_asm_string()
+            );
+        }
+    }
+
+    #[test]
+    fn test_u32_trailing_zero_bytes_rejects_invalid_limbs() {
+        for limbs in [
+            [-1, 0, 0, 0],
+            [0, 256, 0, 0],
+            [0, 0, -1, 0],
+            [0, 0, 0, 256],
+            [256, 0, 0, 1],
+        ] {
+            let result = execute_script(script! {
+                { limbs[0] }
+                { limbs[1] }
+                { limbs[2] }
+                { limbs[3] }
+                { u32_trailing_zero_bytes() }
+                OP_TRUE
+            });
+            assert!(
+                !result.success,
+                "accepted invalid limbs {limbs:?}: {result}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_u32_trailing_zero_bytes_rejects_noncanonical_witness_limbs() {
+        for index in 0..4 {
+            let mut witness = vec![vec![0]; 4];
+            witness[index] = vec![1, 0];
+            let result = execute_raw_script_with_inputs_strict(
+                script! {
+                    { u32_trailing_zero_bytes() }
+                    OP_DROP
+                    OP_TRUE
+                }
+                .compile_with_policy()
+                .to_bytes(),
+                witness,
+            );
+            assert!(
+                !result.success,
+                "accepted noncanonical limb {index}: {result}"
+            );
         }
     }
 

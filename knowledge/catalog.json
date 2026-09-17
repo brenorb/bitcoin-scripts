@@ -542,9 +542,9 @@
       "class": "arithmetic/word",
       "summary": "Range-checked u4 vector projection to the count of unequal adjacent pairs.",
       "status": "active",
-      "evidence": "inspected",
+      "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-17",
+      "as_of": "2026-09-18",
       "knowledge_page": "knowledge/primitives/u4-transition-count.md",
       "implementation": "src/arithmetic/u4/transition_count.rs",
       "documentation": "src/arithmetic/u4/README.md",
@@ -573,21 +573,21 @@
             "hint_items": 0
           },
           "includes": "fragment-only: 32 numeric range checks, 31 adjacent inequality comparisons, one altstack count accumulator, and input cleanup; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
-          "script_bytes": 619,
+          "script_bytes": 588,
           "witness_bytes": 65,
-          "witness_bytes_max": 65,
+          "witness_bytes_max": null,
           "max_stack_items": 35,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": 0,
-          "per_use_script_bytes": 619,
+          "per_use_script_bytes": 588,
           "metric_keys": [
             "u4_transition_count_batch32",
             "u4_transition_count_batch32_witness",
             "u4_transition_count_batch32_stack",
             "u4_transition_count_batch32_opcodes"
           ],
-          "static_non_push_opcodes": 491
+          "static_non_push_opcodes": 391
         }
       ],
       "limitations": [

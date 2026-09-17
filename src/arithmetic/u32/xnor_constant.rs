@@ -27,9 +27,12 @@ pub fn u32_xnor_constant(value: u32) -> Script {
         { u32_drop() }
         { u8_drop_xor_table() }
         { u32_fromaltstack() }
-        for _ in 0..4 {
+        for _ in 0..3 {
             255 OP_SWAP OP_SUB
+            OP_TOALTSTACK
         }
+        255 OP_SWAP OP_SUB
+        OP_FROMALTSTACK OP_FROMALTSTACK OP_FROMALTSTACK
     }
 }
 

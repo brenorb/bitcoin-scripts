@@ -37,10 +37,12 @@ executor is the repository's tapscript-context harness with the combined
 
 | Configuration | Query script | Table setup | Witness | Data items | Hints | Peak | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `u4_odd_inverse_mod16` | pending | pending | 3 bytes | 1 | 0 | pending | pending |
+| `u4_odd_inverse_mod16` | 9 | 16 | 3-byte canonical fixture | 1 | 0 | 20 | 7 |
 
-The result is currently `inspected`; the metric fixture and focused CI run are
-the reproduction boundary for upgrading it to `locally-reproduced`.
+The result is `locally-reproduced` by the metric fixture and focused CI run.
+The 3-byte witness is a canonical-input fixture, not an unrestricted maximum
+when nonminimal numeric aliases are accepted. Move or consume the result
+before dropping the resident table; otherwise cleanup removes the result.
 
 ## Comparison and limitations
 

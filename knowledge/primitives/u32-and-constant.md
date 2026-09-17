@@ -8,8 +8,9 @@ witness-supplied word?
 
 ## Construction and threat model
 
-`u32_and_constant(value)` consumes the top four canonical byte limbs, checks
-each hostile limb with `verify_canonical_byte()`, loads the existing 256-entry
+`u32_and_constant(value)` consumes the top four canonical byte limbs, validates
+each original hostile limb with `verify_canonical_byte()` before table setup,
+and loads the existing 256-entry
 byte Boolean table, ANDs every byte with the public compile-time `value`, and
 removes the table before returning. The mask is script data, not a secret.
 
@@ -29,7 +30,7 @@ framing.
 
 | Construction | Locking script | Representative witness | Maximum witness | Data items | Hint items | Peak items | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Embedded mask `0x89abcdef` | 612 | 13 bytes | 13 bytes | 4 | 0 | 272 | 460 |
+| Embedded mask `0x89abcdef` | 620 | 13 bytes | 13 bytes | 4 | 0 | 272 | 448 |
 | Generic `u32_and` with runtime mask | 326 operation bytes plus table setup/cleanup | 21 bytes | 21 bytes | 8 | 0 | table-dependent | not measured here |
 
 The embedded form removes four witness data items and saves the second word's
@@ -45,12 +46,12 @@ The implementation and metric boundary are currently `inspected`; the
 repository CI metric fixture is the executable reproduction gate. Deployment
 is `unclassified`. The fixture uses mask `0x89abcdef` and four canonical
 `0xff` data limbs. Correctness tests cover zero, all-zero/all-one masks,
-boundary masks, malformed and non-minimal limbs, and surrounding main- and
-alt-stack state.
+boundary masks, malformed and non-minimal limbs at every position, canonical
+128 and 255 limbs at every position, and surrounding main- and alt-stack state.
 
 The strict metric fixture is intended to execute through the repository's
 locked `bitcoin-scriptexec` dependency in a tapscript context with the
-combined main-plus-alt-stack limit. The 460 figure is a static non-push
+combined main-plus-alt-stack limit. The 448 figure is a static non-push
 opcode count, not a dynamic execution or validation-weight claim. No Bitcoin
 Core differential, complete-transaction, relay-policy, or cryptographic
 claim is made.

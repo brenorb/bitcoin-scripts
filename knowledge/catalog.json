@@ -787,7 +787,7 @@
       "class": "arithmetic/word",
       "summary": "Checked four-byte u32 bitwise AND with one public compile-time mask embedded in the locking script.",
       "status": "experimental",
-      "evidence": "inspected",
+      "evidence": "locally-reproduced",
       "execution": "unclassified",
       "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u32-and-constant.md",
@@ -824,21 +824,21 @@
             "complete_input_items": 4
           },
           "includes": "fragment-with-memory: four canonical byte checks, generated shared Boolean table, four AND queries, table cleanup, and output routing; excludes input pushes, terminal predicate, unrelated live state, and transaction context",
-          "script_bytes": 612,
+          "script_bytes": 620,
           "witness_bytes": 13,
           "witness_bytes_max": 13,
           "max_stack_items": 272,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": null,
-          "per_use_script_bytes": 612,
+          "per_use_script_bytes": 620,
           "metric_keys": [
             "u32_and_constant",
             "u32_and_constant_witness",
             "u32_and_constant_stack",
             "u32_and_constant_opcodes"
           ],
-          "static_non_push_opcodes": 460
+          "static_non_push_opcodes": 448
         }
       ],
       "limitations": [

@@ -247,12 +247,14 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-16",
+      "as_of": "2026-09-17",
       "knowledge_page": "knowledge/primitives/u4.md",
       "implementation": "src/arithmetic/u4/mod.rs",
       "documentation": "src/arithmetic/u4/README.md",
       "tests": [
-        "src/arithmetic/u4"
+        "src/arithmetic/u4",
+        "src/arithmetic/u4/popcount.rs",
+        "primitive_metrics::u4_popcount_metrics_are_current"
       ],
       "references": [
         "bitcoin-script-locked",
@@ -428,6 +430,34 @@
             "u4_bit_reverse_batch32_opcodes"
           ],
           "static_non_push_opcodes": 232
+        },
+        {
+          "id": "nibble-popcount-batch32-checked",
+          "label": "Checked 32-nibble Hamming-weight projection",
+          "parameters": {
+            "nibble_count": 32,
+            "check_inputs": true,
+            "table_items": 16,
+            "data_items": 32,
+            "hint_items": 0,
+            "output_range": "0..=4"
+          },
+          "includes": "fragment-with-memory: 16-item popcount table setup, 32 range-checked queries, table cleanup, and output restoration; representative witness records 32 hostile nibble data items; excludes terminal predicate, unrelated live state, and transaction context; static non-push opcode count is measured separately",
+          "script_bytes": 440,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 50,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 16,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u4_popcount_batch32",
+            "u4_popcount_batch32_witness",
+            "u4_popcount_batch32_stack",
+            "u4_popcount_batch32_opcodes"
+          ],
+          "static_non_push_opcodes": 328
         },
         {
           "id": "nibble-to-le-bits-batch32-checked",

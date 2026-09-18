@@ -17,6 +17,8 @@ pub fn u4_fromaltstack(n: u32) -> Script {
     }
 }
 
+/// Copies eight contiguous raw stack items starting at `address` items from
+/// the top. The caller supplies the range and canonicality invariants.
 pub fn u4_copy_u32_from(address: u32) -> Script {
     script! {
         for _ in 0..8 {
@@ -26,6 +28,8 @@ pub fn u4_copy_u32_from(address: u32) -> Script {
     }
 }
 
+/// Moves eight contiguous raw stack items starting at `address` items from
+/// the top. The caller supplies the range and canonicality invariants.
 pub fn u4_move_u32_from(address: u32) -> Script {
     script! {
         for _ in 0..8 {
@@ -296,6 +300,122 @@ mod tests {
             OP_TRUE
         };
         crate::support::execution::run(script);
+    }
+
+    #[test]
+    fn copy_and_move_u32_preserve_nibble_order() {
+        for (transfer, copied) in [(u4_copy_u32_from(0), true), (u4_move_u32_from(0), false)] {
+            crate::support::execution::run(script! {
+                { u4_number_to_nibble(0x1234_5678) }
+                { transfer }
+                8 OP_EQUALVERIFY
+                7 OP_EQUALVERIFY
+                6 OP_EQUALVERIFY
+                5 OP_EQUALVERIFY
+                4 OP_EQUALVERIFY
+                3 OP_EQUALVERIFY
+                2 OP_EQUALVERIFY
+                1 OP_EQUALVERIFY
+                if copied {
+                    8 OP_EQUALVERIFY
+                    7 OP_EQUALVERIFY
+                    6 OP_EQUALVERIFY
+                    5 OP_EQUALVERIFY
+                    4 OP_EQUALVERIFY
+                    3 OP_EQUALVERIFY
+                    2 OP_EQUALVERIFY
+                    1 OP_EQUALVERIFY
+                }
+                OP_TRUE
+            });
+        }
+    }
+
+    #[test]
+    fn copy_and_move_u32_at_depth_eight_preserve_every_word() {
+        for (transfer, copied) in [(u4_copy_u32_from(8), true), (u4_move_u32_from(8), false)] {
+            crate::support::execution::run(script! {
+                5 OP_TOALTSTACK
+                99
+                { u4_number_to_nibble(0x1234_5678) }
+                { u4_number_to_nibble(0x9abc_def0) }
+                { transfer }
+                if copied {
+                    8 OP_EQUALVERIFY
+                    7 OP_EQUALVERIFY
+                    6 OP_EQUALVERIFY
+                    5 OP_EQUALVERIFY
+                    4 OP_EQUALVERIFY
+                    3 OP_EQUALVERIFY
+                    2 OP_EQUALVERIFY
+                    1 OP_EQUALVERIFY
+                    0 OP_EQUALVERIFY
+                    15 OP_EQUALVERIFY
+                    14 OP_EQUALVERIFY
+                    13 OP_EQUALVERIFY
+                    12 OP_EQUALVERIFY
+                    11 OP_EQUALVERIFY
+                    10 OP_EQUALVERIFY
+                    9 OP_EQUALVERIFY
+                    8 OP_EQUALVERIFY
+                    7 OP_EQUALVERIFY
+                    6 OP_EQUALVERIFY
+                    5 OP_EQUALVERIFY
+                    4 OP_EQUALVERIFY
+                    3 OP_EQUALVERIFY
+                    2 OP_EQUALVERIFY
+                    1 OP_EQUALVERIFY
+                } else {
+                    8 OP_EQUALVERIFY
+                    7 OP_EQUALVERIFY
+                    6 OP_EQUALVERIFY
+                    5 OP_EQUALVERIFY
+                    4 OP_EQUALVERIFY
+                    3 OP_EQUALVERIFY
+                    2 OP_EQUALVERIFY
+                    1 OP_EQUALVERIFY
+                    0 OP_EQUALVERIFY
+                    15 OP_EQUALVERIFY
+                    14 OP_EQUALVERIFY
+                    13 OP_EQUALVERIFY
+                    12 OP_EQUALVERIFY
+                    11 OP_EQUALVERIFY
+                    10 OP_EQUALVERIFY
+                    9 OP_EQUALVERIFY
+                }
+                99 OP_EQUALVERIFY
+                OP_FROMALTSTACK 5 OP_EQUALVERIFY
+                OP_TRUE
+            });
+        }
+    }
+
+    #[test]
+    fn word_transfer_stack_boundaries_are_strict() {
+        for (transfer, success_items, success_output_items, failure_items) in [
+            (u4_copy_u32_from(0), 992usize, 1000usize, 993usize),
+            (u4_move_u32_from(0), 999usize, 999usize, 1000usize),
+        ] {
+            let success = crate::support::execution::execute_script_with_inputs_strict(
+                script! {
+                    { transfer.clone() }
+                    for _ in 0..success_output_items { OP_DROP }
+                    OP_TRUE
+                },
+                vec![vec![1]; success_items],
+            );
+            assert!(success.success, "boundary success failed: {success}");
+
+            let failure = crate::support::execution::execute_script_with_inputs_strict(
+                script! { { transfer } },
+                vec![vec![1]; failure_items],
+            );
+            assert_eq!(
+                failure.error,
+                Some(bitcoin_scriptexec::ExecError::StackSize),
+                "boundary failure changed: {failure}"
+            );
+        }
     }
 
     #[test]

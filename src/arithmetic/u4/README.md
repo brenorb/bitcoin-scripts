@@ -81,6 +81,9 @@ these operations, but this module contains no hash-specific round logic.
   raw ScriptNum encoding and leaves big-endian output on the altstack.
 - `bits::u4_nibbles_to_le_bits_toaltstack_canonical(nibble_count)` validates
   raw ScriptNum encoding and leaves little-endian output on the altstack.
+- `stack::u4_copy_u32_from(address)` and `stack::u4_move_u32_from(address)`
+  route eight raw stack items from an address measured in individual stack
+  items, not words. They do not validate nibble range or ScriptNum encoding.
 
 ## Script metrics
 
@@ -108,6 +111,14 @@ each input with the same output-restoration boundary.
 | Existing branch splitter, 32 four-bit limbs | <!-- metric:u4_bits_branch_batch32 -->1374<!-- /metric:u4_bits_branch_batch32 --> bytes | <!-- metric:u4_bits_branch_batch32_stack -->130<!-- /metric:u4_bits_branch_batch32_stack --> items | not recorded |
 | Checked high/low nibble pair to one byte | <!-- metric:u4_pair_to_u8_checked -->20<!-- /metric:u4_pair_to_u8_checked --> bytes | <!-- metric:u4_pair_to_u8_checked_stack -->5<!-- /metric:u4_pair_to_u8_checked_stack --> items | not recorded |
 | Checked high/middle/low nibble triplet to u12 | <!-- metric:u4_triplet_to_u12_checked -->44<!-- /metric:u4_triplet_to_u12_checked --> bytes | <!-- metric:u4_triplet_to_u12_checked_stack -->6<!-- /metric:u4_triplet_to_u12_checked_stack --> items | not recorded |
+
+Word-transfer boundaries use a separate witness column because the router
+consumes raw items without validating their numeric encoding:
+
+| Fragment | Locking script | Serialized witness | Combined peak | Static non-push opcodes |
+| --- | ---: | ---: | ---: | ---: |
+| `u4_copy_u32_from(0)` | <!-- metric:u4_copy_u32_from -->16<!-- /metric:u4_copy_u32_from --> bytes | <!-- metric:u4_copy_u32_from_witness -->16<!-- /metric:u4_copy_u32_from_witness --> bytes, 8 data items, 0 hints (17-byte maximum) | <!-- metric:u4_copy_u32_from_stack -->16<!-- /metric:u4_copy_u32_from_stack --> items | <!-- metric:u4_copy_u32_from_opcodes -->8<!-- /metric:u4_copy_u32_from_opcodes --> |
+| `u4_move_u32_from(0)` | <!-- metric:u4_move_u32_from -->16<!-- /metric:u4_move_u32_from --> bytes | <!-- metric:u4_move_u32_from_witness -->16<!-- /metric:u4_move_u32_from_witness --> bytes, 8 data items, 0 hints (17-byte maximum) | <!-- metric:u4_move_u32_from_stack -->9<!-- /metric:u4_move_u32_from_stack --> items | <!-- metric:u4_move_u32_from_opcodes -->8<!-- /metric:u4_move_u32_from_opcodes --> |
 | Checked high/high-middle/low-middle/low nibble quad to u16 | <!-- metric:u4_quad_to_u16_checked -->76<!-- /metric:u4_quad_to_u16_checked --> bytes | <!-- metric:u4_quad_to_u16_checked_stack -->7<!-- /metric:u4_quad_to_u16_checked_stack --> items | not recorded |
 | Checked byte to high/low nibble pair | <!-- metric:u8_to_u4_pair_checked -->62<!-- /metric:u8_to_u4_pair_checked --> bytes | <!-- metric:u8_to_u4_pair_checked_stack -->4<!-- /metric:u8_to_u4_pair_checked_stack --> items | not recorded |
 | `verify_canonical_nibble()` | <!-- metric:u4_canonical_nibble -->10<!-- /metric:u4_canonical_nibble --> bytes | <!-- metric:u4_canonical_nibble_stack -->4<!-- /metric:u4_canonical_nibble_stack --> items | not recorded |

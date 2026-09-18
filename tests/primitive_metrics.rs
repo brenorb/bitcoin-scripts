@@ -2349,6 +2349,42 @@ fn metrics() -> Vec<Metric> {
         },
         Metric {
             readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from",
+            value: script_len(u4::stack::u4_copy_u32_from(0)),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from_stack",
+            value: max_stack_items(
+                script! {
+                    { u4::stack::u4_number_to_nibble(0x1234_5678) }
+                    { u4::stack::u4_copy_u32_from(0) }
+                    { u4::stack::u4_drop(16) }
+                    OP_TRUE
+                },
+                vec![],
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from",
+            value: script_len(u4::stack::u4_move_u32_from(0)),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from_stack",
+            value: max_stack_items(
+                script! {
+                    { u4::stack::u4_number_to_nibble(0x1234_5678) }
+                    { u4::stack::u4_move_u32_from(0) }
+                    { u4::stack::u4_drop(8) }
+                    OP_TRUE
+                },
+                vec![],
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
             key: "u4_bits_table_push",
             value: script_len(u4::bits::u4_push_to_be_bits_table()),
         },
@@ -4593,6 +4629,72 @@ fn ed25519_packed_decoder_metrics_are_current() {
             readme: "src/fields/ed25519/README.md",
             key: "ed25519_packed_decoder_witness_max",
             value: witness_size(&witness),
+        },
+    ]);
+}
+
+#[test]
+fn u4_word_transfer_metrics_are_current() {
+    let copy = u4::stack::u4_copy_u32_from(0);
+    let move_script = u4::stack::u4_move_u32_from(0);
+    let witness = (0..8).map(scriptnum).collect::<Vec<_>>();
+    let copy_peak = max_stack_items_strict(
+        script! {
+            { copy.clone() }
+            for _ in 0..8 { OP_2DROP }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    let move_peak = max_stack_items_strict(
+        script! {
+            { move_script.clone() }
+            for _ in 0..4 { OP_2DROP }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from",
+            value: script_len(copy.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from_stack",
+            value: copy_peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from_opcodes",
+            value: static_non_push_opcodes(copy),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from",
+            value: script_len(move_script.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from_stack",
+            value: move_peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from_opcodes",
+            value: static_non_push_opcodes(move_script),
         },
     ]);
 }

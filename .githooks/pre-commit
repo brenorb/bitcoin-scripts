@@ -5,6 +5,7 @@ root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
 python3 tools/kb.py validate
+cargo fmt --all -- --check
 
 needs_metrics=0
 while IFS= read -r path; do

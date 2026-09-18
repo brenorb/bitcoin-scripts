@@ -75,6 +75,8 @@ they do not use BN254 or any other field modulus.
   the existing one-opcode sixteen-bit rotation.
 - `u32_rrot8()`, `u32_rrot16()`, and `u32_rrot(24)` are unchecked fixed-byte
   permutations; callers own byte-range and canonical ScriptNum validation.
+- `u32_rrot7()` is the unchecked fixed seven-bit right rotation used by
+  SHA-256; callers own byte-range and canonical ScriptNum validation.
 
 ## Script metrics
 
@@ -135,6 +137,7 @@ as less-than-or-equal.
 | `u32_rrot7_checked()` | <!-- metric:u32_rrot7_checked -->130<!-- /metric:u32_rrot7_checked --> bytes | <!-- metric:u32_rrot7_checked_witness -->9<!-- /metric:u32_rrot7_checked_witness --> bytes (<!-- metric:u32_rrot7_checked_witness_max -->13<!-- /metric:u32_rrot7_checked_witness_max --> max), 4 data items | <!-- metric:u32_rrot7_checked_stack -->8<!-- /metric:u32_rrot7_checked_stack --> items; <!-- metric:u32_rrot7_checked_opcodes -->87<!-- /metric:u32_rrot7_checked_opcodes --> static non-push opcodes |
 | `u32_rrot8_checked()` | <!-- metric:u32_rrot8_checked -->57<!-- /metric:u32_rrot8_checked --> bytes | <!-- metric:u32_rrot8_checked_witness -->9<!-- /metric:u32_rrot8_checked_witness --> bytes (<!-- metric:u32_rrot8_checked_witness_max -->13<!-- /metric:u32_rrot8_checked_witness_max --> max), 4 data items | <!-- metric:u32_rrot8_checked_stack -->7<!-- /metric:u32_rrot8_checked_stack --> items; <!-- metric:u32_rrot8_checked_opcodes -->36<!-- /metric:u32_rrot8_checked_opcodes --> static non-push opcodes |
 | `u32_rrot16_checked()` | <!-- metric:u32_rrot16_checked -->55<!-- /metric:u32_rrot16_checked --> bytes | <!-- metric:u32_rrot16_checked_witness -->9<!-- /metric:u32_rrot16_checked_witness --> bytes (<!-- metric:u32_rrot16_checked_witness_max -->13<!-- /metric:u32_rrot16_checked_witness_max --> max), 4 data items | <!-- metric:u32_rrot16_checked_stack -->7<!-- /metric:u32_rrot16_checked_stack --> items; <!-- metric:u32_rrot16_checked_opcodes -->35<!-- /metric:u32_rrot16_checked_opcodes --> static non-push opcodes |
+| `u32_rrot7()` | <!-- metric:u32_rrot7 -->76<!-- /metric:u32_rrot7 --> bytes | <!-- metric:u32_rrot7_witness -->9<!-- /metric:u32_rrot7_witness --> bytes (<!-- metric:u32_rrot7_witness_max -->13<!-- /metric:u32_rrot7_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_rrot7_stack -->8<!-- /metric:u32_rrot7_stack --> items |
 | `u32_rrot8()` | <!-- metric:u32_rrot8 -->3<!-- /metric:u32_rrot8 --> bytes | <!-- metric:u32_rrot8_witness -->9<!-- /metric:u32_rrot8_witness --> bytes (<!-- metric:u32_rrot8_witness_max -->13<!-- /metric:u32_rrot8_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_rrot8_stack -->5<!-- /metric:u32_rrot8_stack --> items |
 | `u32_rrot16()` | <!-- metric:u32_rrot16 -->1<!-- /metric:u32_rrot16 --> bytes | <!-- metric:u32_rrot16_witness -->9<!-- /metric:u32_rrot16_witness --> bytes (<!-- metric:u32_rrot16_witness_max -->13<!-- /metric:u32_rrot16_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_rrot16_stack -->4<!-- /metric:u32_rrot16_stack --> items |
 | `u32_rrot(24)` | <!-- metric:u32_rrot24 -->2<!-- /metric:u32_rrot24 --> bytes | <!-- metric:u32_rrot24_witness -->9<!-- /metric:u32_rrot24_witness --> bytes (<!-- metric:u32_rrot24_witness_max -->13<!-- /metric:u32_rrot24_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_rrot24_stack -->5<!-- /metric:u32_rrot24_stack --> items |

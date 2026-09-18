@@ -4675,6 +4675,13 @@ fn u32_fixed_rotation_metrics_are_current() {
     let witness_max = byte_u32_witness(0x8080_8080).to_vec();
     let fragments = [
         (
+            "u32_rrot7",
+            u32::rotate::u32_rrot7(),
+            "u32_rrot7_witness",
+            "u32_rrot7_witness_max",
+            "u32_rrot7_stack",
+        ),
+        (
             "u32_rrot8",
             u32::rotate::u32_rrot8(),
             "u32_rrot8_witness",

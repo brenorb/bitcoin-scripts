@@ -916,6 +916,9 @@
         "src/arithmetic/u32",
         "arithmetic::u32::rotate::tests::fixed_byte_rotations_match_reference",
         "primitive_metrics::u32_fixed_rotation_metrics_are_current",
+        "arithmetic::u32::rotate::tests::fixed_rotation7_matches_reference_boundaries",
+        "arithmetic::u32::rotate::tests::fixed_rotation7_preserves_runtime_stack_state",
+        "arithmetic::u32::rotate::tests::fixed_rotation7_rejects_a_short_word_with_an_execution_error",
         "arithmetic::u32::stack::tests::test_u32_equality_boundaries_and_raw_encoding",
         "arithmetic::u32::stack::tests::equality_rejects_short_words_with_an_execution_error",
         "primitive_metrics::u32_equality_metrics_are_current",
@@ -1446,6 +1449,32 @@
             "u32_equalverify_witness",
             "u32_equalverify_witness_max",
             "u32_equalverify_stack"
+          ]
+        },
+        {
+          "id": "fixed-rotation-7",
+          "label": "u32_rrot7()",
+          "parameters": {
+            "rotation": 7,
+            "input_items": 4,
+            "output_items": 4,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: unchecked fixed seven-bit right rotation used by SHA-256; representative witness has four one-byte data items and the maximum is 13 bytes for four canonical byte-valued ScriptNums; excludes input pushes and output checks",
+          "script_bytes": 76,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 8,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 76,
+          "metric_keys": [
+            "u32_rrot7",
+            "u32_rrot7_witness",
+            "u32_rrot7_witness_max",
+            "u32_rrot7_stack"
           ]
         },
         {

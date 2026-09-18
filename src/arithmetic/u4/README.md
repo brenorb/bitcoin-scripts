@@ -198,6 +198,7 @@ representative left witness is <!-- metric:u4_lexicographic_le_constant_128_witn
 <!-- metric:u4_zero_bitmask_batch32_witness -->65<!-- /metric:u4_zero_bitmask_batch32_witness --> serialized witness bytes for the representative packed zero-bitmask batch.
 
 <!-- metric:u4_bit_reverse_canonical_batch32_witness -->65<!-- /metric:u4_bit_reverse_canonical_batch32_witness --> serialized witness bytes for the representative canonical bit-reversal batch.
+<!-- metric:u4_bit_reverse_batch32_witness -->65<!-- /metric:u4_bit_reverse_batch32_witness --> serialized witness bytes for the representative range-checked bit-reversal batch; unrestricted four-byte numeric aliases can reach 161 bytes.
 
 <!-- metric:u4_bit_planes_canonical_batch16_witness -->33<!-- /metric:u4_bit_planes_canonical_batch16_witness --> serialized witness bytes for the representative canonical bit-plane batch.
 
@@ -579,7 +580,9 @@ separately from the numeric-range-only transpose.
 For `bit_reverse::u4_nibbles_to_bit_reverse(n)`, input and output order are
 unchanged: each `nibble[i]` is replaced by its bit-reversed value. The checked
 standalone peak is `n + 19` combined items, and the generator rejects empty
-batches and batches above 981.
+batches and batches above 981. The 65-byte representative witness uses
+minimal one-byte items; without a canonical-input requirement, four-byte
+numeric aliases can increase the 32-item witness to 161 bytes.
 
 ## Operational notes
 

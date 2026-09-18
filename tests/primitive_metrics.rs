@@ -5866,6 +5866,11 @@ fn u4_bit_reverse_metrics_are_current() {
         },
         Metric {
             readme: "src/arithmetic/u4/README.md",
+            key: "u4_bit_reverse_batch32_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
             key: "u4_bit_reverse_batch32_stack",
             value: stack,
         },

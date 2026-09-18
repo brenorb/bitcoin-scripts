@@ -450,7 +450,7 @@
           "includes": "fragment-with-memory: 16-item bit-reversal table setup, 32 checked lookups, table cleanup, and output restoration; representative witness size records 32 hostile nibble data items; excludes terminal predicate, unrelated live state, and transaction context; static non-push opcode count is 232, dynamic count is unavailable",
           "script_bytes": 344,
           "witness_bytes": 65,
-          "witness_bytes_max": 65,
+          "witness_bytes_max": 161,
           "max_stack_items": 51,
           "executed_opcodes": null,
           "validation_weight": null,
@@ -458,6 +458,7 @@
           "per_use_script_bytes": 8,
           "metric_keys": [
             "u4_bit_reverse_batch32",
+            "u4_bit_reverse_batch32_witness",
             "u4_bit_reverse_batch32_stack",
             "u4_bit_reverse_batch32_opcodes"
           ],

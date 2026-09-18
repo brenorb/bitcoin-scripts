@@ -58,7 +58,9 @@ fn u4_nibbles_to_bit_reverse_impl(nibble_count: u32, canonical: bool) -> Script 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::support::execution::execute_script;
+    use crate::support::execution::{execute_script, execute_script_with_inputs_strict};
+    use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+    use bitcoin_scriptexec::ExecError;
 
     fn verify(inputs: &[u32]) {
         let result = execute_script(script! {
@@ -82,13 +84,30 @@ mod tests {
 
     #[test]
     fn rejects_out_of_range_nibbles() {
-        for invalid in [-1, 16] {
+        for position in 0..4 {
+            let mut input = vec![1; 4];
+            input[position] = if position % 2 == 0 { -1 } else { 16 };
             let result = execute_script(script! {
-                { invalid }
-                { u4_nibbles_to_bit_reverse(1) }
+                for nibble in input { { nibble } }
+                { u4_nibbles_to_bit_reverse(4) }
+                for _ in 0..4 { OP_DROP }
                 OP_TRUE
             });
-            assert!(!result.success, "accepted invalid nibble {invalid}");
+            assert!(!result.success, "accepted invalid nibble at {position}");
+        }
+
+        for position in 0..4 {
+            let mut witness = vec![vec![1]; 4];
+            witness[position] = vec![0, 0, 0, 0, 1];
+            let result = execute_script_with_inputs_strict(
+                script! {
+                    { u4_nibbles_to_bit_reverse(4) }
+                    for _ in 0..4 { OP_DROP }
+                    OP_TRUE
+                },
+                witness,
+            );
+            assert!(!result.success, "accepted oversized nibble at {position}");
         }
     }
 
@@ -99,6 +118,95 @@ mod tests {
             u4_nibbles_to_bit_reverse(U4_BIT_REVERSE_MAX_BATCH + 1)
         })
         .is_err());
+        assert!(std::panic::catch_unwind(|| u4_nibbles_to_bit_reverse_canonical(0)).is_err());
+        assert!(std::panic::catch_unwind(|| {
+            u4_nibbles_to_bit_reverse_canonical(U4_BIT_REVERSE_MAX_BATCH + 1)
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn range_only_accepts_consensus_numeric_aliases_but_policy_rejects_them() {
+        for alias in [vec![1, 0], vec![0x80]] {
+            let range_only = execute_tapscript(
+                script! {
+                    { u4_nibbles_to_bit_reverse(1) }
+                    OP_DROP OP_TRUE
+                }
+                .compile_with_policy(),
+                vec![alias.clone()],
+                TapscriptProfile::Consensus,
+            );
+            assert!(
+                range_only.accepted() == Some(true),
+                "range-only rejected alias: {range_only:?}"
+            );
+
+            let canonical = execute_tapscript(
+                script! {
+                    { u4_nibbles_to_bit_reverse_canonical(1) }
+                    OP_DROP OP_TRUE
+                }
+                .compile_with_policy(),
+                vec![alias],
+                TapscriptProfile::Policy,
+            );
+            assert!(
+                canonical.accepted() == Some(false),
+                "policy accepted alias: {canonical:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn strict_range_frontier_and_preserved_state() {
+        let maximum = execute_script_with_inputs_strict(
+            script! {
+                { u4_nibbles_to_bit_reverse(U4_BIT_REVERSE_MAX_BATCH) }
+                { u4_drop(U4_BIT_REVERSE_MAX_BATCH) }
+                OP_TRUE
+            },
+            vec![vec![1]; U4_BIT_REVERSE_MAX_BATCH as usize],
+        );
+        assert!(
+            maximum.success,
+            "maximum range-only batch failed: {maximum}"
+        );
+        assert_eq!(maximum.stats.max_nb_stack_items, 1000);
+
+        let mut preserved = vec![vec![77]];
+        preserved.extend(vec![vec![1]; 980]);
+        let with_state = execute_script_with_inputs_strict(
+            script! {
+                { u4_nibbles_to_bit_reverse(980) }
+                { u4_drop(980) }
+                77 OP_EQUALVERIFY OP_TRUE
+            },
+            preserved,
+        );
+        assert!(with_state.success, "preserved state failed: {with_state}");
+
+        let mut over_budget = vec![vec![77]];
+        over_budget.extend(vec![vec![1]; U4_BIT_REVERSE_MAX_BATCH as usize]);
+        let rejected = execute_script_with_inputs_strict(
+            script! { { u4_nibbles_to_bit_reverse(U4_BIT_REVERSE_MAX_BATCH) } },
+            over_budget,
+        );
+        assert_eq!(rejected.error, Some(ExecError::StackSize));
+    }
+
+    #[test]
+    fn strict_canonical_frontier() {
+        let maximum = execute_script_with_inputs_strict(
+            script! {
+                { u4_nibbles_to_bit_reverse_canonical(U4_BIT_REVERSE_MAX_BATCH) }
+                { u4_drop(U4_BIT_REVERSE_MAX_BATCH) }
+                OP_TRUE
+            },
+            vec![vec![1]; U4_BIT_REVERSE_MAX_BATCH as usize],
+        );
+        assert!(maximum.success, "maximum canonical batch failed: {maximum}");
+        assert_eq!(maximum.stats.max_nb_stack_items, 1000);
     }
 
     #[test]

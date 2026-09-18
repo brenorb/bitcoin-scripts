@@ -916,6 +916,9 @@
         "src/arithmetic/u32",
         "arithmetic::u32::rotate::tests::fixed_byte_rotations_match_reference",
         "primitive_metrics::u32_fixed_rotation_metrics_are_current",
+        "arithmetic::u32::stack::tests::test_u32_equality_boundaries_and_raw_encoding",
+        "arithmetic::u32::stack::tests::equality_rejects_short_words_with_an_execution_error",
+        "primitive_metrics::u32_equality_metrics_are_current",
         "arithmetic::u32::stack::tests::test_u32_iszero",
         "arithmetic::u32::stack::tests::test_u32_iszero_does_not_treat_invalid_nonzero_limbs_as_zero",
         "arithmetic::u32::shift::tests::checked_shift_accepts_boundaries",
@@ -935,8 +938,8 @@
         "digit-arithmetic",
         "lookup-table"
       ],
-      "security": "No independent cryptographic claim; checked consumers validate canonical byte items in range, while unchecked fixed rotations require callers to supply that invariant. The canonical rrot8 adapter performs that byte boundary before rotation. The canonical rrot16 adapter performs that byte boundary before rotation.",
-      "stack_contract": "A u32 occupies four byte-valued items; ordering varies only through documented stack helpers. The unchecked fixed rotations preserve the four-item word shape and do not validate inputs. The zero predicate consumes four limbs and returns one boolean. The checked byte-equality mask consumes two words and returns one four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane. The checked MSB mask consumes one word and returns a four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane.",
+      "security": "No independent cryptographic claim; equality compares raw byte items and does not validate range or canonical ScriptNum encoding. Checked consumers validate canonical byte items in range, while unchecked fixed rotations require callers to supply that invariant. The canonical rrot8 adapter performs that byte boundary before rotation. The canonical rrot16 adapter performs that byte boundary before rotation.",
+      "stack_contract": "A u32 occupies four byte-valued items; ordering varies only through documented stack helpers. u32_equal consumes two words and returns one Boolean raw-byte equality result; u32_equalverify consumes both words and leaves no result on success. The unchecked fixed rotations preserve the four-item word shape and do not validate inputs. The zero predicate consumes four limbs and returns one boolean. The checked byte-equality mask consumes two words and returns one four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane. The checked MSB mask consumes one word and returns a four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane.",
       "configurations": [
         {
           "id": "add-drop",
@@ -1392,6 +1395,58 @@
             "u32_compress_canonical_opcodes"
           ],
           "static_non_push_opcodes": 102
+        },
+        {
+          "id": "equality",
+          "label": "u32_equal()",
+          "parameters": {
+            "input_items": 8,
+            "output_items": 1,
+            "data_items": 8,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: four raw byte comparisons and Boolean reduction; representative witness has eight data items and is 17 bytes, with a 25-byte maximum for eight canonical byte-valued ScriptNums; excludes input pushes, terminal predicate, and output checks",
+          "script_bytes": 18,
+          "witness_bytes": 17,
+          "witness_bytes_max": 25,
+          "max_stack_items": 9,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 18,
+          "metric_keys": [
+            "u32_equal",
+            "u32_equal_witness",
+            "u32_equal_witness_max",
+            "u32_equal_stack"
+          ]
+        },
+        {
+          "id": "equality-verify",
+          "label": "u32_equalverify()",
+          "parameters": {
+            "input_items": 8,
+            "output_items": 0,
+            "data_items": 8,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: four raw byte comparisons with failure on mismatch and no result on success; representative witness has eight data items and is 17 bytes, with a 25-byte maximum for eight canonical byte-valued ScriptNums; excludes input pushes, terminal predicate, and output checks",
+          "script_bytes": 9,
+          "witness_bytes": 17,
+          "witness_bytes_max": 25,
+          "max_stack_items": 9,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 9,
+          "metric_keys": [
+            "u32_equalverify",
+            "u32_equalverify_witness",
+            "u32_equalverify_witness_max",
+            "u32_equalverify_stack"
+          ]
         },
         {
           "id": "fixed-rotation-8",

@@ -4598,6 +4598,78 @@ fn ed25519_packed_decoder_metrics_are_current() {
 }
 
 #[test]
+fn u32_equality_metrics_are_current() {
+    const VALUE: u32 = 0x0102_0304;
+    let witness = byte_u32_witness(VALUE)
+        .into_iter()
+        .chain(byte_u32_witness(VALUE))
+        .collect::<Vec<_>>();
+    let witness_max = byte_u32_witness(0x8080_8080)
+        .into_iter()
+        .chain(byte_u32_witness(0x8080_8080))
+        .collect::<Vec<_>>();
+    let equal = u32::stack::u32_equal();
+    let equalverify = u32::stack::u32_equalverify();
+    let equal_stack = max_stack_items_strict(
+        script! {
+            { equal.clone() }
+            OP_DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    let equalverify_stack = max_stack_items_strict(
+        script! {
+            { equalverify.clone() }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_equal",
+            value: script_len(equal),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_equal_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_equal_witness_max",
+            value: witness_size(&witness_max),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_equal_stack",
+            value: equal_stack,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_equalverify",
+            value: script_len(equalverify),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_equalverify_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_equalverify_witness_max",
+            value: witness_size(&witness_max),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_equalverify_stack",
+            value: equalverify_stack,
+        },
+    ]);
+}
+
+#[test]
 fn u32_fixed_rotation_metrics_are_current() {
     let witness = vec![vec![1u8]; 4];
     let witness_max = byte_u32_witness(0x8080_8080).to_vec();

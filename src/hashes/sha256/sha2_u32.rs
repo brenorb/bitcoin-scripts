@@ -1045,12 +1045,16 @@ mod tests {
             };
         }
         let result = execute_script(script! {
+            77 OP_TOALTSTACK
+            99
             { message_script }
             { sha256_prefix(message.len(), output_bytes) }
             for byte in expected[..output_bytes].iter() {
                 { *byte }
                 OP_EQUALVERIFY
             }
+            OP_FROMALTSTACK 77 OP_EQUALVERIFY
+            99 OP_EQUALVERIFY
             OP_TRUE
         });
         assert!(result.success, "{result}");
@@ -1058,9 +1062,11 @@ mod tests {
 
     #[test]
     fn hashes_output_prefixes() {
+        assert_eq!(sha256_prefix(32, 32), sha256(32));
         for output_bytes in [1, 8, 31, 32] {
             verify_prefix(b"abc", output_bytes);
         }
+        verify_prefix(&[], 8);
         for message_len in [55, 56, 63, 64] {
             verify_prefix(&vec![0xa5; message_len], 8);
         }

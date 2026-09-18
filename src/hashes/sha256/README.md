@@ -26,9 +26,15 @@ output comparison.
 | Implementation | 32-byte input script |
 | --- | ---: |
 | `sha2_u32` | <!-- metric:sha2_u32_32 -->512428<!-- /metric:sha2_u32_32 --> bytes |
-| `sha2_u32`, first 8 digest bytes | <!-- metric:sha2_u32_prefix_32_8 -->512456<!-- /metric:sha2_u32_prefix_32_8 --> bytes |
+| `sha2_u32`, first 8 digest bytes | <!-- metric:sha2_u32_prefix_32_8 -->512468<!-- /metric:sha2_u32_prefix_32_8 --> bytes |
 | `sha2_u4` | <!-- metric:sha2_u4_32 -->332942<!-- /metric:sha2_u4_32 --> bytes |
 | `sha256_prefix` (32-byte input, 8-nibble output) | <!-- metric:sha2_u4_prefix_32_8 -->332970<!-- /metric:sha2_u4_prefix_32_8 --> bytes |
+
+The byte-prefix profile uses a 65-byte witness and the nibble-prefix profile
+uses 129 bytes. Their active combined peaks and static non-push counts are:
+
+- u32 prefix: `<!-- metric:sha2_u32_prefix_32_8_witness -->65<!-- /metric:sha2_u32_prefix_32_8_witness -->` witness bytes, `<!-- metric:sha2_u32_prefix_32_8_stack -->856<!-- /metric:sha2_u32_prefix_32_8_stack -->` peak items, `<!-- metric:sha2_u32_prefix_32_8_opcodes -->372178<!-- /metric:sha2_u32_prefix_32_8_opcodes -->` static non-push opcodes.
+- u4 prefix: `<!-- metric:sha2_u4_prefix_32_8_witness -->129<!-- /metric:sha2_u4_prefix_32_8_witness -->` witness bytes, `<!-- metric:sha2_u4_prefix_32_8_stack -->969<!-- /metric:sha2_u4_prefix_32_8_stack -->` peak items, `<!-- metric:sha2_u4_prefix_32_8_opcodes -->195231<!-- /metric:sha2_u4_prefix_32_8_opcodes -->` static non-push opcodes.
 
 The `sha2_u4` multi-chunk path reuses its 16-entry row-offset lookup table
 while replacing the 136-entry XOR/AND table between chunks. For an 80-byte
@@ -56,6 +62,9 @@ cover the u32 and u4 layouts.
 SHA-256 provides a 256-bit output, with generic 128-bit collision resistance
 and 256-bit preimage/second-preimage resistance. These claims assume canonical
 SHA-256 use; they do not authenticate witness data by themselves.
+
+An 8-byte prefix has at most a 32-bit generic collision bound and an ideal
+64-bit preimage bound; truncation does not remove the SHA-256 compression work.
 
 ## Script compatibility and standardness
 

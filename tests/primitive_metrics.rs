@@ -4699,6 +4699,127 @@ fn u32_uncompress_canonical_nonnegative_metrics_are_current() {
     ]);
 }
 
+#[test]
+fn output_prefix_metrics_are_current() {
+    let byte_witness = vec![vec![0x42]; 32];
+    let nibble_witness = vec![vec![1]; 64];
+    let ripemd_prefix = ripemd160::ripemd160_prefix(32, 8);
+    let sha1_prefix = sha1::sha1_prefix(32, 8);
+    let sha2_u32_prefix = sha256::sha2_u32::sha256_prefix(32, 8);
+    let sha2_u4_prefix = sha256::sha2_u4::sha256_prefix(32, 8);
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/hashes/ripemd160/README.md",
+            key: "ripemd160_prefix_32_8",
+            value: script_len(ripemd_prefix.clone()),
+        },
+        Metric {
+            readme: "src/hashes/ripemd160/README.md",
+            key: "ripemd160_prefix_32_8_witness",
+            value: witness_size(&byte_witness),
+        },
+        Metric {
+            readme: "src/hashes/ripemd160/README.md",
+            key: "ripemd160_prefix_32_8_stack",
+            value: max_stack_items(
+                script! {
+                    { ripemd_prefix.clone() }
+                    for _ in 0..8 { OP_DROP }
+                    OP_TRUE
+                },
+                byte_witness.clone(),
+            ),
+        },
+        Metric {
+            readme: "src/hashes/ripemd160/README.md",
+            key: "ripemd160_prefix_32_8_opcodes",
+            value: static_non_push_opcodes(ripemd_prefix),
+        },
+        Metric {
+            readme: "src/hashes/sha1/README.md",
+            key: "sha1_u32_prefix_32_8",
+            value: script_len(sha1_prefix.clone()),
+        },
+        Metric {
+            readme: "src/hashes/sha1/README.md",
+            key: "sha1_u32_prefix_32_8_witness",
+            value: witness_size(&byte_witness),
+        },
+        Metric {
+            readme: "src/hashes/sha1/README.md",
+            key: "sha1_u32_prefix_32_8_stack",
+            value: max_stack_items(
+                script! {
+                    { sha1_prefix.clone() }
+                    for _ in 0..8 { OP_DROP }
+                    OP_TRUE
+                },
+                byte_witness.clone(),
+            ),
+        },
+        Metric {
+            readme: "src/hashes/sha1/README.md",
+            key: "sha1_u32_prefix_32_8_opcodes",
+            value: static_non_push_opcodes(sha1_prefix),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u32_prefix_32_8",
+            value: script_len(sha2_u32_prefix.clone()),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u32_prefix_32_8_witness",
+            value: witness_size(&byte_witness),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u32_prefix_32_8_stack",
+            value: max_stack_items(
+                script! {
+                    { sha2_u32_prefix.clone() }
+                    for _ in 0..8 { OP_DROP }
+                    OP_TRUE
+                },
+                byte_witness.clone(),
+            ),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u32_prefix_32_8_opcodes",
+            value: static_non_push_opcodes(sha2_u32_prefix),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_prefix_32_8",
+            value: script_len(sha2_u4_prefix.clone()),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_prefix_32_8_witness",
+            value: witness_size(&nibble_witness),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_prefix_32_8_stack",
+            value: max_stack_items(
+                script! {
+                    { sha2_u4_prefix.clone() }
+                    for _ in 0..8 { OP_DROP }
+                    OP_TRUE
+                },
+                nibble_witness.clone(),
+            ),
+        },
+        Metric {
+            readme: "src/hashes/sha256/README.md",
+            key: "sha2_u4_prefix_32_8_opcodes",
+            value: static_non_push_opcodes(sha2_u4_prefix),
+        },
+    ]);
+}
+
 fn check_readme_metrics(metrics: Vec<Metric>) {
     let update = env::var_os("UPDATE_PRIMITIVE_METRICS").is_some();
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));

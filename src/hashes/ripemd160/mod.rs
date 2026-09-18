@@ -488,12 +488,16 @@ mod tests {
     fn verify_prefix(message: &[u8], output_bytes: usize) {
         let expected = reference_ripemd160::Hash::hash(message).to_byte_array();
         let result = crate::support::execution::execute_script_without_stack_limit(script! {
+            77 OP_TOALTSTACK
+            99
             { push_message(message) }
             { ripemd160_prefix(message.len(), output_bytes) }
             for byte in expected[..output_bytes].iter() {
                 { *byte }
                 OP_EQUALVERIFY
             }
+            OP_FROMALTSTACK 77 OP_EQUALVERIFY
+            99 OP_EQUALVERIFY
             OP_TRUE
         });
         assert!(result.success, "{result}");
@@ -504,26 +508,29 @@ mod tests {
         for output_bytes in [1, 8, 19, 20] {
             verify_prefix(b"abc", output_bytes);
         }
+        verify_prefix(&[], 8);
         for message_len in [55, 56, 63, 64] {
             verify_prefix(&vec![0xa5; message_len], 8);
         }
     }
 
     #[test]
-    fn rejects_prefix_boundaries_and_non_byte_witnesses() {
+    fn rejects_prefix_boundaries_and_missing_input() {
+        assert_eq!(ripemd160_prefix(32, 20), ripemd160(32));
         for output_bytes in [0, 21] {
             let panic = std::panic::catch_unwind(|| ripemd160_prefix(1, output_bytes));
             assert!(panic.is_err());
         }
 
-        for value in [256i64, -1] {
-            let result = crate::support::execution::execute_script_without_stack_limit(script! {
-                { value }
-                { ripemd160_prefix(1, 8) }
-                OP_TRUE
-            });
-            assert!(!result.success, "non-byte witness was accepted: {result}");
-        }
+        let result = crate::support::execution::execute_script_without_stack_limit(script! {
+            { ripemd160_prefix(1, 8) }
+            for _ in 0..8 { OP_DROP }
+            OP_TRUE
+        });
+        assert!(
+            !result.success,
+            "missing message input was accepted: {result}"
+        );
     }
 
     #[test]

@@ -344,12 +344,16 @@ mod tests {
     fn verify_prefix(message: &[u8], output_bytes: usize) {
         let expected = reference_sha1::Hash::hash(message).to_byte_array();
         let result = crate::support::execution::execute_script_without_stack_limit(script! {
+            77 OP_TOALTSTACK
+            99
             { push_message(message) }
             { sha1_prefix(message.len(), output_bytes) }
             for byte in expected[..output_bytes].iter() {
                 { *byte }
                 OP_EQUALVERIFY
             }
+            OP_FROMALTSTACK 77 OP_EQUALVERIFY
+            99 OP_EQUALVERIFY
             OP_TRUE
         });
 
@@ -396,9 +400,11 @@ mod tests {
 
     #[test]
     fn hashes_output_prefixes() {
+        assert_eq!(sha1_prefix(32, 20), sha1(32));
         for output_bytes in [1, 8, 19, 20] {
             verify_prefix(b"abc", output_bytes);
         }
+        verify_prefix(&[], 8);
         for message_len in [55, 56, 63, 64] {
             verify_prefix(&vec![0xa5; message_len], 8);
         }

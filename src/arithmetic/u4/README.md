@@ -105,6 +105,10 @@ each input with the same output-restoration boundary.
 | Fragment | Locking script | Maximum combined stack | Static non-push opcodes |
 | --- | ---: | ---: | ---: |
 | `u4_push_add_tables()` | <!-- metric:u4_add_tables -->92<!-- /metric:u4_add_tables --> bytes | instance-specific | not recorded |
+| Half lookup setup | <!-- metric:u4_half_lookup_push -->35<!-- /metric:u4_half_lookup_push --> bytes | 16 table items | not recorded |
+| Half lookup cleanup | <!-- metric:u4_half_lookup_drop -->8<!-- /metric:u4_half_lookup_drop --> bytes | consumes 16 items | not recorded |
+| Full lookup setup | <!-- metric:u4_full_lookup_push -->41<!-- /metric:u4_full_lookup_push --> bytes | 17 table items | not recorded |
+| Full lookup cleanup | <!-- metric:u4_full_lookup_drop -->9<!-- /metric:u4_full_lookup_drop --> bytes | consumes 17 items | not recorded |
 | Staggered bit-table setup | <!-- metric:u4_bits_table_push -->61<!-- /metric:u4_bits_table_push --> bytes | 61 table items | not recorded |
 | Staggered bit-table cleanup | <!-- metric:u4_bits_table_drop -->31<!-- /metric:u4_bits_table_drop --> bytes | consumes 61 items | not recorded |
 | One checked table query, output on altstack | <!-- metric:u4_bits_checked_query -->22<!-- /metric:u4_bits_checked_query --> bytes | composition-dependent | not recorded |

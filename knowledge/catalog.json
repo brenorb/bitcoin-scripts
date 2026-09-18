@@ -288,7 +288,8 @@
         "src/arithmetic/u4/popcount.rs",
         "primitive_metrics::u4_popcount_metrics_are_current",
         "primitive_metrics::u4_altstack_transport_metrics_are_current",
-        "primitive_metrics::u4_staged_word_verifier_metrics_are_current"
+        "primitive_metrics::u4_staged_word_verifier_metrics_are_current",
+        "primitive_metrics::u4_lookup_lifecycle_metrics_are_current"
       ],
       "references": [
         "bitcoin-script-locked",
@@ -302,7 +303,7 @@
         "tracked-stack"
       ],
       "security": "No independent cryptographic claim. Checked bit conversion, bit-plane transposition, and bit reversal enforce numeric nibble range before table indexing; the zero-mask projection performs canonical-nibble checks without a lookup table; unchecked conversion and other u4 operations require callers to supply certified canonical nibbles. Byte-unique ScriptNum encoding remains a protocol obligation where applicable.",
-      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The zero-mask projection consumes canonical nibbles and returns one numeric zero predicate per input without resident table memory. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table. The raw altstack transport helpers reverse each moved group in one direction, so a complete roundtrip preserves order and older main- and altstack state; callers own nibble-range and ScriptNum validation. The staged word verifier consumes eight main-stack and eight staged altstack items, compares raw encodings, and leaves no result; callers supply staging, canonicality, and the terminal predicate.",
+      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The zero-mask projection consumes canonical nibbles and returns one numeric zero predicate per input without resident table memory. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table. The raw altstack transport helpers reverse each moved group in one direction, so a complete roundtrip preserves order and older main- and altstack state; callers own nibble-range and ScriptNum validation. The staged word verifier consumes eight main-stack and eight staged altstack items, compares raw encodings, and leaves no result; callers supply staging, canonicality, and the terminal predicate. The half lookup uses 16 triangular offset items and the full lookup uses 17 linear offset items; callers own the lookup depth and matching cleanup, and cleanup does not identify or validate table contents.",
       "configurations": [
         {
           "id": "addition-memory",
@@ -341,6 +342,66 @@
             "u4_u32_verify_from_altstack_opcodes"
           ],
           "static_non_push_opcodes": 23
+        },
+        {
+          "id": "half-lookup-setup",
+          "label": "Triangular half lookup table setup",
+          "parameters": { "table_items": 16, "addressing": "sorted triangular offsets" },
+          "includes": "fragment-only: 16-item offset-table setup; excludes pairwise queries, cleanup, and unrelated live state",
+          "script_bytes": 35,
+          "witness_bytes": 0,
+          "witness_bytes_max": 0,
+          "max_stack_items": 16,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 35,
+          "per_use_script_bytes": null,
+          "metric_keys": ["u4_half_lookup_push"]
+        },
+        {
+          "id": "half-lookup-cleanup",
+          "label": "Triangular half lookup table cleanup",
+          "parameters": { "table_items": 16, "addressing": "matching destructive drop" },
+          "includes": "fragment-only: cleanup of an existing 16-item triangular offset table; excludes queries and unrelated live state",
+          "script_bytes": 8,
+          "witness_bytes": 0,
+          "witness_bytes_max": 0,
+          "max_stack_items": 16,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": null,
+          "metric_keys": ["u4_half_lookup_drop"]
+        },
+        {
+          "id": "full-lookup-setup",
+          "label": "Linear full lookup table setup",
+          "parameters": { "table_items": 17, "addressing": "linear offsets" },
+          "includes": "fragment-only: 17-item offset-table setup; excludes pairwise queries, cleanup, and unrelated live state",
+          "script_bytes": 41,
+          "witness_bytes": 0,
+          "witness_bytes_max": 0,
+          "max_stack_items": 17,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 41,
+          "per_use_script_bytes": null,
+          "metric_keys": ["u4_full_lookup_push"]
+        },
+        {
+          "id": "full-lookup-cleanup",
+          "label": "Linear full lookup table cleanup",
+          "parameters": { "table_items": 17, "addressing": "matching destructive drop" },
+          "includes": "fragment-only: cleanup of an existing 17-item linear offset table; excludes queries and unrelated live state",
+          "script_bytes": 9,
+          "witness_bytes": 0,
+          "witness_bytes_max": 0,
+          "max_stack_items": 17,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": null,
+          "metric_keys": ["u4_full_lookup_drop"]
         },
         {
           "id": "copy-u32-from",

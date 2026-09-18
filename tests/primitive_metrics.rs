@@ -4731,6 +4731,32 @@ fn u4_altstack_transport_metrics_are_current() {
 }
 
 #[test]
+fn u4_lookup_lifecycle_metrics_are_current() {
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_half_lookup_push",
+            value: script_len(u4::logic::u4_push_half_lookup()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_half_lookup_drop",
+            value: script_len(u4::logic::u4_drop_half_lookup()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_full_lookup_push",
+            value: script_len(u4::logic::u4_push_full_lookup()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_full_lookup_drop",
+            value: script_len(u4::logic::u4_drop_full_lookup()),
+        },
+    ]);
+}
+
+#[test]
 fn u4_staged_word_verifier_metrics_are_current() {
     let verifier = u4::stack::u4_u32_verify_from_altstack();
     let witness = vec![scriptnum(0x12); 16];

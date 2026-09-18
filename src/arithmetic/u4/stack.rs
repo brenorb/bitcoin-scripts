@@ -594,6 +594,21 @@ mod tests {
     }
 
     #[test]
+    fn copy_and_move_u32_reject_out_of_bounds_source_depth() {
+        for transfer in [u4_copy_u32_from(9), u4_move_u32_from(9)] {
+            let result = crate::support::execution::execute_script_with_inputs_strict(
+                script! { { transfer } },
+                vec![vec![1]; 16],
+            );
+            assert_eq!(
+                result.error,
+                Some(bitcoin_scriptexec::ExecError::InvalidStackOperation),
+                "out-of-bounds source depth changed: {result}"
+            );
+        }
+    }
+
+    #[test]
     fn word_transfer_stack_boundaries_are_strict() {
         for (transfer, success_items, success_output_items, failure_items) in [
             (u4_copy_u32_from(0), 992usize, 1000usize, 993usize),

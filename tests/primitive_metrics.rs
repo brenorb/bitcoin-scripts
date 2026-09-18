@@ -4664,6 +4664,73 @@ fn u4_word_transfer_metrics_are_current() {
 }
 
 #[test]
+fn u4_altstack_transport_metrics_are_current() {
+    let to_alt = u4::stack::u4_toaltstack(4);
+    let from_alt = u4::stack::u4_fromaltstack(4);
+    let witness = (0..4).map(scriptnum).collect::<Vec<_>>();
+    let to_alt_peak = max_stack_items_strict(
+        script! {
+            { to_alt.clone() }
+            OP_FROMALTSTACK OP_DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    let from_alt_peak = max_stack_items_strict(
+        script! {
+            { to_alt.clone() }
+            { from_alt.clone() }
+            for _ in 0..4 { OP_DROP }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_toaltstack4",
+            value: script_len(to_alt),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_toaltstack4_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_toaltstack4_stack",
+            value: to_alt_peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_toaltstack4_opcodes",
+            value: static_non_push_opcodes(u4::stack::u4_toaltstack(4)),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_fromaltstack4",
+            value: script_len(from_alt.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_fromaltstack4_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_fromaltstack4_stack",
+            value: from_alt_peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_fromaltstack4_opcodes",
+            value: static_non_push_opcodes(from_alt),
+        },
+    ]);
+}
+
+#[test]
 fn u32_uncompress_canonical_metrics_are_current() {
     let fragment = u32::stack::u32_uncompress_canonical();
     let witness = vec![scriptnum(i64::from(i32::MIN))];

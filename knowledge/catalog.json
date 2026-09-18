@@ -286,7 +286,8 @@
       "tests": [
         "src/arithmetic/u4",
         "src/arithmetic/u4/popcount.rs",
-        "primitive_metrics::u4_popcount_metrics_are_current"
+        "primitive_metrics::u4_popcount_metrics_are_current",
+        "primitive_metrics::u4_altstack_transport_metrics_are_current"
       ],
       "references": [
         "bitcoin-script-locked",
@@ -300,7 +301,7 @@
         "tracked-stack"
       ],
       "security": "No independent cryptographic claim. Checked bit conversion, bit-plane transposition, and bit reversal enforce numeric nibble range before table indexing; the zero-mask projection performs canonical-nibble checks without a lookup table; unchecked conversion and other u4 operations require callers to supply certified canonical nibbles. Byte-unique ScriptNum encoding remains a protocol obligation where applicable.",
-      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The zero-mask projection consumes canonical nibbles and returns one numeric zero predicate per input without resident table memory. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table.",
+      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The zero-mask projection consumes canonical nibbles and returns one numeric zero predicate per input without resident table memory. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table. The raw altstack transport helpers reverse each moved group in one direction, so a complete roundtrip preserves order and older main- and altstack state; callers own nibble-range and ScriptNum validation.",
       "configurations": [
         {
           "id": "addition-memory",
@@ -360,6 +361,48 @@
             "u4_move_u32_from_opcodes"
           ],
           "static_non_push_opcodes": 8
+        },
+        {
+          "id": "altstack-transport-4",
+          "label": "u4_toaltstack(4)",
+          "parameters": { "items": 4 },
+          "includes": "fragment-only: four raw main-stack items moved to the altstack; the moved group is reversed; excludes input pushes and terminal check; no nibble-range or canonical-encoding validation",
+          "script_bytes": 4,
+          "witness_bytes": 8,
+          "witness_bytes_max": 9,
+          "max_stack_items": 4,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 4,
+          "metric_keys": [
+            "u4_toaltstack4",
+            "u4_toaltstack4_witness",
+            "u4_toaltstack4_stack",
+            "u4_toaltstack4_opcodes"
+          ],
+          "static_non_push_opcodes": 4
+        },
+        {
+          "id": "altstack-transport-4-return",
+          "label": "u4_fromaltstack(4)",
+          "parameters": { "items": 4 },
+          "includes": "fragment-only: four raw altstack items moved to the main stack; the moved group is reversed; return-path metrics populate altstack with u4_toaltstack(4); excludes setup, input pushes, and terminal check; no nibble-range or canonical-encoding validation",
+          "script_bytes": 4,
+          "witness_bytes": 8,
+          "witness_bytes_max": 9,
+          "max_stack_items": 4,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 4,
+          "per_use_script_bytes": 4,
+          "metric_keys": [
+            "u4_fromaltstack4",
+            "u4_fromaltstack4_witness",
+            "u4_fromaltstack4_stack",
+            "u4_fromaltstack4_opcodes"
+          ],
+          "static_non_push_opcodes": 4
         },
         {
           "id": "nibble-to-bits-batch32-checked",

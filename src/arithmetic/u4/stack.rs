@@ -1,6 +1,10 @@
 use crate::support::script::*;
 use bitcoin::{opcodes::all::*, Opcode};
 
+/// Moves `n` raw main-stack items to the altstack.
+///
+/// The moved group is reversed on the altstack. The caller supplies any
+/// range and canonical-encoding invariants.
 pub fn u4_toaltstack(n: u32) -> Script {
     script! {
         for _ in 0..n {
@@ -9,6 +13,10 @@ pub fn u4_toaltstack(n: u32) -> Script {
     }
 }
 
+/// Moves `n` raw altstack items to the main stack.
+///
+/// The moved group is reversed on the main stack. The caller supplies any
+/// range and canonical-encoding invariants.
 pub fn u4_fromaltstack(n: u32) -> Script {
     script! {
         for _ in 0..n {
@@ -262,6 +270,7 @@ mod tests {
     use super::*;
     use super::{u4_hex_to_nibbles, u4_repeat_number};
     use crate::arithmetic::u4::stack::u4_number_to_nibble;
+    use crate::support::execution::execute_script_with_inputs_strict;
 
     #[test]
     fn test_repeat() {
@@ -300,6 +309,89 @@ mod tests {
             OP_TRUE
         };
         crate::support::execution::run(script);
+    }
+
+    #[test]
+    fn altstack_transport_documents_one_way_order_and_roundtrip() {
+        let to_alt = execute_script_with_inputs_strict(
+            script! {
+                42 OP_TOALTSTACK
+                1 2 3
+                { u4_toaltstack(3) }
+                OP_FROMALTSTACK 1 OP_EQUALVERIFY
+                OP_FROMALTSTACK 2 OP_EQUALVERIFY
+                OP_FROMALTSTACK 3 OP_EQUALVERIFY
+                OP_FROMALTSTACK 42 OP_EQUAL
+            },
+            vec![],
+        );
+        assert!(to_alt.success, "main-to-alt order changed: {to_alt}");
+
+        let from_alt = execute_script_with_inputs_strict(
+            script! {
+                42 OP_TOALTSTACK
+                3 OP_TOALTSTACK
+                2 OP_TOALTSTACK
+                1 OP_TOALTSTACK
+                { u4_fromaltstack(3) }
+                3 OP_EQUALVERIFY
+                2 OP_EQUALVERIFY
+                1 OP_EQUALVERIFY
+                OP_FROMALTSTACK 42 OP_EQUAL
+            },
+            vec![],
+        );
+        assert!(from_alt.success, "alt-to-main order changed: {from_alt}");
+
+        let roundtrip = execute_script_with_inputs_strict(
+            script! {
+                42 OP_TOALTSTACK
+                1 2 3
+                { u4_toaltstack(3) }
+                { u4_fromaltstack(3) }
+                3 OP_EQUALVERIFY
+                2 OP_EQUALVERIFY
+                1 OP_EQUALVERIFY
+                OP_FROMALTSTACK 42 OP_EQUAL
+            },
+            vec![],
+        );
+        assert!(roundtrip.success, "roundtrip changed order: {roundtrip}");
+    }
+
+    #[test]
+    fn altstack_transport_zero_is_a_noop() {
+        let result = execute_script_with_inputs_strict(
+            script! {
+                42 OP_TOALTSTACK
+                { u4_toaltstack(0) }
+                { u4_fromaltstack(0) }
+                OP_FROMALTSTACK 42 OP_EQUAL
+            },
+            vec![],
+        );
+        assert!(
+            result.success,
+            "zero-item transport changed state: {result}"
+        );
+    }
+
+    #[test]
+    fn altstack_transport_rejects_missing_items_in_both_directions() {
+        let to_alt = execute_script_with_inputs_strict(script! { { u4_toaltstack(1) } }, vec![]);
+        assert!(!to_alt.success);
+        assert!(matches!(
+            to_alt.error,
+            Some(bitcoin_scriptexec::ExecError::InvalidStackOperation)
+        ));
+
+        let from_alt =
+            execute_script_with_inputs_strict(script! { { u4_fromaltstack(1) } }, vec![]);
+        assert!(!from_alt.success);
+        assert!(matches!(
+            from_alt.error,
+            Some(bitcoin_scriptexec::ExecError::InvalidStackOperation)
+        ));
     }
 
     #[test]

@@ -27,12 +27,14 @@ requested width; 31 bits require 20 trits. Witness order is
 other trits as exactly `[01]` or `[02]`.
 
 The Script fragment explicitly rejects padded, negative-zero, and out-of-range
-trit encodings. It then reconstructs the committed value as
-`3*acc + trit` while draining the saved trits from the altstack.
+trit encodings. The integer adapter also rejects values outside the requested
+bit width before the final `3*acc + trit` step. It then reconstructs the
+committed value while draining the saved trits from the altstack.
 
 ## Evidence and representative cost
 
-Evidence is `locally-reproduced`: all three codewords, integer boundaries,
+Evidence is `locally-reproduced`: all three codewords, integer boundaries at
+every supported width, surrounding-stack preservation, ScriptNum overflow,
 wrong openings, non-canonical encodings, and out-of-range trits pass focused
 tests. The local tests use the strict tapscript-context executor; no Bitcoin
 Core consensus or relay-policy comparison has been performed, so deployment is
@@ -42,7 +44,7 @@ For a 32-byte preimage and a 31-bit value:
 
 | Fragment | Script bytes | Serialized witness | Witness items | Peak items |
 | --- | ---: | ---: | ---: | ---: |
-| `verify_ternary_hash_path_to_integer` | 924 | 63 | 21 | 24 |
+| `verify_ternary_hash_path_to_integer` | 947 | 63 | 21 | 24 |
 
 The benchmark reports zero auxiliary hint items. These are fragment-only
 measurements: the verifier and integer reconstruction are included, while

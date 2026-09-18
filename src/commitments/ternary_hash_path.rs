@@ -179,18 +179,34 @@ pub fn verify_ternary_hash_path(trit_count: usize, commitment: [u8; 20]) -> Scri
     }
 }
 
-/// Verify a ternary path and reconstruct its committed integer.
+/// Verify a ternary path and reconstruct its committed integer, rejecting
+/// values outside the requested bit width.
 pub fn verify_ternary_hash_path_to_integer(bit_width: usize, commitment: [u8; 20]) -> Script {
     assert_integer_width(bit_width);
     let trit_count = integer_trit_count(bit_width);
+    let maximum = (1u64 << bit_width) - 1;
+    let quotient = (maximum / 3) as u32;
+    let remainder = (maximum % 3) as u32;
     script! {
         { ternary_hash_path_script_inner(trit_count, true) }
         { commitment.to_vec() }
         OP_EQUALVERIFY
 
         0
-        for _ in 0..trit_count {
+        for step in 0..trit_count {
             OP_FROMALTSTACK
+            if step + 1 == trit_count {
+                // Before the final 3*acc + trit step, enforce acc*3+trit <= 2^width-1.
+                OP_SWAP
+                OP_DUP { quotient } OP_LESSTHANOREQUAL OP_VERIFY
+                OP_DUP { quotient } OP_EQUAL
+                OP_IF
+                    OP_SWAP
+                    OP_DUP { remainder } OP_LESSTHANOREQUAL OP_VERIFY
+                    OP_SWAP
+                OP_ENDIF
+                OP_SWAP
+            }
             OP_SWAP
             OP_DUP
             OP_DUP
@@ -243,6 +259,82 @@ mod tests {
             );
             assert!(result.success, "value={value}, width={width}: {result}");
         }
+    }
+
+    #[test]
+    fn enforces_integer_width_at_every_supported_width() {
+        let preimage = [0x42; 32];
+        for width in 1..=31 {
+            let trit_count = integer_trit_count(width);
+            let maximum = (1u64 << width) - 1;
+            for value in [maximum, 1u64 << width] {
+                let mut remaining = value;
+                let trits = (0..trit_count)
+                    .map(|_| {
+                        let trit = (remaining % 3) as u8;
+                        remaining /= 3;
+                        trit
+                    })
+                    .collect::<Vec<_>>();
+                let commitment = ternary_hash_path_commitment(&preimage, &trits);
+                let result = execute_script_with_inputs_strict(
+                    script! {
+                        { verify_ternary_hash_path_to_integer(width, commitment) }
+                        OP_DROP OP_TRUE
+                    },
+                    ternary_hash_path_witness(&preimage, &trits),
+                );
+                assert_eq!(
+                    result.success,
+                    value == maximum,
+                    "value={value}, width={width}: {result}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn preserves_surrounding_main_and_alt_stack_state() {
+        let width = 6;
+        let value = 17;
+        let preimage = [0x24; 32];
+        let commitment = ternary_hash_path_integer_commitment(&preimage, value, width);
+        let mut witness = vec![vec![0x7b]];
+        witness.extend(ternary_hash_path_integer_witness(&preimage, value, width));
+        let result = execute_script_with_inputs_strict(
+            script! {
+                0x2a OP_TOALTSTACK
+                { verify_ternary_hash_path_to_integer(width, commitment) }
+                { value } OP_EQUALVERIFY
+                OP_FROMALTSTACK 0x2a OP_EQUALVERIFY
+                0x7b OP_EQUAL
+            },
+            witness,
+        );
+        assert!(
+            result.success,
+            "surrounding stack state was not preserved: {result}"
+        );
+    }
+
+    #[test]
+    fn rejects_scriptnum_overflow_during_reconstruction() {
+        let width = 31;
+        let trit_count = integer_trit_count(width);
+        let trits = vec![2; trit_count];
+        let preimage = [0x33; 32];
+        let commitment = ternary_hash_path_commitment(&preimage, &trits);
+        let result = execute_script_with_inputs_strict(
+            script! {
+                { verify_ternary_hash_path_to_integer(width, commitment) }
+                OP_DROP OP_TRUE
+            },
+            ternary_hash_path_witness(&preimage, &trits),
+        );
+        assert!(
+            !result.success,
+            "overflowing reconstruction was accepted: {result}"
+        );
     }
 
     #[test]

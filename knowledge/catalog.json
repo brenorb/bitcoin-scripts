@@ -1514,6 +1514,9 @@
       "tests": [
         "commitments::ternary_hash_path::tests::verifies_all_ternary_codewords",
         "commitments::ternary_hash_path::tests::verifies_integer_boundaries_and_values",
+        "commitments::ternary_hash_path::tests::enforces_integer_width_at_every_supported_width",
+        "commitments::ternary_hash_path::tests::preserves_surrounding_main_and_alt_stack_state",
+        "commitments::ternary_hash_path::tests::rejects_scriptnum_overflow_during_reconstruction",
         "commitments::ternary_hash_path::tests::rejects_wrong_openings_and_noncanonical_trits",
         "commitments::ternary_hash_path::tests::rejects_out_of_range_generic_trits",
         "primitive_metrics::ternary_hash_path_metrics_are_current",
@@ -1540,14 +1543,14 @@
             "preimage_bytes": 32
           },
           "includes": "fragment-only: verifier and base-3 integer reconstruction; witness includes serialized trits and preimage",
-          "script_bytes": 924,
+          "script_bytes": 947,
           "witness_bytes": 63,
           "witness_bytes_max": 63,
           "max_stack_items": 24,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": 0,
-          "per_use_script_bytes": 924,
+          "per_use_script_bytes": 947,
           "metric_keys": [
             "ternary_hash_path_integer_31",
             "ternary_hash_path_integer_witness_31",
@@ -1557,7 +1560,7 @@
       ],
       "limitations": [
         "Non-standard mixed-hash construction without dedicated cryptanalysis",
-        "Integer reconstruction limited to 31 bits and 20 trits at that width",
+        "Integer reconstruction limited to 31 bits and 20 trits at that width; out-of-range values are rejected",
         "Dominated by the measured four-way path for ordinary 31-bit integer bytes and stack usage",
         "All trits coexist at script entry; surrounding protocol state must be charged against the 1,000-item stack limit",
         "Bitcoin Core consensus and policy validation not performed"

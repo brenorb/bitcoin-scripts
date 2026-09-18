@@ -68,7 +68,8 @@ from small enumerable spaces.
   and `2 -> RS`, leaving `RR` unused. Non-canonical and out-of-range trit
   encodings are rejected explicitly.
 - The integer verifier hashes least-significant trits first, then reconstructs
-  the base-3 value. There is no default variant.
+  the base-3 value and rejects values outside the requested bit width. There is
+  no default variant.
 
 ## Rolling composition without byte concatenation
 
@@ -147,7 +148,7 @@ the tests with the listed witness.
 | --- | ---: | ---: | ---: |
 | `verify_hash_path_to_integer(31, commitment)` | <!-- metric:hash_path_integer_31 -->520<!-- /metric:hash_path_integer_31 --> bytes | <!-- metric:hash_path_integer_witness_31 -->78<!-- /metric:hash_path_integer_witness_31 --> bytes (32-byte nonce, 31 bits) | <!-- metric:hash_path_integer_stack_31 -->34<!-- /metric:hash_path_integer_stack_31 --> |
 | `verify_four_way_hash_path_to_integer(31, commitment)` | <!-- metric:four_way_hash_path_integer_31 -->438<!-- /metric:four_way_hash_path_integer_31 --> bytes | <!-- metric:four_way_hash_path_integer_witness_31 -->61<!-- /metric:four_way_hash_path_integer_witness_31 --> bytes (32-byte nonce, 16 digits) | <!-- metric:four_way_hash_path_integer_stack_31 -->19<!-- /metric:four_way_hash_path_integer_stack_31 --> |
-| `verify_ternary_hash_path_to_integer(31, commitment)` | <!-- metric:ternary_hash_path_integer_31 -->924<!-- /metric:ternary_hash_path_integer_31 --> bytes | <!-- metric:ternary_hash_path_integer_witness_31 -->63<!-- /metric:ternary_hash_path_integer_witness_31 --> bytes (32-byte nonce, 20 trits) | <!-- metric:ternary_hash_path_integer_stack_31 -->24<!-- /metric:ternary_hash_path_integer_stack_31 --> |
+| `verify_ternary_hash_path_to_integer(31, commitment)` | <!-- metric:ternary_hash_path_integer_31 -->947<!-- /metric:ternary_hash_path_integer_31 --> bytes | <!-- metric:ternary_hash_path_integer_witness_31 -->63<!-- /metric:ternary_hash_path_integer_witness_31 --> bytes (32-byte nonce, 20 trits) | <!-- metric:ternary_hash_path_integer_stack_31 -->24<!-- /metric:ternary_hash_path_integer_stack_31 --> |
 | `verify_preimage_length(commitment)` | <!-- metric:preimage_length_default -->44<!-- /metric:preimage_length_default --> bytes | <!-- metric:preimage_length_witness_min -->18<!-- /metric:preimage_length_witness_min -->–<!-- metric:preimage_length_witness_max -->524<!-- /metric:preimage_length_witness_max --> bytes (16–520-byte preimage) | <!-- metric:preimage_length_stack -->3<!-- /metric:preimage_length_stack --> |
 
 The benchmark executes the representative witness under the strict local

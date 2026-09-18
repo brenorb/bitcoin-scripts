@@ -57,6 +57,11 @@ pub fn verify_n(n: u32) -> Script {
     }
 }
 
+/// Verifies eight staged altstack items against eight main-stack items.
+///
+/// The staged word must have been transferred with `u4_toaltstack(8)` and is
+/// compared by raw byte encoding. This consumes both words on success and
+/// performs no nibble-range or canonical-encoding validation.
 pub fn u4_u32_verify_from_altstack() -> Script {
     script! {
         for _ in 0..8 {
@@ -390,6 +395,112 @@ mod tests {
         assert!(!from_alt.success);
         assert!(matches!(
             from_alt.error,
+            Some(bitcoin_scriptexec::ExecError::InvalidStackOperation)
+        ));
+    }
+
+    #[test]
+    fn altstack_word_verifier_accepts_matching_words_and_preserves_sentinels() {
+        let result = execute_script_with_inputs_strict(
+            script! {
+                99 OP_TOALTSTACK
+                77
+                { u4_number_to_nibble(0x1234_5678) }
+                { u4_number_to_nibble(0x1234_5678) }
+                { u4_toaltstack(8) }
+                { u4_u32_verify_from_altstack() }
+                77 OP_EQUALVERIFY
+                OP_FROMALTSTACK 99 OP_EQUAL
+            },
+            vec![],
+        );
+        assert!(result.success, "matching staged word failed: {result}");
+    }
+
+    #[test]
+    fn altstack_word_verifier_rejects_a_mismatch_at_each_position() {
+        for staged in [
+            0x9234_5678,
+            0x1934_5678,
+            0x12a4_5678,
+            0x123b_5678,
+            0x1234_c678,
+            0x1234_5d78,
+            0x1234_56e8,
+            0x1234_567f,
+        ] {
+            let result = execute_script_with_inputs_strict(
+                script! {
+                    { u4_number_to_nibble(0x1234_5678) }
+                    { u4_number_to_nibble(staged) }
+                    { u4_toaltstack(8) }
+                    { u4_u32_verify_from_altstack() }
+                    OP_TRUE
+                },
+                vec![],
+            );
+            assert!(!result.success, "accepted mismatching word {staged:#x}");
+        }
+    }
+
+    #[test]
+    fn altstack_word_verifier_compares_raw_encodings() {
+        let mut main_word = vec![vec![0x01]; 8];
+        let mut staged_word = main_word.clone();
+        staged_word[0] = vec![0x01, 0x00];
+        let mut witness = main_word.clone();
+        witness.extend(staged_word.clone());
+        let mismatch = execute_script_with_inputs_strict(
+            script! {
+                { u4_toaltstack(8) }
+                { u4_u32_verify_from_altstack() }
+                OP_TRUE
+            },
+            witness,
+        );
+        assert!(!mismatch.success, "accepted a noncanonical byte alias");
+
+        staged_word[0] = vec![0x01, 0x00];
+        main_word[0] = staged_word[0].clone();
+        let mut matching_witness = main_word;
+        matching_witness.extend(staged_word);
+        let matching = execute_script_with_inputs_strict(
+            script! {
+                { u4_toaltstack(8) }
+                { u4_u32_verify_from_altstack() }
+                OP_TRUE
+            },
+            matching_witness,
+        );
+        assert!(matching.success, "identical raw encodings did not match");
+    }
+
+    #[test]
+    fn altstack_word_verifier_rejects_missing_main_or_alt_items() {
+        let missing_alt = execute_script_with_inputs_strict(
+            script! {
+                { u4_number_to_nibble(0x1234_5678) }
+                { u4_u32_verify_from_altstack() }
+            },
+            vec![],
+        );
+        assert!(!missing_alt.success);
+        assert!(matches!(
+            missing_alt.error,
+            Some(bitcoin_scriptexec::ExecError::InvalidStackOperation)
+        ));
+
+        let missing_main = execute_script_with_inputs_strict(
+            script! {
+                { u4_number_to_nibble(0x1234_5678) }
+                { u4_toaltstack(8) }
+                { u4_u32_verify_from_altstack() }
+            },
+            vec![],
+        );
+        assert!(!missing_main.success);
+        assert!(matches!(
+            missing_main.error,
             Some(bitcoin_scriptexec::ExecError::InvalidStackOperation)
         ));
     }

@@ -88,6 +88,10 @@ these operations, but this module contains no hash-specific round logic.
   reverses the moved group; `stack::u4_fromaltstack(n)` does the same in the
   other direction. A complete roundtrip preserves order, and `n=0` is a
   no-op. Neither helper validates nibble range or ScriptNum encoding.
+- `stack::u4_u32_verify_from_altstack()` consumes eight raw main-stack items
+  and eight staged altstack items, comparing their byte encodings. It leaves
+  no result; callers must supply a terminal predicate and stage the second
+  word with `u4_toaltstack(8)`.
 
 ## Script metrics
 
@@ -133,6 +137,14 @@ boundary.
 | --- | ---: | ---: | ---: | ---: |
 | `u4_toaltstack(4)` | <!-- metric:u4_toaltstack4 -->4<!-- /metric:u4_toaltstack4 --> bytes | <!-- metric:u4_toaltstack4_witness -->8<!-- /metric:u4_toaltstack4_witness --> bytes, 4 data items, 0 hints (9-byte maximum) | <!-- metric:u4_toaltstack4_stack -->4<!-- /metric:u4_toaltstack4_stack --> items | <!-- metric:u4_toaltstack4_opcodes -->4<!-- /metric:u4_toaltstack4_opcodes --> |
 | `u4_fromaltstack(4)` | <!-- metric:u4_fromaltstack4 -->4<!-- /metric:u4_fromaltstack4 --> bytes | <!-- metric:u4_fromaltstack4_witness -->8<!-- /metric:u4_fromaltstack4_witness --> bytes, 4 data items, 0 hints (9-byte maximum) | <!-- metric:u4_fromaltstack4_stack -->4<!-- /metric:u4_fromaltstack4_stack --> items | <!-- metric:u4_fromaltstack4_opcodes -->4<!-- /metric:u4_fromaltstack4_opcodes --> |
+
+The staged verifier row excludes the eight-item staging fragment and terminal
+predicate from its script size. Its runtime fixture contains both eight-item
+words as data, with no hint items.
+
+| Fragment | Locking script | Serialized witness | Combined peak | Static non-push opcodes |
+| --- | ---: | ---: | ---: | ---: |
+| `u4_u32_verify_from_altstack()` | <!-- metric:u4_u32_verify_from_altstack -->29<!-- /metric:u4_u32_verify_from_altstack --> bytes | <!-- metric:u4_u32_verify_from_altstack_witness -->33<!-- /metric:u4_u32_verify_from_altstack_witness --> bytes, 16 data items, 0 hints (33-byte maximum) | <!-- metric:u4_u32_verify_from_altstack_stack -->17<!-- /metric:u4_u32_verify_from_altstack_stack --> items | <!-- metric:u4_u32_verify_from_altstack_opcodes -->23<!-- /metric:u4_u32_verify_from_altstack_opcodes --> |
 | Checked high/high-middle/low-middle/low nibble quad to u16 | <!-- metric:u4_quad_to_u16_checked -->76<!-- /metric:u4_quad_to_u16_checked --> bytes | <!-- metric:u4_quad_to_u16_checked_stack -->7<!-- /metric:u4_quad_to_u16_checked_stack --> items | not recorded |
 | Checked byte to high/low nibble pair | <!-- metric:u8_to_u4_pair_checked -->62<!-- /metric:u8_to_u4_pair_checked --> bytes | <!-- metric:u8_to_u4_pair_checked_stack -->4<!-- /metric:u8_to_u4_pair_checked_stack --> items | not recorded |
 | `verify_canonical_nibble()` | <!-- metric:u4_canonical_nibble -->10<!-- /metric:u4_canonical_nibble --> bytes | <!-- metric:u4_canonical_nibble_stack -->4<!-- /metric:u4_canonical_nibble_stack --> items | not recorded |

@@ -287,7 +287,8 @@
         "src/arithmetic/u4",
         "src/arithmetic/u4/popcount.rs",
         "primitive_metrics::u4_popcount_metrics_are_current",
-        "primitive_metrics::u4_altstack_transport_metrics_are_current"
+        "primitive_metrics::u4_altstack_transport_metrics_are_current",
+        "primitive_metrics::u4_staged_word_verifier_metrics_are_current"
       ],
       "references": [
         "bitcoin-script-locked",
@@ -301,7 +302,7 @@
         "tracked-stack"
       ],
       "security": "No independent cryptographic claim. Checked bit conversion, bit-plane transposition, and bit reversal enforce numeric nibble range before table indexing; the zero-mask projection performs canonical-nibble checks without a lookup table; unchecked conversion and other u4 operations require callers to supply certified canonical nibbles. Byte-unique ScriptNum encoding remains a protocol obligation where applicable.",
-      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The zero-mask projection consumes canonical nibbles and returns one numeric zero predicate per input without resident table memory. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table. The raw altstack transport helpers reverse each moved group in one direction, so a complete roundtrip preserves order and older main- and altstack state; callers own nibble-range and ScriptNum validation.",
+      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The zero-mask projection consumes canonical nibbles and returns one numeric zero predicate per input without resident table memory. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table. The raw altstack transport helpers reverse each moved group in one direction, so a complete roundtrip preserves order and older main- and altstack state; callers own nibble-range and ScriptNum validation. The staged word verifier consumes eight main-stack and eight staged altstack items, compares raw encodings, and leaves no result; callers supply staging, canonicality, and the terminal predicate.",
       "configurations": [
         {
           "id": "addition-memory",
@@ -319,6 +320,27 @@
           "metric_keys": [
             "u4_add_tables"
           ]
+        },
+        {
+          "id": "verify-u32-from-altstack",
+          "label": "u4_u32_verify_from_altstack()",
+          "parameters": { "items": 8 },
+          "includes": "fragment-only: staged eight-nibble raw-encoding verification; excludes eight-item staging, both word pushes, and terminal predicate; no nibble-range or canonical-encoding validation",
+          "script_bytes": 29,
+          "witness_bytes": 33,
+          "witness_bytes_max": 33,
+          "max_stack_items": 17,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 8,
+          "per_use_script_bytes": 29,
+          "metric_keys": [
+            "u4_u32_verify_from_altstack",
+            "u4_u32_verify_from_altstack_witness",
+            "u4_u32_verify_from_altstack_stack",
+            "u4_u32_verify_from_altstack_opcodes"
+          ],
+          "static_non_push_opcodes": 23
         },
         {
           "id": "copy-u32-from",

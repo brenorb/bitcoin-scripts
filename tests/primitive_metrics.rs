@@ -4731,6 +4731,43 @@ fn u4_altstack_transport_metrics_are_current() {
 }
 
 #[test]
+fn u4_staged_word_verifier_metrics_are_current() {
+    let verifier = u4::stack::u4_u32_verify_from_altstack();
+    let witness = vec![scriptnum(0x12); 16];
+    let peak = max_stack_items_strict(
+        script! {
+            { u4::stack::u4_toaltstack(8) }
+            { verifier.clone() }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_u32_verify_from_altstack",
+            value: script_len(verifier.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_u32_verify_from_altstack_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_u32_verify_from_altstack_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_u32_verify_from_altstack_opcodes",
+            value: static_non_push_opcodes(verifier),
+        },
+    ]);
+}
+
+#[test]
 fn u32_uncompress_canonical_metrics_are_current() {
     let fragment = u32::stack::u32_uncompress_canonical();
     let witness = vec![scriptnum(i64::from(i32::MIN))];

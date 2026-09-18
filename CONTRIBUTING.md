@@ -13,8 +13,9 @@ Enable the repository pre-commit checks once per clone:
 git config core.hooksPath .githooks
 ```
 
-The hook validates the knowledge base on every commit and checks metric
-snapshots when staged source, README, or metric files could affect them.
+The hook checks Rust formatting and validates the knowledge base on every
+commit. It also checks metric snapshots when staged source, README, or metric
+files could affect them.
 
 ## Minimum research contribution
 

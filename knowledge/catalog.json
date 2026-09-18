@@ -45,14 +45,14 @@
             "complete_input_items": 16
           },
           "includes": "fragment-with-memory: numeric nibble checks, packed lookup setup, four M-hat blocks, output ordering, and table cleanup; excludes input pushes, output consumption, tapleaf/control-block bytes, transaction framing, and unrelated live state",
-          "script_bytes": 1565,
+          "script_bytes": 1595,
           "witness_bytes": 32,
           "witness_bytes_max": 33,
           "max_stack_items": 633,
           "executed_opcodes": null,
           "validation_weight": 0,
           "setup_script_bytes": null,
-          "per_use_script_bytes": 1565,
+          "per_use_script_bytes": 1595,
           "metric_keys": [
             "prince_m_layer",
             "prince_m_layer_witness",

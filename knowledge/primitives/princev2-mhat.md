@@ -29,7 +29,7 @@ auxiliary hints; all data items coexist at entry.
 
 | Configuration | Script bytes | Witness bytes | Hints | Peak items | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Zero-key packed layout, state `0x0123456789abcdef` | 1,565 | 32 (33 max) | 0 | 633 | 827 |
+| Zero-key packed layout, state `0x0123456789abcdef` | 1,595 | 32 (33 max) | 0 | 633 | 857 |
 
 The local executor reported no useful dynamic opcode count for this run, so
 static non-push operations are reported separately. The measured validation
@@ -70,4 +70,3 @@ cargo run --locked --release --example prince_m_layer_benchmark
   `ScriptCompilation::compile_with_policy()`.
 - Execution: the locked `bitcoin-scriptexec` revision in tapscript mode with
   the combined stack limit enabled.
-

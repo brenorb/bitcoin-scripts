@@ -1743,10 +1743,6 @@ pub fn prince_m_layer() -> Script {
             0 OP_LESSTHAN OP_NOT OP_VERIFY
             OP_DUP
             16 OP_LESSTHAN OP_VERIFY
-            OP_TOALTSTACK
-        }
-        for _ in 0..16 {
-            OP_FROMALTSTACK
         }
         { optimized::m_layer_engine() }
     }
@@ -1772,7 +1768,9 @@ pub fn u64_to_nibbles_msb(v: u64) -> [u8; 16] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::support::execution::{execute_script, execute_script_with_inputs_strict};
+    use crate::support::execution::{
+        execute_raw_script_with_inputs_strict, execute_script, execute_script_with_inputs_strict,
+    };
     use crate::support::script::{script, ScriptCompilation};
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha20Rng;
@@ -1995,14 +1993,16 @@ mod tests {
         for state in [0, u64::MAX, 0x0123_4567_89ab_cdef] {
             let expected = m_layer(state);
             let expected_nibbles = u64_to_nibbles_msb(expected);
+            let mut witness = vec![vec![0x7b]];
+            witness.extend(m_layer_witness(state));
             let leaf = script! {
                 { fragment.clone() }
                 for nibble in expected_nibbles {
                     { nibble as u32 } OP_EQUALVERIFY
                 }
-                OP_TRUE
+                0x7b OP_EQUAL
             };
-            let result = execute_script_with_inputs_strict(leaf, m_layer_witness(state));
+            let result = execute_script_with_inputs_strict(leaf, witness);
             assert!(result.success, "state={state:016x}: {result}");
             assert!(result.stats.max_nb_stack_items <= 1_000);
         }
@@ -2011,24 +2011,29 @@ mod tests {
     #[test]
     fn test_optimized_m_layer_rejects_invalid_nibbles_and_short_input() {
         let fragment = prince_m_layer();
-        let too_large = {
-            let mut witness = m_layer_witness(0);
-            witness[15] = vec![16];
-            witness
+        let rejection_leaf = script! {
+            { fragment.clone() }
+            for _ in 0..8 { OP_2DROP }
+            OP_TRUE
         };
-        let negative = {
-            let mut witness = m_layer_witness(0);
-            witness[15] = vec![0x81];
-            witness
-        };
-        for witness in [too_large, negative] {
-            let result = execute_script_with_inputs_strict(fragment.clone(), witness);
-            assert!(!result.success, "invalid nibble was accepted: {result}");
+        let rejection_bytes = rejection_leaf.compile_with_policy().to_bytes();
+        for invalid in [vec![16], vec![0x81]] {
+            for position in 0..16 {
+                let mut witness = m_layer_witness(0);
+                witness[position] = invalid.clone();
+                let result =
+                    execute_raw_script_with_inputs_strict(rejection_bytes.clone(), witness);
+                assert!(
+                    !result.success,
+                    "invalid nibble at position {position} was accepted: {result}"
+                );
+            }
         }
 
         let mut short = m_layer_witness(0);
         short.pop();
-        let result = execute_script_with_inputs_strict(fragment, short);
+        let short_bytes = fragment.compile_with_policy().to_bytes();
+        let result = execute_raw_script_with_inputs_strict(short_bytes, short);
         assert!(!result.success, "short state was accepted: {result}");
     }
 

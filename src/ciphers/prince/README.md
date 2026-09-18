@@ -22,7 +22,7 @@ including item count/lengths; it excludes the tapleaf and control block.
 | Fragment | Script size |
 | --- | ---: |
 | `prince_encrypt(0)` | <!-- metric:prince_encrypt -->6136<!-- /metric:prince_encrypt --> bytes |
-| Standalone `prince_m_layer()` | <!-- metric:prince_m_layer -->1565<!-- /metric:prince_m_layer --> bytes |
+| Standalone `prince_m_layer()` | <!-- metric:prince_m_layer -->1595<!-- /metric:prince_m_layer --> bytes |
 | Plaintext witness, all-zero block | <!-- metric:prince_witness_min -->17<!-- /metric:prince_witness_min --> bytes |
 | Plaintext witness, no zero nibbles | <!-- metric:prince_witness_max -->33<!-- /metric:prince_witness_max --> bytes |
 | Maximum combined main/alt-stack depth | <!-- metric:prince_stack -->633<!-- /metric:prince_stack --> items |
@@ -35,7 +35,7 @@ transaction framing. Its representative witness has 16 nibble data items,
 32 serialized bytes, and zero auxiliary hints; the strict combined peak is
 <!-- metric:prince_m_layer_stack -->633<!-- /metric:prince_m_layer_stack --> items
 and the fragment has
-<!-- metric:prince_m_layer_static_opcodes -->827<!-- /metric:prince_m_layer_static_opcodes --> static non-push operations.
+<!-- metric:prince_m_layer_static_opcodes -->857<!-- /metric:prince_m_layer_static_opcodes --> static non-push operations.
 The local executor does not expose a useful dynamic opcode count for this
 fragment, so the static count is reported separately. The fragment is below
 the OP-019 5,000-byte target, but it is a reusable linear layer rather than a

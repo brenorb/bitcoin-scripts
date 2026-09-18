@@ -8,8 +8,9 @@ u32 operations.
 - **Evidence:** differentially validated with standard reference digests and
   internal round tests.
 - **Representative result:** a 32-byte hashing fragment is 240,223 bytes.
- - **Representative continuation:** a 64-byte prefix plus a 16-byte suffix uses
-   the midstate continuation fragment documented below.
+- **Representative continuation:** a 64-byte prefix plus a 16-byte suffix uses
+  a 240,152-byte midstate continuation fragment with a 406-item strict
+  combined stack peak.
 - **Security:** the 160-bit output gives at most 80-bit generic collision
   resistance.
 - **Stack contract:** consumes byte items and returns 20 digest byte items. The

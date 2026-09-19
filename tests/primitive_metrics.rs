@@ -15,10 +15,9 @@ use bitcoin_lab::{
     commitments::{
         four_way_hash_path_integer_commitment, four_way_hash_path_integer_witness,
         hash_path_commitment as compute_hash_path_commitment, hash_path_integer_commitment,
-        hash_path_integer_witness, preimage_length_commitment,
-        tapbranch_hash_u4, tapbranch_hash_u4_witness,
-        verify_four_way_hash_path_to_integer, verify_hash_path_chain, verify_hash_path_to_integer,
-        verify_preimage_length,
+        hash_path_integer_witness, preimage_length_commitment, tapbranch_hash_u4,
+        tapbranch_hash_u4_witness, verify_four_way_hash_path_to_integer, verify_hash_path_chain,
+        verify_hash_path_to_integer, verify_preimage_length,
     },
     curves::bn254::groups::{g1::G1Affine, g2::G2Affine},
     fields::{

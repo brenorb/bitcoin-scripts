@@ -31,30 +31,54 @@ framing.
 | Construction | Locking script | Representative witness | Maximum witness | Data items | Hint items | Peak items | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Embedded mask `0x89abcdef` | 776 | 13 bytes | 13 bytes | 4 | 0 | 272 | 548 |
-| Generic `u32_or` with runtime mask | 690 including table setup/cleanup | 21 bytes | 21 bytes | 8 | 0 | table-dependent | not measured here |
+| Generic `u32_or` with runtime mask | not measured at this boundary | 25-byte maximum | 25 bytes | 8 | 0 | table-dependent | not measured here |
 
 The embedded form removes four witness data items and saves the second word's
-serialized witness bytes, but retains the 256-item table and costs a larger
-per-use fragment than the raw operation. It is useful only when the mask is
-public, fixed at script-generation time, and witness width or item count is
-more important than locking-script bytes. Table sharing can make the generic
-composition preferable for multiple operations.
+serialized witness bytes, while retaining the 256-item table. It is useful
+when the mask is public, fixed at script-generation time, and witness width or
+item count is important. Table sharing can make the generic composition
+preferable for multiple operations.
 
 ## Evidence and execution class
 
-The implementation and metric boundary are currently `inspected`; the
-repository CI metric fixture is the executable reproduction gate. Deployment
-is `unclassified`. The fixture uses mask `0x89abcdef` and four canonical
-`0xff` data limbs. Correctness tests cover zero, all-zero/all-one masks,
-boundary masks, malformed and non-minimal limbs at every position, canonical
-128 and 255 limbs at every position, and surrounding main- and alt-stack state.
+The implementation and metric boundary are `locally-reproduced`; deployment
+is `unclassified`. The metric fixture uses mask `0x89abcdef` and four
+canonical `0xff` data limbs. Runtime result cases cover zero, all-zero/all-one
+masks, boundary masks, and 100 seeded word/mask pairs. Malformed-input and
+stack-preservation cases are described below.
 
-The strict metric fixture is intended to execute through the repository's
-locked `bitcoin-scriptexec` dependency in a tapscript context with the
-combined main-plus-alt-stack limit. The 548 figure is a static non-push
-opcode count, not a dynamic execution or validation-weight claim. No Bitcoin
-Core differential, complete-transaction, relay-policy, or cryptographic
-claim is made.
+Result cases use complete leaves that compare the OR output with the expected
+word and the shared `run_with_witness` strict helper. The malformed-input
+regression uses a leaf that consumes all four outputs and ends in `OP_TRUE`,
+executed with the explicit tapscript consensus profile (`require_minimal =
+false`, combined main-plus-alt-stack limit enabled). It checks that negative,
+out-of-range, negative-zero, non-minimal, and five-byte overflow limbs fail
+with the expected interpreter errors at every original limb. A faithful
+mutant of the historical no-rotation validator passes the same successful
+control and accepts non-minimal aliases in positions 0–2 while rejecting
+position 3.
+
+The reproduction uses `rust-bitcoin-script`
+[`124b561ed75ac3ec4c6ad99207d8dcdd3bc67180`](https://github.com/BitVM/rust-bitcoin-script/tree/124b561ed75ac3ec4c6ad99207d8dcdd3bc67180)
+and `bitcoin-scriptexec`
+[`a09e87af444034698697f0a2267e755cf72f9aed`](https://github.com/adrienlacombe/rust-bitcoin-scriptexec/tree/a09e87af444034698697f0a2267e755cf72f9aed).
+The earlier review's reproduction request is recorded in
+[Robin's comment](https://github.com/solving-bitcoin/bitcoin-scripts/pull/146#issuecomment-5725176079),
+and the follow-up asks to keep checks on all four original limbs in
+[the latest comment](https://github.com/solving-bitcoin/bitcoin-scripts/pull/146#issuecomment-5835974652).
+The historical validator source at PR commit
+[`c00ce1a`](https://github.com/solving-bitcoin/bitcoin-scripts/commit/c00ce1a)
+and reviewed commit
+[`2ee1cfc7f7211054b8b970d0e109f4fe6cbd36c6`](https://github.com/solving-bitcoin/bitcoin-scripts/commit/2ee1cfc7f7211054b8b970d0e109f4fe6cbd36c6)
+use the historical lockfile pin to interpreter
+[`702544c9a045ac4fc14846da6da6559e2b7cd9d1`](https://github.com/adrienlacombe/rust-bitcoin-scriptexec/tree/702544c9a045ac4fc14846da6da6559e2b7cd9d1).
+The historical source and lockfile were inspected; the original commit was
+not re-executed under that historical interpreter. Its faithful no-rotation
+mutant was exercised as a regression control under the current local profile.
+These are local interpreter results, not Bitcoin Core differential,
+complete-transaction, relay-policy, or cryptographic claims. The 548 figure is
+a static non-push opcode count, not a dynamic execution or validation-weight
+claim.
 
 ## Parameters and witness
 

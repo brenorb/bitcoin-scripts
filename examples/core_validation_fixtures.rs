@@ -266,6 +266,155 @@ fn fixture(
     })
 }
 
+fn replace_fixture_taproot_context(
+    row: &mut Value,
+    script: &ScriptBuf,
+    witness: &[Vec<u8>],
+    control: &[u8],
+    output_script: &ScriptBuf,
+) {
+    let mut complete_witness = witness.to_vec();
+    complete_witness.push(script.to_bytes());
+    complete_witness.push(control.to_vec());
+    row["script_hex"] = json!(script.as_bytes().to_lower_hex_string());
+    row["script_sha256"] = json!(sha256::Hash::hash(script.as_bytes()).to_string());
+    row["control_block_hex"] = json!(control.to_lower_hex_string());
+    row["script_pubkey_hex"] = json!(output_script.as_bytes().to_lower_hex_string());
+    row["tapleaf_hash"] =
+        json!(TapLeafHash::from_script(script, LeafVersion::TapScript).to_string());
+    row["local"] = local_execution(script, witness);
+    row["local_profiles"] = json!({
+        "consensus": local_profile(script, witness, TapscriptProfile::Consensus),
+        "policy": local_profile(script, witness, TapscriptProfile::Policy),
+    });
+    row["local_commitment"] = local_commitment(output_script, &complete_witness);
+    row["metrics"]["locking_script_bytes"] = json!(script.len());
+    row["metrics"]["taproot_witness_bytes"] =
+        json!(serialize(&Witness::from_slice(&complete_witness)).len());
+    row["metrics"]["static_non_push_opcodes"] = json!(0);
+}
+
+fn depth_one_commitment_fixtures() -> Vec<Value> {
+    let secp = Secp256k1::new();
+    let internal_key = Keypair::from_secret_key(
+        &secp,
+        &SecretKey::from_slice(&[0x01; 32]).expect("fixed test key"),
+    )
+    .x_only_public_key()
+    .0;
+    let script = ScriptBuf::from_bytes(vec![0x51]); // OP_TRUE
+    let sibling = ScriptBuf::from_bytes(vec![0x00]); // OP_FALSE
+    let spend_info = TaprootBuilder::new()
+        .add_leaf(1, script.clone())
+        .expect("depth-one target leaf")
+        .add_leaf(1, sibling)
+        .expect("depth-one sibling leaf")
+        .finalize(&secp, internal_key)
+        .expect("complete depth-one tree");
+    let control = spend_info
+        .control_block(&(script.clone(), LeafVersion::TapScript))
+        .expect("depth-one control block")
+        .serialize();
+    let output_script = ScriptBuf::new_p2tr_tweaked(spend_info.output_key());
+    let witness = Vec::<Vec<u8>>::new();
+
+    let mut valid = fixture(
+        "taproot-depth-one-valid",
+        "A depth-one OP_TRUE leaf with one TapBranch sibling and a valid 65-byte control block.",
+        script.clone(),
+        witness.clone(),
+        RAW_BOUNDARY,
+        expectations(None, None),
+    );
+    replace_fixture_taproot_context(&mut valid, &script, &witness, &control, &output_script);
+
+    let mut rows = vec![valid.clone()];
+    let mut mutation = |name: &str,
+                        description: &str,
+                        revealed_script: ScriptBuf,
+                        mutated_control: Vec<u8>,
+                        rejection: &str| {
+        let mut row = valid.clone();
+        row["name"] = json!(name);
+        row["description"] = json!(description);
+        row["expected"] = expectations(Some(rejection), None);
+        row["local_profile_comparison"] = json!({
+            "scope": "The local commitment preflight rejection gates the combined verdict while preserving the otherwise successful leaf profiles as separate diagnostics",
+            "compare_to_core": true,
+            "expected": {"consensus": false, "policy": false},
+        });
+        replace_fixture_taproot_context(
+            &mut row,
+            &revealed_script,
+            &witness,
+            &mutated_control,
+            &output_script,
+        );
+        rows.push(row);
+    };
+
+    let mut parity = control.clone();
+    parity[0] ^= 1;
+    mutation(
+        "taproot-depth-one-parity-flip",
+        "The output-key parity bit is flipped in an otherwise valid depth-one control block.",
+        script.clone(),
+        parity,
+        "taproot-commitment",
+    );
+
+    let alternate_internal_key = Keypair::from_secret_key(
+        &secp,
+        &SecretKey::from_slice(&[0x02; 32]).expect("fixed alternate test key"),
+    )
+    .x_only_public_key()
+    .0
+    .serialize();
+    let mut internal_key_mutation = control.clone();
+    internal_key_mutation[1..33].copy_from_slice(&alternate_internal_key);
+    mutation(
+        "taproot-depth-one-internal-key-mutation",
+        "The control block contains a different valid x-only internal key while retaining the original output and Merkle path.",
+        script.clone(),
+        internal_key_mutation,
+        "taproot-commitment",
+    );
+
+    mutation(
+        "taproot-depth-one-script-mutation",
+        "The revealed OP_TRUE leaf is changed to the independently truthy OP_2 bytecode without changing its control block or output.",
+        ScriptBuf::from_bytes(vec![0x52]),
+        control.clone(),
+        "taproot-commitment",
+    );
+
+    let mut sibling_mutation = control.clone();
+    sibling_mutation[33] ^= 1;
+    mutation(
+        "taproot-depth-one-sibling-mutation",
+        "One bit of the depth-one TapBranch sibling hash is flipped.",
+        script.clone(),
+        sibling_mutation,
+        "taproot-commitment",
+    );
+
+    mutation(
+        "taproot-depth-one-control-32-bytes",
+        "The control block is truncated to 32 bytes, below the 33-byte minimum.",
+        script.clone(),
+        control[..32].to_vec(),
+        "taproot-control-size",
+    );
+    mutation(
+        "taproot-depth-one-control-34-bytes",
+        "The control block is truncated to 34 bytes, which is not 33 plus a whole 32-byte Merkle node.",
+        script,
+        control[..34].to_vec(),
+        "taproot-control-size",
+    );
+    rows
+}
+
 fn drop_items(count: usize) -> Vec<u8> {
     let mut bytes = vec![0x6d; count / 2]; // OP_2DROP
     if count % 2 != 0 {
@@ -627,6 +776,8 @@ fn fixtures() -> Value {
         ));
     }
 
+    fixtures.extend(depth_one_commitment_fixtures());
+
     json!({
         "schema_version": 2,
         "expected_bitcoin_core_version": CORE_VERSION,
@@ -681,7 +832,7 @@ mod tests {
         assert_eq!(first, fixtures());
         let rows = first["fixtures"].as_array().unwrap();
         assert_eq!(first["fixture_count"], rows.len());
-        assert_eq!(rows.len(), 46);
+        assert_eq!(rows.len(), 53);
         let interpreter = provenance::interpreter().unwrap();
         assert_eq!(first["local_interpreter"]["name"], interpreter.name);
         assert_eq!(first["local_interpreter"]["commit"], interpreter.commit);
@@ -773,6 +924,42 @@ mod tests {
             invalid_control["local_profiles"]["consensus"]["accepted"],
             true
         );
+        let depth_one = rows
+            .iter()
+            .filter(|row| {
+                row["name"]
+                    .as_str()
+                    .is_some_and(|name| name.starts_with("taproot-depth-one-"))
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(depth_one.len(), 7);
+        let depth_one_valid = depth_one
+            .iter()
+            .find(|row| row["name"] == "taproot-depth-one-valid")
+            .unwrap();
+        assert_eq!(
+            depth_one_valid["control_block_hex"].as_str().unwrap().len(),
+            130
+        );
+        assert_eq!(depth_one_valid["metrics"]["locking_script_bytes"], 1);
+        assert_eq!(depth_one_valid["metrics"]["data_witness_bytes"], 1);
+        assert_eq!(depth_one_valid["metrics"]["taproot_witness_bytes"], 69);
+        assert_eq!(depth_one_valid["local_commitment"]["accepted"], true);
+        assert_eq!(
+            depth_one_valid["local_profiles"]["consensus"]["accepted"],
+            true
+        );
+        for row in depth_one {
+            assert_eq!(row["local_profiles"]["consensus"]["accepted"], true);
+            assert_eq!(row["local_profiles"]["policy"]["accepted"], true);
+            if row["name"] == "taproot-depth-one-valid" {
+                assert_eq!(row["local_commitment"]["outcome"], "valid");
+            } else {
+                assert_eq!(row["local_commitment"]["outcome"], "invalid");
+                assert_eq!(row["expected"]["consensus"], false);
+                assert_eq!(row["expected"]["policy"], false);
+            }
+        }
         let names: std::collections::HashSet<_> = rows.iter().map(|row| &row["name"]).collect();
         assert_eq!(names.len(), rows.len());
         for row in rows {

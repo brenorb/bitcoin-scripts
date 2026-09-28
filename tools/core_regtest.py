@@ -45,6 +45,7 @@ SCRIPT_ERRORS = {
     "bad-opcode": "Opcode missing or not understood",
     "eval-false": "Script evaluated without error but finished with a false/empty top stack element",
     "taproot-commitment": "Witness program hash mismatch",
+    "taproot-control-size": "Invalid Taproot control block size",
 }
 
 

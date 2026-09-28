@@ -65,12 +65,17 @@ they do not use BN254 or any other field modulus.
   the same shared table and preserves the word selected by `a`.
 - `popcount::u32_popcount()` consumes one four-byte word, range-checks every
   byte, and returns its set-bit count in `0..=32`.
+- `xor_constant::u32_xor_constant(value)` checks one canonical word and XORs it
+  with an embedded constant, removing the constant word from the witness.
 - `popcount::u32_byte_popcounts()` consumes one four-byte word, range-checks
   every byte, and returns four per-byte counts in the same word order.
 - `u32_to_bit_planes()` consumes one checked word and returns eight 4-bit
   planes, with plane seven on top and plane zero deepest.
 - `u32_conditional_select()` consumes `condition | when_true | when_false`,
   normalizes the condition with `OP_0NOTEQUAL`, and returns one complete word.
+- `u32::stack::u32_not()` checks four canonical byte limbs and replaces the word
+  with its bytewise complement. The SHA-256 kernel keeps its own unchecked
+  `sha2_u32::u32_not()` for internally produced byte limbs.
 - `byte_parity::u32_byte_parity()` consumes one four-byte word and returns one
   numeric parity bit per byte, with the least-significant byte's bit on top.
 - `zero::u32_iszero()` consumes one four-byte word, range-checks every byte,
@@ -136,6 +141,8 @@ as less-than-or-equal.
 | `u32_nor(0, 1, 3)` (table excluded) | <!-- metric:u32_nor -->346<!-- /metric:u32_nor --> bytes | 0 bytes | <!-- metric:u32_nor_stack -->272<!-- /metric:u32_nor_stack --> items, including table; <!-- metric:u32_nor_opcodes -->250<!-- /metric:u32_nor_opcodes --> static non-push opcodes |
 | `u32_xnor(0, 1, 3)` (table excluded) | <!-- metric:u32_xnor -->222<!-- /metric:u32_xnor --> bytes | 0 bytes | <!-- metric:u32_xnor_stack -->272<!-- /metric:u32_xnor_stack --> items, including table; <!-- metric:u32_xnor_opcodes -->182<!-- /metric:u32_xnor_opcodes --> static non-push opcodes |
 | `u32_notequal()` | <!-- metric:u32_notequal -->19<!-- /metric:u32_notequal --> bytes | 0 bytes | <!-- metric:u32_notequal_stack -->9<!-- /metric:u32_notequal_stack --> items |
+| `u32_xor_constant(0x89abcdef)` | <!-- metric:u32_xor_constant -->660<!-- /metric:u32_xor_constant --> bytes | <!-- metric:u32_xor_constant_witness -->13<!-- /metric:u32_xor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xor_constant_stack -->272<!-- /metric:u32_xor_constant_stack --> items; <!-- metric:u32_xor_constant_opcodes -->488<!-- /metric:u32_xor_constant_opcodes --> static non-push opcodes |
+| `u32_not()` | <!-- metric:u32_not -->76<!-- /metric:u32_not --> bytes | <!-- metric:u32_not_witness -->13<!-- /metric:u32_not_witness --> bytes, 4 data items | <!-- metric:u32_not_stack -->7<!-- /metric:u32_not_stack --> items; <!-- metric:u32_not_opcodes -->40<!-- /metric:u32_not_opcodes --> static non-push opcodes |
 | `u32_equal()` | <!-- metric:u32_equal -->18<!-- /metric:u32_equal --> bytes | <!-- metric:u32_equal_witness -->17<!-- /metric:u32_equal_witness --> bytes (<!-- metric:u32_equal_witness_max -->25<!-- /metric:u32_equal_witness_max --> max), 8 data items, 0 hints | <!-- metric:u32_equal_stack -->9<!-- /metric:u32_equal_stack --> items |
 | `u32_equalverify()` | <!-- metric:u32_equalverify -->9<!-- /metric:u32_equalverify --> bytes | <!-- metric:u32_equalverify_witness -->17<!-- /metric:u32_equalverify_witness --> bytes (<!-- metric:u32_equalverify_witness_max -->25<!-- /metric:u32_equalverify_witness_max --> max), 8 data items, 0 hints | <!-- metric:u32_equalverify_stack -->9<!-- /metric:u32_equalverify_stack --> items |
 | `u32_compressed_equal()` | <!-- metric:u32_compressed_equal -->37<!-- /metric:u32_compressed_equal --> bytes | <!-- metric:u32_compressed_equal_witness -->11<!-- /metric:u32_compressed_equal_witness --> bytes | <!-- metric:u32_compressed_equal_stack -->5<!-- /metric:u32_compressed_equal_stack --> items |
@@ -162,6 +169,8 @@ as less-than-or-equal.
 | `u8_reverse_toaltstack(4)` | <!-- metric:u8_reverse_toaltstack_4 -->8<!-- /metric:u8_reverse_toaltstack_4 --> bytes | <!-- metric:u8_reverse_toaltstack_4_witness -->9<!-- /metric:u8_reverse_toaltstack_4_witness --> bytes, 4 data items | <!-- metric:u8_reverse_toaltstack_4_stack -->5<!-- /metric:u8_reverse_toaltstack_4_stack --> items |
 | `u32_uncompress_canonical()` | <!-- metric:u32_uncompress_canonical -->431<!-- /metric:u32_uncompress_canonical --> bytes | <!-- metric:u32_uncompress_canonical_witness -->7<!-- /metric:u32_uncompress_canonical_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_stack -->7<!-- /metric:u32_uncompress_canonical_stack --> items |
 | `u32_uncompress_canonical_nonnegative()` | <!-- metric:u32_uncompress_canonical_nonnegative -->405<!-- /metric:u32_uncompress_canonical_nonnegative --> bytes | <!-- metric:u32_uncompress_canonical_nonnegative_witness -->6<!-- /metric:u32_uncompress_canonical_nonnegative_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_nonnegative_stack -->7<!-- /metric:u32_uncompress_canonical_nonnegative_stack --> items; <!-- metric:u32_uncompress_canonical_nonnegative_opcodes -->328<!-- /metric:u32_uncompress_canonical_nonnegative_opcodes --> executed fragment opcodes |
+| `u32_compress()` | <!-- metric:u32_compress -->76<!-- /metric:u32_compress --> bytes | <!-- metric:u32_compress_witness -->9<!-- /metric:u32_compress_witness --> bytes (<!-- metric:u32_compress_witness_max -->13<!-- /metric:u32_compress_witness_max --> max), 4 data items | <!-- metric:u32_compress_stack -->7<!-- /metric:u32_compress_stack --> items |
+| `u32_uncompress()` | <!-- metric:u32_uncompress -->413<!-- /metric:u32_uncompress --> bytes | <!-- metric:u32_uncompress_witness -->7<!-- /metric:u32_uncompress_witness --> bytes (<!-- metric:u32_uncompress_witness_max -->7<!-- /metric:u32_uncompress_witness_max --> max), 1 data item | <!-- metric:u32_uncompress_stack -->7<!-- /metric:u32_uncompress_stack --> items |
 | `u32_compress_canonical()` | <!-- metric:u32_compress_canonical -->130<!-- /metric:u32_compress_canonical --> bytes | <!-- metric:u32_compress_canonical_witness -->9<!-- /metric:u32_compress_canonical_witness --> bytes (<!-- metric:u32_compress_canonical_witness_max -->13<!-- /metric:u32_compress_canonical_witness_max --> max), 4 data items | <!-- metric:u32_compress_canonical_stack -->7<!-- /metric:u32_compress_canonical_stack --> items; <!-- metric:u32_compress_canonical_opcodes -->102<!-- /metric:u32_compress_canonical_opcodes --> static non-push opcodes |
 | `u8_extract_hbit_checked(4)` | <!-- metric:u8_extract_hbit_checked -->73<!-- /metric:u8_extract_hbit_checked --> bytes | <!-- metric:u8_extract_hbit_checked_witness -->4<!-- /metric:u8_extract_hbit_checked_witness --> bytes, 1 data item | <!-- metric:u8_extract_hbit_checked_stack -->5<!-- /metric:u8_extract_hbit_checked_stack --> items |
 | `verify_canonical_byte()` | <!-- metric:u32_canonical_byte -->12<!-- /metric:u32_canonical_byte --> bytes | <!-- metric:u32_canonical_byte_witness -->4<!-- /metric:u32_canonical_byte_witness --> bytes, 1 data item | <!-- metric:u32_canonical_byte_stack -->4<!-- /metric:u32_canonical_byte_stack --> items |
@@ -265,6 +274,16 @@ The same representative byte baseline has
 <!-- metric:u32_add_drop_witness -->20<!-- /metric:u32_add_drop_witness --> serialized witness bytes and a
 <!-- metric:u32_add_drop_byte_stack -->10<!-- /metric:u32_add_drop_byte_stack --> item strict peak.
 
+`u32_xor_constant()` is a fixed-mask adapter: it embeds the second word in
+the locking script and therefore removes four witness data items, but costs
+660 bytes and still loads and drops the 256-item XOR table for each call. The
+raw generic `u32_xor()` is 202 bytes, or 566 bytes with the same table setup
+and cleanup, but does not perform the adapter's hostile-input checks. Use the
+adapter when witness width or item count matters more than script bytes; the
+generic form remains preferable when the mask is already present or the table
+can be shared across a larger composition. The table is shared across the
+four queries in one invocation, then allocated and removed per call; it is not
+reused from a caller-provided table.
 `u32_add_constant(value)` consumes one hostile four-limb word, checks each
 limb, adds the public compile-time constant modulo `2^32`, and returns four
 limbs. The representative fixture embeds `0x89abcdef` and supplies
@@ -315,6 +334,13 @@ avoid the extra word-routing fragment.
 The canonical compressed-u32 row uses the maximum five-byte witness item for
 `-2^31`. It is a raw-encoding boundary: `u32_uncompress()` remains available
 for callers that intentionally accept ScriptNum aliases.
+
+The unchecked `u32_compress()` maps the four-byte u32 through signed
+two's-complement before minimal ScriptNum serialization: `0xffffffff` becomes
+`-1` (`81`), while `0x80000000` becomes `-2^31` (`00 00 00 80 80`). The
+unchecked `u32_uncompress()` treats every five-byte input as that special
+`-2^31` boundary. Callers needing a validated wire format must use the
+canonical wrappers.
 The nonnegative decoder is a domain-specialized alternative: it omits signed
 normalization and the five-byte sentinel path, saving locking bytes while
 rejecting the negative half of the compressed u32 domain.
@@ -478,6 +504,16 @@ byte-limb contract and does not itself range-check the four word limbs.
 `u32_push(0) + u32_equal()` baseline under the same policy compilation. The
 zero predicate contains <!-- metric:u32_iszero_opcodes -->4<!-- /metric:u32_iszero_opcodes -->
 static non-push opcodes; the baseline measures <!-- metric:u32_iszero_equal_baseline -->21<!-- /metric:u32_iszero_equal_baseline --> bytes.
+
+`u32_not()` is the checked reusable bytewise complement. It validates each
+limb's numeric range and minimal ScriptNum encoding before applying
+`255 - limb`, preserving the four-byte word shape for callers such as
+SHA-256's choose function. Its strict metric uses four canonical `0xff`
+witness limbs and includes no auxiliary hints. The SHA-256 kernel keeps its
+own unchecked `hashes::sha256::sha2_u32::u32_not()` helper, whose limbs are
+produced by the surrounding hash kernel; that helper is not a hostile-witness
+boundary, and callers with hostile word witnesses should use the checked
+`u32::stack::u32_not()` fragment.
 
 `u32_to_zero_byte_mask()` consumes the four canonical byte limbs and returns a
 numeric mask in `0..=15`; bit `i` corresponds to the word's `i`th byte in the

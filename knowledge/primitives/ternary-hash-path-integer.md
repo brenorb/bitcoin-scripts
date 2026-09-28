@@ -1,0 +1,82 @@
+# Ternary mixed-hash integer path
+
+Authenticates fixed-width base-3 digits with three fixed-length SHA-256/
+RIPEMD-160 codewords and reconstructs a 1–31-bit non-negative Script integer.
+
+## Question and hypothesis
+
+Can a canonical three-valued hash path provide a useful middle point for
+protocol state that is naturally ternary, while remaining within Bitcoin
+Script's per-item and combined-stack limits? The hypothesis was that explicit
+trit validation would make the representation composable even if its ordinary
+31-bit integer cost lost to the existing binary and four-way paths.
+
+## Construction
+
+Let `S` be SHA-256 and `R` be RIPEMD-160. Each trit selects exactly two hashes:
+
+```text
+0 -> SS    1 -> SR    2 -> RS
+```
+
+`RR` is deliberately unused. The path processes least-significant trits
+first, finishes with `R`, and compares the resulting 20-byte commitment. The
+integer adapter uses the smallest fixed number of base-3 digits covering the
+requested width; 31 bits require 20 trits. Witness order is
+`tritN-1 ... trit0 preimage`, with zero encoded as the empty vector and the
+other trits as exactly `[01]` or `[02]`.
+
+The Script fragment explicitly rejects padded, negative-zero, and out-of-range
+trit encodings. The integer adapter also rejects values outside the requested
+bit width before the final `3*acc + trit` step. It then reconstructs the
+committed value while draining the saved trits from the altstack.
+
+## Evidence and representative cost
+
+Evidence is `locally-reproduced`: all three codewords, integer boundaries at
+every supported width, out-of-range rejections on both branches of the
+integer-width check (accumulator above the quotient, and equal to it with a
+final trit above the remainder), surrounding-stack preservation, ScriptNum
+overflow, wrong openings, non-canonical encodings, and out-of-range trits pass
+focused tests. The local tests use the strict tapscript-context executor; no Bitcoin
+Core consensus or relay-policy comparison has been performed, so deployment is
+`unclassified`.
+
+For a 32-byte preimage and a 31-bit value:
+
+| Fragment | Script bytes | Serialized witness | Witness items | Peak items |
+| --- | ---: | ---: | ---: | ---: |
+| `verify_ternary_hash_path_to_integer` | 947 | 63 | 21 | 24 |
+
+There are zero hint items per invocation; all 21 data items (20 trits and the
+preimage) coexist at script entry. The stack peak is measured with strict local
+stack checks. These are fragment-only
+measurements: the verifier and integer reconstruction are included, while
+input pushes, terminal predicates, and transaction framing are excluded.
+The script has 919 static instructions, 794 of them static non-push opcodes
+(inactive branches included). The pinned interpreter's tapscript
+`opcode_count` counts every instruction position, executed or not, so it also
+reports 919; executed-opcode count remains unavailable rather than being
+inferred from either static count.
+
+The construction is larger than the measured four-way path (438 bytes, 61
+witness bytes, 19 peak items) for ordinary 31-bit integers. Its value is the
+native three-way selector, not a claim of Pareto improvement.
+
+## Security and deployment
+
+The final RIPEMD-160 digest gives the usual generic 80-bit collision bound and
+the mixed schedule is not independently cryptanalysed. Hiding still requires
+min-entropy in the unrevealed preimage/trit pair. Exact byte canonicality is
+enforced by the fragment, but protocol callers must still bind the path length,
+bit width, commitment, participant/round context, and terminal predicate.
+
+All trits are present at script entry and there are no hint items. The 20-trit
+representative stays below the 1,000-item combined stack limit in the strict
+local test, but composition with surrounding protocol state must be measured.
+
+See the [implementation README](../../src/commitments/ternary_hash_path/README.md), the
+[commitment comparison](../comparisons/commitments.md), catalog record
+`commitment/ternary-hash-path-integer`,
+[NR-072](../negative-results/index.md#nr-072-ternary-mixed-hash-paths-lose-to-four-way-integer-paths),
+and [OP-030](../open-problems.md#op-030--ternary-commitment-composition-frontier).

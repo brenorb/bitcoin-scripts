@@ -6,6 +6,7 @@ pub mod bit_reverse;
 pub mod bit_transitions;
 pub mod bits;
 pub mod centered;
+pub mod clamp;
 pub mod compare;
 pub mod cyclic_equality;
 pub mod gray;

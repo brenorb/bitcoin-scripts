@@ -57,6 +57,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 checked nibbles to adjacent-equality bits | `u4_adjacent_equal_mask(32)` | 558 | 64-item peak; 31 output bits; 361 static non-push opcodes; no lookup table or hints |
 | Checked odd u4 inverse | `u4_odd_inverse_mod16` | 9 | 20-item peak; 16-item table; one data item; zero hints |
 | Checked modulo-16 u4 multiplication | `u4_mul_mod16()` | 21 | 261-item peak; 5-byte representative witness; 17 static non-push opcodes |
+| 16 checked nibbles to an embedded cap | `u4_nibbles_to_clamp(4,16)` | <!-- metric:u4_clamp_16 -->270<!-- /metric:u4_clamp_16 --> | <!-- metric:u4_clamp_16_stack -->18<!-- /metric:u4_clamp_16_stack -->-item peak; `min(nibble,4)`; cap embedded |
 | 16 checked nibbles to one XOR nibble | `u4_nibbles_to_xor(16)` | 740 | 273-item peak; 256-item full XOR table |
 | Variable u32 XNOR | `u32_xnor(0, 1, 3)` | 222 | 272-item peak; 182 static non-push opcodes; shared 256-item XOR table |
 | Embedded public-mask u32 XNOR | `u32_xnor_constant(0x89abcdef)` | 686 | 13-byte/four-data-item witness; zero hints; 272-item peak; 502 static non-push opcodes |

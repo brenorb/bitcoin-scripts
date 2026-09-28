@@ -49,6 +49,10 @@ these operations, but this module contains no hash-specific round logic.
 - `lsb::u4_nibbles_to_lsb(nibble_count)` takes a checked batch size in
   `1..=982` and returns one bit per input nibble; the range check does not
   establish canonical ScriptNum encoding.
+- `clamp::u4_nibbles_to_clamp(maximum, nibble_count)` takes a public u4 cap
+  and a checked batch size in `1..=998`, returning `min(nibble, maximum)` per
+  input. Callers preserving live stack items must satisfy
+  `nibble_count + 2 + preserved_items <= 1000`.
 - `sum::u4_nibbles_to_sum_mod16(nibble_count)` takes a checked batch size in
   `1..=965` and returns the batch sum modulo 16.
 - `zero_bitmask::u4_nibbles_to_zero_bitmasks(nibble_count)` takes a checked
@@ -135,6 +139,7 @@ each input with the same output-restoration boundary.
 | Checked transition-count batch, 32 nibbles | <!-- metric:u4_transition_count_batch32 -->588<!-- /metric:u4_transition_count_batch32 --> bytes | <!-- metric:u4_transition_count_batch32_stack -->35<!-- /metric:u4_transition_count_batch32_stack --> items | <!-- metric:u4_transition_count_batch32_opcodes -->391<!-- /metric:u4_transition_count_batch32_opcodes --> |
 | Checked adjacent-equality batch, 32 nibbles | <!-- metric:u4_adjacent_equal_batch32 -->558<!-- /metric:u4_adjacent_equal_batch32 --> bytes | <!-- metric:u4_adjacent_equal_batch32_stack -->64<!-- /metric:u4_adjacent_equal_batch32_stack --> items | <!-- metric:u4_adjacent_equal_batch32_opcodes -->361<!-- /metric:u4_adjacent_equal_batch32_opcodes --> |
 | Checked modulo-16 nibble product | <!-- metric:u4_mul_mod16 -->21<!-- /metric:u4_mul_mod16 --> bytes | <!-- metric:u4_mul_mod16_stack -->261<!-- /metric:u4_mul_mod16_stack --> items with 256-item table | <!-- metric:u4_mul_mod16_opcodes -->17<!-- /metric:u4_mul_mod16_opcodes --> |
+| Embedded-cap clamp, 16 nibbles | <!-- metric:u4_clamp_16 -->270<!-- /metric:u4_clamp_16 --> bytes | <!-- metric:u4_clamp_16_stack -->18<!-- /metric:u4_clamp_16_stack --> items | <!-- metric:u4_clamp_16_opcodes -->206<!-- /metric:u4_clamp_16_opcodes --> |
 | Checked XOR reduction, 16 nibbles | <!-- metric:u4_xor_reduce_batch16 -->740<!-- /metric:u4_xor_reduce_batch16 --> bytes | <!-- metric:u4_xor_reduce_batch16_stack -->273<!-- /metric:u4_xor_reduce_batch16_stack --> items | <!-- metric:u4_xor_reduce_batch16_opcodes -->438<!-- /metric:u4_xor_reduce_batch16_opcodes --> |
 | Checked nondecreasing batch, 32 nibbles | <!-- metric:u4_nondecreasing_batch32 -->588<!-- /metric:u4_nondecreasing_batch32 --> bytes | <!-- metric:u4_nondecreasing_batch32_stack -->35<!-- /metric:u4_nondecreasing_batch32_stack --> items | <!-- metric:u4_nondecreasing_batch32_opcodes -->391<!-- /metric:u4_nondecreasing_batch32_opcodes --> |
 | Checked exact-sum batch, 32 nibbles | <!-- metric:u4_exact_sum_batch32 -->489<!-- /metric:u4_exact_sum_batch32 --> bytes | <!-- metric:u4_exact_sum_batch32_stack -->35<!-- /metric:u4_exact_sum_batch32_stack --> items | <!-- metric:u4_exact_sum_batch32_opcodes -->334<!-- /metric:u4_exact_sum_batch32_opcodes --> |
@@ -186,6 +191,8 @@ generated table setup is <!-- metric:u4_odd_inverse_mod16_table -->16<!-- /metri
 
 
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
+
+The embedded-cap fixture uses <!-- metric:u4_clamp_16_witness -->33<!-- /metric:u4_clamp_16_witness --> serialized witness bytes for <!-- metric:u4_clamp_16_witness_items -->16<!-- /metric:u4_clamp_16_witness_items --> canonical data items and <!-- metric:u4_clamp_16_hints -->0<!-- /metric:u4_clamp_16_hints --> hint items; its combined main-plus-alt-stack peak in the table above is `nibble_count + 2` items. It returns one capped nibble per input. Numeric range checks accept non-minimal encodings; values below or equal to the cap retain their original bytes, while values above it are replaced by the embedded canonical cap. Compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
 
 <!-- metric:u4_adjacent_equal_batch32_witness -->65<!-- /metric:u4_adjacent_equal_batch32_witness --> serialized witness bytes for the representative adjacent-equality batch.
 

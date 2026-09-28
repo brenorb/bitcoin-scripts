@@ -77,8 +77,12 @@ mod tests {
     use crate::{
         arithmetic::u4::stack::{u4_drop, u4_hex_to_nibbles},
         support::{
-            execution::{execute_script, execute_script_with_inputs_strict},
-            script::script,
+            execution::{
+                execute_script, execute_script_with_inputs, execute_script_with_inputs_strict,
+                ExecuteInfo,
+            },
+            script::{script, ScriptCompilation},
+            tapscript::{execute_tapscript, TapscriptOutcome, TapscriptProfile},
         },
     };
     use bitcoin_scriptexec::ExecError;
@@ -271,20 +275,61 @@ mod tests {
 
     #[test]
     fn canonical_projection_rejects_malformed_nibbles() {
-        let script = script! {
-            { u4_nibbles_to_lsb_canonical(4) }
-            for _ in 0..4 { OP_DROP }
-            OP_TRUE
-        };
+        // The consensus tapscript profile decodes non-minimal ScriptNums, so raw
+        // aliases reach the canonicality check. The default helper enforces
+        // minimal numbers and would reject them with MinimalData before it.
+        fn run_consensus(fragment: Script, witness: Vec<Vec<u8>>) -> ExecuteInfo {
+            let script = script! {
+                { fragment }
+                for _ in 0..4 { OP_DROP }
+                OP_TRUE
+            }
+            .compile_with_policy();
+            match execute_tapscript(script, witness, TapscriptProfile::Consensus).outcome {
+                TapscriptOutcome::Executed(result) => result,
+                outcome => panic!("expected local consensus-profile execution: {outcome:?}"),
+            }
+        }
+
+        let control = run_consensus(u4_nibbles_to_lsb_canonical(4), vec![vec![1]; 4]);
+        assert!(control.success, "canonical valid control failed: {control}");
+
         for position in 0..4 {
-            for replacement in [vec![1, 0], vec![0, 1], vec![0x80]] {
+            for (replacement, range_only_accepts, expected) in [
+                // Redundant zero byte aliasing 1.
+                (vec![1, 0], true, ExecError::EqualVerify),
+                // Negative zero aliasing 0.
+                (vec![0x80], true, ExecError::EqualVerify),
+                // Minimal 256 is out of range for both APIs.
+                (vec![0, 1], false, ExecError::Verify),
+            ] {
                 let mut witness = vec![vec![1]; 4];
-                witness[position] = replacement;
-                let result =
-                    crate::support::execution::execute_script_with_inputs(script.clone(), witness);
+                witness[position] = replacement.clone();
+
+                let range_only = run_consensus(u4_nibbles_to_lsb(4), witness.clone());
+                assert_eq!(
+                    range_only.success, range_only_accepts,
+                    "range-only control for {replacement:?} at {position}: {range_only}"
+                );
+
+                let canonical = run_consensus(u4_nibbles_to_lsb_canonical(4), witness.clone());
+                assert_validation_error(
+                    canonical.error,
+                    expected,
+                    &format!("canonical API mishandled {replacement:?} at {position}"),
+                );
+
+                let minimal_helper = execute_script_with_inputs(
+                    script! {
+                        { u4_nibbles_to_lsb_canonical(4) }
+                        for _ in 0..4 { OP_DROP }
+                        OP_TRUE
+                    },
+                    witness,
+                );
                 assert!(
-                    !result.success,
-                    "accepted malformed nibble at {position}: {result}"
+                    !minimal_helper.success,
+                    "accepted malformed nibble at {position}: {minimal_helper}"
                 );
             }
         }

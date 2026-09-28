@@ -67,7 +67,12 @@ to negative and out-of-range values. Its fragment-only boundary includes the
 excludes witness pushes, terminal predicates, unrelated live state, and
 transaction context. Deterministic tests cover all nibble values, malformed
 encodings at every position, the executed 981-input frontier, and surrounding
-main/alt-stack preservation. Evidence is `locally-reproduced`; deployment
+main/alt-stack preservation. The malformed-encoding test runs under the local
+`TapscriptProfile::Consensus` profile, which decodes non-minimal ScriptNums: there
+the range-checked API accepts the alias byte strings `[0x01, 0x00]` (one with a
+redundant zero byte) and `[0x80]` (negative zero), while the canonical API
+rejects them with `EqualVerify`. The default local helper enforces minimal
+numbers and would reject those aliases before the canonicality check runs. Evidence is `locally-reproduced`; deployment
 remains `unclassified`. The Core v30.3 complete-leaf fixture above exercises
 only the range-checked API and does not validate the canonical variant.
 

@@ -17,20 +17,37 @@ coexistence with the surrounding state.
 
 The checked u4 byte unpacker is a batch representation bridge: it validates
 each byte, queries a shared 512-item high/low table, stages the 2*n nibble
-outputs, and restores them in input order. At 16 bytes it measures 1,168
-locking bytes and a 546-item peak; a fair repeated checked scalar splitter is
-1,066 bytes and 34 items. The table wins script bytes at larger batches but
-consumes most of the combined stack, so its 243-byte standalone ceiling must be
-reduced for preserved state.
+outputs, and restores them in input order. At the only batch size measured
+for the table path, 16 bytes, it costs 1,168 locking bytes and a 546-item
+combined peak; a fair repeated checked scalar splitter at the same 16 bytes
+costs 1,066 bytes and 34 items. The scalar splitter is both smaller and
+shallower at this size: the table is 102 bytes larger and holds 512 more
+combined stack items. The table's 512-item setup is a one-time cost that does
+not grow with the batch, while the scalar splitter's cost is per-byte, so the
+two curves must cross somewhere before the table's 243-byte standalone
+ceiling; that crossover batch size is not directly measured in this
+repository, so no claim is made about which representation is smaller at
+larger batches.
 
 The u4 bit-plane adapter is a checked transpose boundary: it reuses the
 four-bit decomposition, groups one bit position across all input nibbles, and
 preserves unrelated main and altstack state. Its representative 16-nibble
 batch is 776 bytes with a 125-item combined peak and zero incremental hints.
+Its standalone peak is `4*n + 61`; live main- or alt-stack state must be
+included in that bound, so the 234-nibble generator ceiling is not a universal
+composition width.
 
 The u4 bit-reversal adapter is a checked per-nibble representation change. It
 preserves lane order, uses a 16-item table, and costs 344 bytes for 32 input
 nibbles with a 51-item combined peak and zero incremental hints.
+
+The checked u32 byte-plane adapter is a fixed-width stack-scheduling boundary:
+it transposes word-major MSB-first bytes into byte-major planes, preserves
+unrelated state, and costs 411 bytes for eight words with a 35-item combined
+peak and zero incremental hints. The generated permutation contains 4*n
+`OP_ROLL` operations, but cumulative stack-shifting work is quadratic in batch
+width, so consumers should price the actual batch rather than the 249-word
+static ceiling.
 
 The checked u32 byte-equality mask is a two-word routing boundary: it keeps
 four per-lane equality predicates as one nibble instead of folding them into

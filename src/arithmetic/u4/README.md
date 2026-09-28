@@ -722,8 +722,9 @@ standalone batch under the strict local stack limit. `parity.rs`, `one_hot.rs`, 
 exhaustively check the 16-value lookup domain, reject malformed
 inputs and invalid batch sizes, and measure representative strict batches. The
 inverse packer tests all 16 nibbles in checked and unchecked modes, rejects
-malformed bit positions and short stacks, and verifies surrounding stack
-preservation.
+malformed bit positions and short stacks, and round-trips all 16 nibbles
+through the checked big-endian altstack splitter while verifying surrounding
+stack preservation.
 
 `cyclic_equality.rs` retains periodic, zero-offset, and surrounding-stack
 checks, and adds asymmetric modulo-offset, raw-alias mutant, malformed-input,

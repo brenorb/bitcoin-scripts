@@ -384,21 +384,30 @@ mod tests {
 
     #[test]
     fn inverse_round_trip_preserves_surrounding_stacks() {
-        let result = execute_script(script! {
-            99
-            42 OP_TOALTSTACK
-            9
-            { u4_nibbles_to_be_bits_toaltstack(1, true) }
-            for _ in 0..4 {
-                OP_FROMALTSTACK
+        // Every nibble, so bit-palindromes such as 0b1001 cannot hide a
+        // reversed weight schedule.
+        for check_inputs in [true, false] {
+            for nibble in 0..16 {
+                let result = execute_script(script! {
+                    99
+                    42 OP_TOALTSTACK
+                    { nibble }
+                    { u4_nibbles_to_be_bits_toaltstack(1, true) }
+                    for _ in 0..4 {
+                        OP_FROMALTSTACK
+                    }
+                    { u4_be_bits_to_nibble(check_inputs) }
+                    { nibble } OP_EQUALVERIFY
+                    99 OP_EQUALVERIFY
+                    OP_FROMALTSTACK
+                    42 OP_EQUAL
+                });
+                assert!(
+                    result.success,
+                    "round trip failed for nibble {nibble}, checked {check_inputs}: {result}"
+                );
             }
-            { u4_be_bits_to_nibble(true) }
-            9 OP_EQUALVERIFY
-            99 OP_EQUALVERIFY
-            OP_FROMALTSTACK
-            42 OP_EQUAL
-        });
-        assert!(result.success, "round trip failed: {result}");
+        }
     }
 
     #[test]

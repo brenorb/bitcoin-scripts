@@ -3,7 +3,7 @@
 These records prevent repeated dead ends. They are scoped observations, not
 universal impossibility proofs.
 
-## NR-064: u4 MSB lookup table is dominated by a direct threshold at n=32
+## NR-071: u4 MSB lookup table is dominated by a direct threshold at n=32
 
 The former 16-entry lookup implementation measured 440 locking-script bytes
 and a 50-item peak, while the direct range-checked `nibble >= 8` implementation

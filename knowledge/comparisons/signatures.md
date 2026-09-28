@@ -33,6 +33,11 @@ These are not substitutes on the same boundary. The explicit CSFS row really
 does place `r`, `s`, and the message in the witness, computes the tagged hash,
 validates the supplied even nonce, and checks `sG-eP=R`; its size, stack, and
 weight make it a research circuit rather than a deployable opcode replacement.
+An isolated width-5 fixed-base generator probe is already dominated by the
+current width-8 schedule: 4,880,087 versus 3,557,157 script bytes and 25,489
+versus 16,129 witness items. Adding the signed-radix-32 decoder would only add
+representation work to that dominated layout, so no CSFS integration PR is
+planned from this experiment.
 The native-field instance construction is useful only when a protocol needs an
 explicit, inspectable field certificate for an already-fixed BIP340 instance.
 Its GLV/wNAF/Jacobian engine runs in the trusted deterministic generator;
@@ -102,7 +107,7 @@ and nodes. Optional `Preimage16` comparisons follow the hash comparison.
 | Construction | Authenticated object | Script bytes | Witness bytes (zero / upper bound) | Stack peak | Verification work / missing protocol work |
 | --- | --- | ---: | ---: | ---: | --- |
 | Lamport 2-bit | One value in 0..3 | 96 | 11 | not recorded | Reject rather than clamp invalid values |
-| HORS-like n32/t8 | Explicit subset | 809 | 280 | not recorded | Message-to-index derivation |
+| HORS-like n32/t8 | Explicit subset | 809 | 280 / 281 max | 50 (strict local) | 16 data items / 0 hints; message-to-index derivation |
 | Legacy Wots32 list-pick | 32-byte message | 4,908 | 1,477 / 1,542 | 143 | 15 hashes for digits below 8, seven otherwise; clamps above-range digits |
 | Legacy Wots32 list-pick + clear | 32-byte message | 4,844 | 1,477 / 1,542 | 143 | Direct checksum reduction; consumes message; terminal predicate excluded |
 | FastWots32 clamped lookup | 32-byte message | 4,465 | 1,476 / 1,542 | 143 | Legacy-style upper saturation; recovers authenticated clamped digits |
@@ -292,7 +297,24 @@ HASH160, 128 for SHA-256) or make the two security profiles interchangeable.
 
 ### Terminal verification of unchanged 20-byte messages
 
-The current smaller construction is
+The current smallest measured fragment-plus-signature construction is
+[mixed-stage constant-sum Winternitz](../primitives/winternitz-constant-sum-mixed20.md).
+It uses 45 alternating SHA256/RIPEMD160 chains, 33 openings, twelve implicit
+endpoints, three fixed slots, and fifteen equal-sum pair relations. Its exact
+union of 32,768 distinct composition classes contains more than `2^160` words.
+
+| Mixed-stage constant-sum profile | Script bytes | Attained maximum signer witness | Maximum combined bytes | Entry items / hints | Combined peak |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Staged isolation check | 1,490 | 844 | **2,334** | 66 / 0 | 111 |
+| Entry isolation check | 1,491 | 844 | **2,335** | 66 / 0 | 111 |
+
+These are `locally-reproduced`, `research-unlimited` metrics at the same
+terminal boundary as the table below. Strict local executions are
+`unclassified`; no Core consensus or policy validation is claimed. The
+candidate was found heuristically and exactly rechecked, so the result improves
+the frontier without proving a global constant-sum or Script optimum.
+
+The previous smaller construction was
 [constant-composition Winternitz](../primitives/winternitz-constant-composition20.md).
 It assigns 49 independent keys to a radix-25 digit multiset with counts
 `[1 × 15, 2 × 7, 3 × 2, 14]`. Fixed digit slots replace per-chain digit
@@ -315,11 +337,23 @@ isolated verification preserves alt state only. HASH160 wins the combined
 objective, while the hybrid has the smallest locking fragment. These are
 `locally-reproduced`, `research-unlimited` measurements with the same witness
 serialization and excluded terminal/framing costs as below. Strict local
-tests remain `unclassified`; one exact out-of-pool `OP_ROLL` boundary is
-recorded as a pinned-interpreter panic, not a successful rejection. Script
+tests remain `unclassified`; the historical `ba96bc2` report recorded one exact
+out-of-pool `OP_ROLL` boundary as a panic, not a successful rejection. The lab
+now pins repaired interpreter `4b7269a`; see
+[adoption and scope](../negative-results/index.md#nr-048-minimal-push-policy-must-follow-execution).
+Earlier metrics retain their original provenance and evidence classes. Script
 checks the composition without enforcing the host's rank-below-`2^160` image
 or returning bytes. The search is bounded, not a proof of global optimality;
 see [NR-042](../negative-results/index.md#nr-042-constant-composition-search-and-endpoint-sharing-limits).
+
+The [separate Core v30.3 experiment](../core-validation.md) validates the
+varied-message isolated HASH160 complete leaf with terminal `OP_TRUE`: 1,599
+locking bytes, 2,432 complete Taproot witness bytes, and 2,810 WU / 703 vbytes
+for one input and one output. It has 70 entry data items, zero hints, and local
+stack-limited peak 119. This exact configuration is `differentially-validated`
+and `policy-validated`; its complete-transaction boundary is not comparable
+to the fragment-plus-data-witness totals above. Other profiles retain their
+existing classes.
 
 The following fixed-sum comparison records the earlier 20-byte frontier.
 The 20-byte comparison has a different message size and is separate from the
@@ -374,10 +408,17 @@ terminal predicate, script framing, control block, and transaction overhead
 are excluded equally. Metrics are `locally-reproduced` and
 `research-unlimited` under the stack-limit-disabled tapscript helper with
 `OP_TRUE`; separate strict-stack tests remain `unclassified` deployment
-evidence. No Core consensus or policy acceptance is established. The pinned
-executor's out-of-entire-stack `OP_PICK` panic limits malformed-index coverage.
+evidence. No Core consensus or policy acceptance is established for this
+constant-sum construction. The historical executor's out-of-entire-stack
+`OP_PICK` panic was a tooling limitation; the repaired `4b7269a` pin does not
+retroactively strengthen these measurements or establish protocol validity.
 
 See the [constant-sum primitive](../primitives/winternitz-constant-sum20.md)
 for exact code capacity, public API, proof scope, hash alternatives,
 independent Python reproduction, and [NR-041](../negative-results/index.md#nr-041-20-byte-winternitz-search-and-overflow-relation-boundaries)
 for the restricted radix search and rejected zero-fixture-only improvements.
+
+The constant-composition verifier intentionally has no Script byte-recovery
+row. Its host-side rank decoder is not included in the authentication costs;
+the missing consumer boundary is tracked by [NR-058](../negative-results/index.md#nr-058-constant-composition-byte-recovery-is-not-yet-a-composable-script-primitive)
+and [OP-022](../open-problems.md#op-022--constant-composition-script-decoder).

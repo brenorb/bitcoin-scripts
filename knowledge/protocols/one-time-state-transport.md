@@ -172,9 +172,11 @@ require a final caller predicate, and surrounding state counts against the
 same 1,000-item limit. Metrics are `locally-reproduced`, `research-unlimited`
 under the stack-limit-disabled tapscript helper with `OP_TRUE`; strict-stack
 tests remain `unclassified` deployment evidence. Transaction framing and
-the caller predicate are excluded. There is no Core consensus or policy
-validation, and the local executor's out-of-stack `OP_PICK` panic remains an
-unresolved validation limitation.
+the caller predicate are excluded. There is no complete constant-sum protocol
+Core consensus or policy validation. The historical executor's out-of-stack
+`OP_PICK` panic is addressed by repaired pin `4b7269a`; see
+[adoption and scope](../negative-results/index.md#nr-048-minimal-push-policy-must-follow-execution).
+That tooling repair does not strengthen the recorded fragment evidence.
 
 See the [constant-sum primitive](../primitives/winternitz-constant-sum20.md)
 and [OP-009](../open-problems.md#op-009--one-time-authentication-security-profiles)
@@ -214,7 +216,27 @@ assignments to the first `2^160` ranks. The consumer must bind the assignment
 to its intended message and define unused-rank and witness-alias handling.
 The local one-time argument uses a fixed multiset as an antichain, honestly
 generated independent keys, and chain inversion/collision assumptions.
-HASH160 retains its existing security tradeoffs. The exact out-of-pool
-`OP_ROLL` boundary exposes a pinned-executor panic, so those tests establish
-neither clean local rejection nor Core validity. See
+HASH160 retains its existing security tradeoffs. The historical `ba96bc2`
+executor panicked at the exact out-of-pool `OP_ROLL` boundary; that result was
+not a clean local rejection. The lab now pins repaired interpreter `4b7269a`,
+without relabeling historical measurements. The later
+[v30.3 differential experiment](../core-validation.md) confirms that boundary
+rejection and validates one complete isolated HASH160 leaf (703 vbytes,
+70 entry data items, zero hints, local stack-limited peak 119). This is
+`differentially-validated`, `policy-validated` publication-leaf evidence; it
+does not validate a complete state-transport or BitVM transaction protocol. See
 [NR-042](../negative-results/index.md#nr-042-constant-composition-search-and-endpoint-sharing-limits).
+
+The [mixed-stage constant-sum construction](../primitives/winternitz-constant-sum-mixed20.md)
+further reduces the same terminal boundary to 2,335 bytes with an entry guard,
+or 2,334 bytes with isolation checked after staging. It uses 45 alternating
+SHA256/RIPEMD160 chains, 33 selector/node openings, twelve implicit endpoints,
+and fifteen local equal-sum pair relations. The exactly counted union carries
+all 160 input bits and needs no branch hints. Its 66 data items coexist at entry
+and the fragment peaks at 111 combined stack items.
+
+The representation remains terminal: Script checks and consumes the selected
+union codeword but does not reconstruct the source bytes or reject unused ranks.
+The same BitVM3 binding obligations therefore apply. These measurements are
+`locally-reproduced`, `research-unlimited`; strict local execution is
+`unclassified`, and the heuristic parameter search is not an optimum proof.

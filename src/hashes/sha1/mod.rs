@@ -2,11 +2,14 @@
 
 use crate::arithmetic::u32::{
     add::u32_add_drop,
-    and::u32_and,
-    or::u32_or,
+    and::u32_and_drop,
+    or::u32_or_drop,
     rotate::u32_rrot,
-    stack::{u32_drop, u32_fromaltstack, u32_pick, u32_push, u32_roll, u32_toaltstack},
-    xor::{u32_xor, u8_drop_xor_table, u8_push_xor_table},
+    stack::{
+        u32_drop, u32_fromaltstack, u32_pick, u32_push, u32_roll, u32_toaltstack,
+        u8_reverse_toaltstack,
+    },
+    xor::{u32_xor_drop, u8_drop_xor_table, u8_push_xor_table},
 };
 use crate::support::script::{script, Script};
 use crate::support::script_ops::push_to_stack;
@@ -38,7 +41,7 @@ pub fn sha1(num_bytes: usize) -> Script {
     }
 
     script! {
-        { push_reverse_bytes_to_alt(num_bytes) }
+        { u8_reverse_toaltstack(num_bytes) }
         { u8_push_xor_table() }
         { padding_add_roll(num_bytes) }
         { sha1_init() }
@@ -58,12 +61,37 @@ pub fn sha1(num_bytes: usize) -> Script {
     }
 }
 
-fn push_reverse_bytes_to_alt(num_bytes: usize) -> Script {
+/// Continues SHA-1 from H0..H4 after one unpadded 64-byte block over a
+/// 16-byte suffix, producing the digest of the resulting 80-byte message.
+/// The suffix is the complete input stack as 16 canonical byte-valued items;
+/// the caller must authenticate the supplied state against the prefix.
+pub fn sha1_80bytes_from_midstate(midstate: [u32; 5]) -> Script {
+    let mut state = midstate;
+    state.reverse();
     script! {
-        for i in 1..=num_bytes {
-            { num_bytes - i }
-            OP_ROLL
-            OP_TOALTSTACK
+        { u8_reverse_toaltstack(16) }
+        { u8_push_xor_table() }
+        for _ in 0..16 {
+            OP_FROMALTSTACK
+        }
+        0x80
+        { push_to_stack(0, 39) }
+        { u32_push(0) }
+        { u32_push(640) }
+        for i in 1..16 {
+            { u32_roll(i as u32) }
+        }
+        for word in state {
+            { u32_push(word) }
+        }
+        { sha1_transform(16) }
+        { sha1_final() }
+        for _ in 0..5 {
+            { u32_toaltstack() }
+        }
+        { u8_drop_xor_table() }
+        for _ in 0..5 {
+            { u32_fromaltstack() }
         }
     }
 }
@@ -231,33 +259,17 @@ const fn round_constant(round: usize) -> u32 {
     }
 }
 
-// Each bitwise primitive preserves its first input. These wrappers consume
-// that preserved copy so their stack contract is simply (x, y) -> op(x, y).
+// Round helpers consume both operands and leave only the bitwise result.
 fn xor_top_drop(words_above_table: usize) -> Script {
-    script! {
-        { u32_xor(0, 1, words_above_table as u32 + 1) }
-        { u32_toaltstack() }
-        { u32_drop() }
-        { u32_fromaltstack() }
-    }
+    u32_xor_drop(0, 1, words_above_table as u32 + 1)
 }
 
 fn and_top_drop(words_above_table: usize) -> Script {
-    script! {
-        { u32_and(0, 1, words_above_table as u32 + 1) }
-        { u32_toaltstack() }
-        { u32_drop() }
-        { u32_fromaltstack() }
-    }
+    u32_and_drop(0, 1, words_above_table as u32 + 1)
 }
 
 fn or_top_drop(words_above_table: usize) -> Script {
-    script! {
-        { u32_or(0, 1, words_above_table as u32 + 1) }
-        { u32_toaltstack() }
-        { u32_drop() }
-        { u32_fromaltstack() }
-    }
+    u32_or_drop(0, 1, words_above_table as u32 + 1)
 }
 
 // d ^ (b & (c ^ d))
@@ -307,7 +319,8 @@ fn majority(words_above_table: usize) -> Script {
 mod tests {
     use super::*;
     use crate::arithmetic::u32::stack::{u32_equal, u32_push};
-    use bitcoin::hashes::{sha1 as reference_sha1, Hash};
+    use crate::support::execution::execute_script_with_inputs;
+    use bitcoin::hashes::{sha1 as reference_sha1, Hash, HashEngine};
 
     fn push_message(message: &[u8]) -> Script {
         script! {
@@ -330,6 +343,15 @@ mod tests {
         });
 
         assert!(result.success, "{result}");
+    }
+
+    fn midstate_for_prefix(prefix: &[u8; 64]) -> [u32; 5] {
+        let mut engine = reference_sha1::HashEngine::default();
+        engine.input(prefix);
+        let bytes = engine.midstate();
+        std::array::from_fn(|index| {
+            u32::from_be_bytes(bytes[index * 4..index * 4 + 4].try_into().unwrap())
+        })
     }
 
     #[test]
@@ -446,6 +468,91 @@ mod tests {
         verify_digest(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
         verify_digest(&[0x42; 80]);
         verify_digest(&[0x24; 130]);
+    }
+
+    #[test]
+    fn continues_from_midstate() {
+        let prefix = [0x42u8; 64];
+        let suffix: Vec<u8> = (0..16).collect();
+        let midstate = midstate_for_prefix(&prefix);
+        let mut message = prefix.to_vec();
+        message.extend_from_slice(&suffix);
+        let expected = reference_sha1::Hash::hash(&message).to_byte_array();
+        let result = crate::support::execution::execute_script_without_stack_limit(script! {
+            { push_message(&suffix) }
+            { sha1_80bytes_from_midstate(midstate) }
+            for byte in expected {
+                { byte }
+                OP_EQUALVERIFY
+            }
+            OP_TRUE
+        });
+
+        assert!(result.success, "{result}");
+    }
+
+    #[test]
+    fn continues_from_asymmetric_midstate_vector() {
+        let mut prefix = [0u8; 64];
+        for (index, byte) in prefix.iter_mut().enumerate() {
+            *byte = index as u8;
+        }
+        prefix[1] = 0x7f;
+        prefix[2] = 0x80;
+        prefix[3] = 0xff;
+        let suffix = [
+            0x00, 0x7f, 0x80, 0xff, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa,
+            0xbb, 0xcc,
+        ];
+        let midstate = midstate_for_prefix(&prefix);
+        let mut message = prefix.to_vec();
+        message.extend_from_slice(&suffix);
+        let expected = reference_sha1::Hash::hash(&message).to_byte_array();
+        let result = crate::support::execution::execute_script_without_stack_limit(script! {
+            { push_message(&suffix) }
+            { sha1_80bytes_from_midstate(midstate) }
+            for byte in expected {
+                { byte }
+                OP_EQUALVERIFY
+            }
+            OP_TRUE
+        });
+
+        assert!(result.success, "{result}");
+    }
+
+    #[test]
+    fn rejects_extra_suffix_bytes() {
+        let result = execute_script_with_inputs(
+            script! {
+                { sha1_80bytes_from_midstate(INITIAL_STATE) }
+                for _ in 0..20 {
+                    OP_DROP
+                }
+                OP_DEPTH
+                OP_0
+                OP_EQUAL
+            },
+            vec![vec![0x42]; 17],
+        );
+
+        assert!(!result.success);
+    }
+
+    #[test]
+    fn rejects_short_suffix_bytes() {
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                { sha1_80bytes_from_midstate(INITIAL_STATE) }
+                for _ in 0..20 {
+                    OP_DROP
+                }
+                OP_TRUE
+            },
+            vec![Vec::new(); 15],
+        );
+
+        assert!(!result.success);
     }
 
     #[test]

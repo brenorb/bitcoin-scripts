@@ -444,11 +444,12 @@ pub fn blake3_compute_script(message_len: usize) -> Script {
     blake3_compute_script_with_limb(message_len, 29)
 }
 
-fn blake3_short(stack: &mut StackTracker, message_len: u32) {
+fn blake3_short(stack: &mut StackTracker, message_len: u32, output_word_count: u8) {
     assert!(
         (1..=32).contains(&message_len),
         "short BLAKE3 message length must be in the range [1, 32]"
     );
+    assert!((1..=8).contains(&output_word_count));
 
     let input_nibbles = message_len * 2;
     stack.define(input_nibbles, "short message nibbles");
@@ -537,7 +538,7 @@ fn blake3_short(stack: &mut StackTracker, message_len: u32) {
             })
             .collect();
         tables.push_late_tables(stack);
-        compress_short_digits(stack, message_len, message, &tables);
+        compress_short_digits(stack, message_len, message, &tables, output_word_count);
     } else {
         let message = (0..message_word_count as usize)
             .map(|semantic_index| (semantic_index as u8, message_words[semantic_index]))
@@ -550,21 +551,26 @@ fn blake3_short(stack: &mut StackTracker, message_len: u32) {
             get_flags_for_block(0, 1),
             message,
             &tables,
-            8,
+            output_word_count,
             true,
             true,
         );
     }
 
-    for _ in 0..8 {
+    let unused_state_variables = if message_word_count == 8 {
+        8 + (8 - u32::from(output_word_count)) * 8
+    } else {
+        16 - u32::from(output_word_count)
+    };
+    for _ in 0..unused_state_variables {
         stack.drop(stack.get_var_from_stack(0));
     }
-    if message_len == 32 {
+    if output_word_count == 8 && message_len == 32 {
         tables.drop_after_destructive_xor_query(stack);
     } else {
         tables.drop(stack);
     }
-    stack.from_altstack_joined(64, "blake3-hash");
+    stack.from_altstack_joined(u32::from(output_word_count) * 8, "blake3-hash");
 }
 
 fn blake3_short_message_nibbles(message: &[u8]) -> Vec<u8> {
@@ -646,29 +652,78 @@ pub fn blake3_short_compute_script(message_len: usize) -> Script {
     );
 
     let mut stack = StackTracker::new();
-    blake3_short(&mut stack, message_len as u32);
+    blake3_short(&mut stack, message_len as u32, 8);
     Script::new("optimized short BLAKE3").push_script(optimize_to_fixed_point(
         stack.get_script().compile_with_policy(),
     ))
 }
 
-pub fn blake3_verify_output_script(expected_output: [u8; 32]) -> Script {
+/// Computes the first 128 bits of unkeyed BLAKE3 for a witness-backed message
+/// of at most 32 bytes. The input contract matches
+/// [`blake3_short_compute_script`], while the output contains only the first
+/// four little-endian digest words (32 u4 items).
+pub fn blake3_short_compute_script_truncated_128(message_len: usize) -> Script {
+    if message_len == 0 {
+        let empty = <[u8; 32]>::from_hex(
+            "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+        )
+        .unwrap();
+        let nibbles = empty[..16]
+            .into_iter()
+            .flat_map(|byte| [byte >> 4, byte & 0x0f])
+            .collect::<Vec<_>>();
+        return Script::new("truncated empty BLAKE3").push_script(
+            script! {
+                OP_DEPTH 0 OP_EQUALVERIFY
+                for nibble in nibbles {
+                    { nibble }
+                }
+            }
+            .compile_with_policy(),
+        );
+    }
+    assert!(
+        message_len <= 32,
+        "short BLAKE3 messages must be at most 32 bytes"
+    );
+
+    let mut stack = StackTracker::new();
+    blake3_short(&mut stack, message_len as u32, 4);
+    Script::new("optimized truncated short BLAKE3").push_script(optimize_to_fixed_point(
+        stack.get_script().compile_with_policy(),
+    ))
+}
+
+fn verify_output_bytes(expected_output: &[u8], name: &str) -> Script {
     let expected_nibbles = expected_output
         .into_iter()
         .flat_map(|byte| [byte >> 4, byte & 0x0f])
         .rev()
         .collect::<Vec<_>>();
 
-    script! {
-        for (index, nibble) in expected_nibbles.iter().enumerate() {
-            {*nibble}
-            if index + 1 == expected_nibbles.len() {
-                OP_EQUAL
-            } else {
-                OP_EQUALVERIFY
+    Script::new(name).push_script(
+        script! {
+            for (index, nibble) in expected_nibbles.iter().enumerate() {
+                {*nibble}
+                if index + 1 == expected_nibbles.len() {
+                    OP_EQUAL
+                } else {
+                    OP_EQUALVERIFY
+                }
             }
         }
-    }
+        .compile_with_policy(),
+    )
+}
+
+pub fn blake3_verify_output_script(expected_output: [u8; 32]) -> Script {
+    verify_output_bytes(&expected_output, "verify BLAKE3 output")
+}
+
+/// Verifies the first 128 bits returned by
+/// [`blake3_short_compute_script_truncated_128`].
+pub fn blake3_verify_output_prefix_script(expected_output: [u8; 16]) -> Script {
+    verify_output_bytes(&expected_output, "verify truncated BLAKE3 output")
 }
 
 #[cfg(test)]
@@ -857,6 +912,49 @@ mod tests {
     }
 
     #[test]
+    fn test_short_truncated_128_all_lengths() {
+        for message_len in 0..=32 {
+            let message = (0..message_len)
+                .map(|index| ((index * 97 + message_len * 23) & 0xff) as u8)
+                .collect::<Vec<_>>();
+            let expected = *blake3::hash(&message).as_bytes();
+            let result = execute_script(script! {
+                { blake3_push_short_message_script(&message) }
+                { blake3_short_compute_script_truncated_128(message_len) }
+                { blake3_verify_output_prefix_script(expected[..16].try_into().unwrap()) }
+            });
+            assert!(result.success, "length {message_len}: {result}");
+        }
+    }
+
+    #[test]
+    fn test_short_truncated_128_rejects_malformed_inputs() {
+        let compute = blake3_short_compute_script_truncated_128(1);
+        for invalid_nibble in [-1, 16] {
+            let result = execute_script(script! {
+                { invalid_nibble } 0
+                { compute.clone() }
+            });
+            assert!(!result.success, "accepted invalid nibble {invalid_nibble}");
+        }
+
+        let extra_input = execute_script(script! {
+            0 0 0
+            { compute }
+        });
+        assert!(!extra_input.success, "accepted an extra witness item");
+
+        let extra_empty_input = execute_script(script! {
+            0
+            { blake3_short_compute_script_truncated_128(0) }
+        });
+        assert!(
+            !extra_empty_input.success,
+            "accepted input for an empty message"
+        );
+    }
+
+    #[test]
     fn test_short_direct_nibbles_reject_malformed_inputs() {
         let compute = blake3_short_compute_script(1);
         for invalid_nibble in [-1, 16] {
@@ -993,56 +1091,110 @@ mod tests {
         test_official_test_vectors_with_limbs(&USEFUL_LIMB_LENGTHS)
     }
 
+    // Fragment-only tapscript resource probe with the stack limit enforced.
+    // All message and padding items coexist in the witness at entry, with zero
+    // auxiliary hints. Staging and hashing are
+    // compiled together; the 64 digest nibbles and padding remain observable.
+    // A complete-leaf cleanup would let the optimizer remove the empty hash's
+    // constant output and invalidate the stack-bound measurement.
     fn test_blake3_stack_space(
         blake3_script: Script,
         message_len: usize,
         limb_len: u8,
         extra_elements: i32,
-    ) -> bool {
+    ) -> crate::support::execution::ExecuteInfo {
+        assert!(extra_elements >= 0);
         let message = vec![0u8; message_len];
-        execute_script(script! {
-            for _ in 0..extra_elements {
-                { -1 } OP_TOALTSTACK
+        let mut witness = Vec::new();
+        for chunk in chunk_message(&message).into_iter().rev() {
+            for half in chunk.chunks_exact(32) {
+                for limb in pack_256_bits(half, limb_len) {
+                    let mut encoded = [0u8; 8];
+                    let len = bitcoin::script::write_scriptint(&mut encoded, i64::from(limb));
+                    witness.push(encoded[..len].to_vec());
+                }
             }
-            { blake3_push_message_script_with_limb(&message, limb_len) }
-            { blake3_script.clone() }
-            for _ in 0..extra_elements {
-                OP_FROMALTSTACK OP_DROP
-            }
-            for _ in 0..64 {
-                OP_DROP
-            }
-            OP_TRUE
-        })
-        .success
+        }
+        witness.extend((0..extra_elements).map(|_| vec![0x81]));
+        let data_items = witness.len();
+        let witness_bytes =
+            bitcoin::consensus::serialize(&bitcoin::Witness::from_slice(&witness)).len();
+        let compiled = script! {
+            for _ in 0..extra_elements { OP_TOALTSTACK }
+            { blake3_script }
+        }
+        .compile_with_policy();
+        let script_bytes = compiled.len();
+        let compilation = if script_bytes > crate::support::script::MAX_OPTIMIZER_INPUT_BYTES {
+            "unoptimized"
+        } else {
+            "optimized"
+        };
+        let result = crate::support::execution::execute_raw_script_with_inputs_strict(
+            compiled.to_bytes(),
+            witness,
+        );
+        println!(
+            "BLAKE3_RESOURCE message_bytes={message_len} limb_bits={limb_len} message_items={} padding_items={extra_elements} data_items={data_items} hint_items=0 witness_bytes={witness_bytes} script_bytes={script_bytes} compilation={compilation} combined_peak={} context=tapscript stack_limit_enforced={} deployment=unclassified error={:?}",
+            data_items - extra_elements as usize, result.stats.max_nb_stack_items,
+            result.stack_limit_enforced, result.error,
+        );
+        result
     }
 
     fn test_maximum_alstack_element_calculation_with_limbs(limb_lens: &[u8]) {
+        use bitcoin_scriptexec::ExecError;
         for limb_len in limb_lens.iter().copied() {
             for message_len in std::iter::once(0).chain((64..=1024).step_by(64)) {
                 let blake3_script = blake3_compute_script_with_limb(message_len, limb_len);
                 let maximum_extra_elements =
                     maximum_number_of_altstack_elements_using_blake3(message_len, limb_len);
                 if maximum_extra_elements < 0 {
-                    assert!(!test_blake3_stack_space(
-                        blake3_script.clone(),
-                        message_len,
-                        limb_len,
-                        0
-                    ));
+                    let result = test_blake3_stack_space(blake3_script, message_len, limb_len, 0);
+                    assert_eq!(
+                        result.error,
+                        Some(ExecError::StackSize),
+                        "limb {limb_len}, message {message_len}, no padding"
+                    );
                 } else {
-                    assert!(test_blake3_stack_space(
+                    let result = test_blake3_stack_space(
                         blake3_script.clone(),
                         message_len,
                         limb_len,
-                        maximum_extra_elements
-                    ));
-                    assert!(!test_blake3_stack_space(
-                        blake3_script.clone(),
+                        maximum_extra_elements,
+                    );
+                    assert!(result.stack_limit_enforced);
+                    assert_eq!(
+                        result.error, None,
+                        "limb {limb_len}, message {message_len}, padding {maximum_extra_elements}"
+                    );
+                    // Hashing is a fragment with 64 outputs, so complete-leaf
+                    // clean-stack success is deliberately false.
+                    assert!(!result.success);
+                    let expected = blake3::hash(&vec![0u8; message_len])
+                        .as_bytes()
+                        .iter()
+                        .flat_map(|byte| [byte >> 4, byte & 0x0f])
+                        .map(|nibble| if nibble == 0 { vec![] } else { vec![nibble] })
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        result.final_stack.0.iter_str().collect::<Vec<_>>(),
+                        expected,
+                        "limb {limb_len}, message {message_len}: digest nibbles"
+                    );
+                    assert_eq!(
+                        result.stats.max_nb_stack_items, 1000,
+                        "limb {limb_len}, message {message_len}: capacity must be tight"
+                    );
+                    let overflow = test_blake3_stack_space(
+                        blake3_script,
                         message_len,
                         limb_len,
-                        maximum_extra_elements + 1
-                    ));
+                        maximum_extra_elements + 1,
+                    );
+                    assert_eq!(overflow.error, Some(ExecError::StackSize),
+                        "limb {limb_len}, message {message_len}, capacity {maximum_extra_elements}: valid peak {}, next peak {}",
+                        result.stats.max_nb_stack_items, overflow.stats.max_nb_stack_items);
                 }
             }
         }

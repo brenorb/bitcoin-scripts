@@ -1282,9 +1282,11 @@ pub(crate) fn compress_short_digits(
     block_len: u32,
     mut message: HashMap<u8, DigitWord>,
     tables: &TablesVars,
+    output_words: u8,
 ) {
     // This backend is called only for a single root block with eight live
     // message words (29..=32 bytes).
+    assert!((1..=8).contains(&output_words));
     let initial = [
         IV[0], IV[1], IV[2], IV[3], IV[4], IV[5], IV[6], IV[7], IV[0], IV[1], IV[2], IV[3], 0, 0,
         block_len, 0b1011,
@@ -1374,11 +1376,11 @@ pub(crate) fn compress_short_digits(
         }
     }
 
-    for word in (0..8_u8).rev() {
+    for word in (0..output_words).rev() {
         for digit in 0..8 {
             let y = state[&(word + 8)];
             let x = state.get_mut(&word).unwrap();
-            if block_len == 32 && word == 0 && digit == 7 {
+            if output_words == 8 && block_len == 32 && word == 0 && digit == 7 {
                 digit_xor_final_query(stack, x, digit, &y, digit);
             } else {
                 digit_xor(stack, x, digit, &y, digit);
@@ -1400,15 +1402,38 @@ mod tests {
     use crate::support::execution::execute_script;
     use crate::support::script::ScriptCompilation;
 
+    fn isolated_table_cleanup(tables: TablesVars) -> Script {
+        // Declare the fragment's input layout without emitting setup pushes.
+        // Optimizing unused setup followed by cleanup can erase the setup;
+        // subtracting independently optimized lengths is not a cleanup cost.
+        let mut stack = StackTracker::new();
+        let mut input = |var: StackVariable, name: &str| {
+            if var.is_null() {
+                var
+            } else {
+                stack.define(var.size(), name)
+            }
+        };
+        let inputs = TablesVars {
+            depth_lookup: input(tables.depth_lookup, "depth_lookup"),
+            xor_table: input(tables.xor_table, "xor_table"),
+            shift_tables: input(tables.shift_tables, "shift_tables"),
+            modulo_last: input(tables.modulo_last, "modulo_last"),
+            add_interleaved: input(tables.add_interleaved, "add_interleaved"),
+            ..tables
+        };
+        inputs.drop(&mut stack);
+        stack.get_script()
+    }
+
     #[test]
     fn packed_table_lifecycle_metrics() {
         let mut stack = StackTracker::new();
         let tables = TablesVars::new(&mut stack, true);
         let setup_bytes = stack.get_script().compile_with_policy().len();
-        tables.drop(&mut stack);
         assert_eq!(setup_bytes, 353);
         assert_eq!(
-            stack.get_script().compile_with_policy().len() - setup_bytes,
+            isolated_table_cleanup(tables).compile_with_policy().len(),
             166
         );
 
@@ -1417,11 +1442,10 @@ mod tests {
         let initial_setup_bytes = stack.get_script().compile_with_policy().len();
         tables.push_late_tables(&mut stack);
         let complete_setup_bytes = stack.get_script().compile_with_policy().len();
-        tables.drop(&mut stack);
         assert_eq!(initial_setup_bytes, 241);
         assert_eq!(complete_setup_bytes - initial_setup_bytes, 112);
         assert_eq!(
-            stack.get_script().compile_with_policy().len() - complete_setup_bytes,
+            isolated_table_cleanup(tables).compile_with_policy().len(),
             166
         );
     }

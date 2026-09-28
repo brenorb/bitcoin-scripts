@@ -1,4 +1,5 @@
 use crate::arithmetic::u32::zip::u32_copy_zip;
+use crate::arithmetic::u32::zip::u32_zip;
 use crate::support::script::*;
 
 /// Bitwise XOR of two u8 elements, i denoting how many values are there in the stack after the table (including the input numbers A and B)
@@ -100,6 +101,26 @@ pub fn u32_xor(a: u32, b: u32, stack_size: u32) -> Script {
         {u8_xor(2 + (stack_size - 2) * 4)}
 
 
+        OP_FROMALTSTACK
+        OP_FROMALTSTACK
+        OP_FROMALTSTACK
+    }
+}
+
+/// Bitwise XOR of two a-th and b-th u32 values, consuming both inputs.
+/// `stack_size` is one plus the number of u32 words above the shared table.
+pub fn u32_xor_drop(a: u32, b: u32, stack_size: u32) -> Script {
+    assert_ne!(a, b);
+    assert!(stack_size >= 3);
+    script! {
+        { u32_zip(a, b) }
+        { u8_xor(4 + (stack_size - 2) * 4) }
+        OP_TOALTSTACK
+        { u8_xor(2 + (stack_size - 2) * 4) }
+        OP_TOALTSTACK
+        { u8_xor((stack_size - 2) * 4) }
+        OP_TOALTSTACK
+        { u8_xor((stack_size - 2) * 4 - 2) }
         OP_FROMALTSTACK
         OP_FROMALTSTACK
         OP_FROMALTSTACK
@@ -331,9 +352,10 @@ pub fn u8_drop_xor_table() -> Script {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::arithmetic::test_helpers::{run_with_witness, word_witness};
     use crate::arithmetic::u32::stack::*;
-    use crate::support::execution::run;
-    use rand::Rng;
+    use crate::support::execution::{execute_script_with_inputs_strict, run};
+    use rand::{rngs::StdRng, Rng, SeedableRng};
 
     #[test]
     fn test_xor_table() {
@@ -358,42 +380,103 @@ mod tests {
     #[test]
     fn test_u32_xor() {
         println!("u32 xor: {} bytes", u32_xor(0, 1, 3).len());
-        let mut rng = rand::thread_rng();
+        let script = script! {
+            { u32_toaltstack() }
+            { u32_toaltstack() }
+            { u8_push_xor_table() }
+            { u32_fromaltstack() }
+            { u32_fromaltstack() }
+            { u32_xor(0, 1, 3) }
+            { u32_toaltstack() }
+            { u32_drop() } // drop the preserved y
+            { u8_drop_xor_table() }
+            { u32_fromaltstack() }
+            { u32_equal() }
+        }
+        .compile_with_policy()
+        .to_bytes();
+        let mut rng = StdRng::seed_from_u64(0x7533325f786f72);
         for _ in 0..1000 {
             let x: u32 = rng.gen();
             let y: u32 = rng.gen();
-            let script = script! {
-                {u8_push_xor_table()}
-                {u32_push(x)}
-                {u32_push(y)}
-                {u32_xor(0, 1, 3)}
-                { u32_push(x ^ y) }
-                {u32_equal()}
-                OP_TOALTSTACK
-                {u32_drop()} // drop y
-                {u8_drop_xor_table()}
-                OP_FROMALTSTACK
-            };
-            run(script);
+            run_with_witness(
+                &script,
+                word_witness(x ^ y)
+                    .chain(word_witness(x))
+                    .chain(word_witness(y)),
+            );
         }
     }
 
     #[test]
+    fn test_u32_xor_drop() {
+        let script = script! {
+            { u32_toaltstack() }
+            { u32_toaltstack() }
+            { u8_push_xor_table() }
+            { u32_fromaltstack() }
+            { u32_fromaltstack() }
+            { u32_xor_drop(0, 1, 3) }
+            { u32_toaltstack() }
+            { u8_drop_xor_table() }
+            { u32_fromaltstack() }
+            { u32_equal() }
+        };
+        let compiled = script.clone().compile_with_policy().to_bytes();
+        let mut rng = StdRng::seed_from_u64(0x7533325f64726f70);
+        for _ in 0..100 {
+            let x: u32 = rng.gen();
+            let y: u32 = rng.gen();
+            run_with_witness(
+                &compiled,
+                word_witness(x ^ y)
+                    .chain(word_witness(x))
+                    .chain(word_witness(y)),
+            );
+        }
+
+        let malformed = execute_script_with_inputs_strict(
+            script,
+            vec![
+                vec![],
+                vec![],
+                vec![],
+                vec![],
+                vec![],
+                vec![],
+                vec![],
+                vec![0, 1],
+                vec![],
+                vec![],
+                vec![],
+                vec![],
+            ],
+        );
+        assert!(
+            !malformed.success,
+            "out-of-range byte unexpectedly accepted"
+        );
+    }
+
+    #[test]
     fn test_u8_xor_exhaustive() {
+        // Keep the expected byte below the table and restore the two operands
+        // above it. Only witness values vary across the exhaustive domain.
+        let script = script! {
+            OP_TOALTSTACK OP_TOALTSTACK
+            { u8_push_xor_table() }
+            OP_FROMALTSTACK OP_FROMALTSTACK
+            { u8_xor(2) }
+            OP_TOALTSTACK
+            { u8_drop_xor_table() }
+            OP_FROMALTSTACK
+            OP_EQUAL
+        }
+        .compile_with_policy()
+        .to_bytes();
         for a in 0..256 {
             for b in 0..256 {
-                let script = script! {
-                  { u8_push_xor_table() }
-                  { a }
-                  { b }
-                  { u8_xor(2) }
-                  { a ^ b }
-                  OP_EQUAL
-                  OP_TOALTSTACK
-                  { u8_drop_xor_table() }
-                  OP_FROMALTSTACK
-                };
-                run(script);
+                run_with_witness(&script, [a ^ b, a, b]);
             }
         }
     }

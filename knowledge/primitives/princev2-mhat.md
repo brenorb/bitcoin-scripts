@@ -10,29 +10,36 @@ stack execution and zero auxiliary hints?
 
 `prince_m_layer()` consumes the 16 MSB-first u4 state nibbles used by
 `prince_encrypt()` and returns the transformed 16-nibble state in the same
-order. It first checks every numeric input is in `0..=15`, then reuses the
-packed lookup memory and quartet scheduler already used by the optimized
-PRINCEv2 generator. It omits key whitening, S-boxes, round constants, and
-ShiftRows. The transformation is the PRINCEv2 M-layer and is an involution.
+order. It first certifies every input nibble is canonically encoded (the
+empty byte vector for zero; a single byte with value `1..=15` otherwise, the
+same per-nibble convention `prince_verify` uses), restoring and checking each
+of the 16 altstack positions independently, then reuses the packed lookup
+memory and quartet scheduler already used by the optimized PRINCEv2
+generator. It omits key whitening, S-boxes, round constants, and ShiftRows.
+The transformation is the PRINCEv2 M-layer and is an involution.
 
 The fragment preserves unrelated stack items below the 16-state input. It
-does not enforce minimally encoded witness bytes; callers that require a
-canonical wire encoding must add that policy at the surrounding boundary.
+rejects out-of-range values and non-minimally encoded ScriptNums (e.g. a
+two-byte encoding of a small value, or a byte with the sign bit set) at every
+position; callers still own complete protocol binding at the surrounding
+boundary.
 
 ## Measured boundary
 
-The `fragment-with-memory` boundary includes numeric range checks, packed table
-setup, all four M-hat blocks, output ordering, and table cleanup. It excludes
-input pushes, output consumption, tapleaf/control-block bytes, and transaction
-framing. The representative witness contains 16 nibble data items and zero
-auxiliary hints; all data items coexist at entry.
+The `fragment-with-memory` boundary includes canonical nibble checks, packed
+table setup, all four M-hat blocks, output ordering, and table cleanup. It
+excludes input pushes, output consumption, tapleaf/control-block bytes, and
+transaction framing. The representative witness contains 16 nibble data items
+and zero auxiliary hints; all data items coexist at entry.
 
 | Configuration | Script bytes | Witness bytes | Hints | Peak items | Static non-push opcodes |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Zero-key packed layout, state `0x0123456789abcdef` | 1,595 | 32 (33 max) | 0 | 633 | 857 |
+| Zero-key packed layout, state `0x0123456789abcdef` | 1,707 | 32 (33 max) | 0 | 633 | 937 |
 
-The local executor reported no useful dynamic opcode count for this run, so
-static non-push operations are reported separately. The measured validation
+In Tapscript the local executor's `opcode_count` counts every parsed
+instruction, pushes and untaken branches included (1,608 for the benchmark
+leaf), so it is not a dynamic executed-opcode count; static non-push operations
+are reported instead. The measured validation
 weight delta was zero. The result is `locally-reproduced` in a tapscript
 fixture with the combined 1,000-item stack limit enabled and remains
 `unclassified` for deployment.
@@ -41,9 +48,13 @@ fixture with the combined 1,000-item stack limit enabled and remains
 
 Deterministic tests compare zero, all-nibble-maximum, and
 `0x0123456789abcdef` states against the native PRINCEv2 M-layer reference.
-They also reject an out-of-range nibble, a negative ScriptNum, and a short
-state. The benchmark executes the representative state under the strict local
-interpreter and reports the same boundary metrics.
+A dedicated all-position test certifies that every one of the 16 nibble
+positions independently rejects an out-of-range value (`16`, `-1`) and a
+non-minimal encoding (a two-byte zero, a two-byte one, the single-byte alias
+`0x00`, a byte with the sign bit set), with a canonical all-zero control succeeding, under
+`TapscriptProfile::Consensus` with a complete leaf; a short state is rejected
+separately. The benchmark executes the representative state under the strict
+local interpreter and reports the same boundary metrics.
 
 ## Comparison and limitation
 
@@ -51,8 +62,7 @@ The complete zero-key PRINCEv2 encryption fragment is 6,136 bytes and has the
 same measured 633-item peak. The standalone linear layer is therefore below
 the OP-019 5,000-byte fragment target, but it is not an encryption leaf and
 does not close the full-key/full-plaintext differential criterion. Complete
-transaction, Bitcoin Core, relay-policy, and canonical-byte validation remain
-open.
+transaction, Bitcoin Core, and relay-policy validation remain open.
 
 ## Reproduction
 

@@ -17,18 +17,20 @@ test-only baseline and is not a composable production construction.
 
 ## Boundary and threat model
 
-The measured boundary is `fragment-with-memory`: numeric `0..=15` checks,
-packed lookup setup, four M-hat blocks, output restoration, and cleanup. It
-excludes input pushes, output consumption, transaction framing, and unrelated
-live state. Witness input is hostile numeric ScriptNum data; range failures,
-negative values, and missing state items must fail before lookup depths are
-used. Minimally encoded byte serialization is a caller-level obligation.
+The measured boundary is `fragment-with-memory`: canonical per-nibble checks
+(empty vector for zero, single byte in `1..=15` otherwise), packed lookup
+setup, four M-hat blocks, output restoration, and cleanup. It excludes input
+pushes, output consumption, transaction framing, and unrelated live state.
+Witness input is hostile numeric ScriptNum data; range failures, negative
+values, non-minimal encodings, and missing state items must all fail before
+lookup depths are used.
 
 ## Result
 
-The fragment is 1,565 bytes, uses 16 data items and zero hints, reaches a
-strict 633-item combined peak, and has 827 static non-push operations. The
-local executor reports no useful dynamic opcode count for this run. The
+The fragment is 1,707 bytes, uses 16 data items and zero hints, reaches a
+strict 633-item combined peak, and has 937 static non-push operations. The
+Tapscript executor's `opcode_count` (1,608 for the benchmark leaf) counts every
+parsed instruction rather than executed opcodes, so no dynamic count is reported. The
 result is `locally-reproduced` and `unclassified` for deployment; it is a
 linear subconstruction, not a complete encryption proof.
 

@@ -239,6 +239,6 @@ hash above remain historical evidence; rerunning the harness produces a new
 
 The integrated suite was rerun on 2026-09-27 against pinned Core v30.3: all
 46 consensus/policy expectations and all 92 combined local/Core comparisons
-passed. The report SHA256 is
+passed. The [integrated report](../tests/data/core-validation-v30.3.integrated-20260927.json) SHA256 is
 `5e5cd789eb6e1253cbab92702cda78eb193ed376940fa9a63aca50c1df1b6d75`.
 

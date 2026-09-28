@@ -16,7 +16,7 @@ Measured fragments exclude input pushes and output comparison.
 | HASH160 SHA-256 → RIPEMD-160 | 32-byte input | 752,651 | differentially-validated | Large composed research fragment |
 | HASH160 shared byte table | 32-byte input | 752,327 | differentially-validated | Saves 324 bytes by sharing the 256-item lookup |
 | SHA-256 u4 | 32-byte input | 332,942 | differentially-validated | Large research fragment |
-| SHA-256 u4 prefix | 32-byte input, 8-nibble prefix | 332,970 | differentially-validated | 32-bit collision bound; compression cost unchanged |
+| SHA-256 u4 prefix | 32-byte input, 8-nibble prefix | 332,970 | differentially-validated | 16-bit collision bound; compression cost unchanged |
 | SHA-256 u4 shared lookup | 80-byte input, two chunks | 736,595 | locally-reproduced | 905-item strict peak; 11-byte saving per extra chunk over table reload |
 | SHA-256 u4 midstate | 64-byte prefix + 16-byte suffix | 332,830 | locally-reproduced | 32 nibble witness items (48-byte fixture, 65-byte maximum); 969-item peak; caller binds the state |
 | SHA-256 u32 | 32-byte input | 512,428 | differentially-validated | Larger than local u4 variant |
@@ -53,8 +53,10 @@ algorithms: each executes the full compression schedule and only routes the
 selected output items. The byte-prefix profiles use 65-byte witnesses; the
 u4 eight-nibble profile uses 129 bytes. Their measured stack peaks are 406
 (RIPEMD-160), 632 (SHA-1), 856 (SHA-256 u32), and 969 (SHA-256 u4), under the
-research-unlimited local boundary. An 8-byte or 8-nibble prefix has at most a
-32-bit generic collision bound and an ideal 64-bit preimage bound.
+research-unlimited local boundary. An 8-byte prefix has at most a 32-bit
+generic collision bound and an ideal 64-bit preimage bound; an 8-nibble
+prefix has at most a 16-bit generic collision bound and an ideal 32-bit
+preimage bound.
 
 The SHAKE256 prefix row is a distinct cost point, not a claim that the full
 XOF is deployable: it only materializes the requested output blocks. The

@@ -1769,8 +1769,9 @@ u32), and 332,970 bytes (SHA-256 u4); the corresponding full fragments are
 406, 632, 856, and 969 items, respectively, under the local
 `research-unlimited` boundary.
 
-The prefixes are useful only as explicit result-shape choices. An 8-byte or
-8-nibble prefix has at most a 32-bit generic collision bound and an ideal
-64-bit preimage bound. This is locally reproduced and differentially checked
-against the underlying hash references; it is not a consensus or relay-policy
-deployment claim.
+The prefixes are useful only as explicit result-shape choices. An 8-byte
+prefix has at most a 32-bit generic collision bound and an ideal 64-bit
+preimage bound; an 8-nibble prefix has at most a 16-bit generic collision
+bound and an ideal 32-bit preimage bound. This is locally reproduced and
+differentially checked against the underlying hash references; it is not a
+consensus or relay-policy deployment claim.

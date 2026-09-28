@@ -21,6 +21,7 @@ the source. Read a page together with its comparison page and evidence record.
 - [Checked u4 nonzero-power-of-two predicate](u4-power-of-two.md)
 - [Checked u4 modulo-three projection](u4-mod3.md)
 - [Checked u4 parity projection](u4-parity.md)
+- [Checked fixed-symbol u4 occurrence count](u4-count.md)
 - [Checked u4 transition count](u4-transition-count.md)
 - [Checked u4 adjacent-equality mask](u4-adjacent-equality.md)
 - [Checked odd u4 inverse modulo 16](u4-odd-inverse-mod16.md)

@@ -54,6 +54,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 checked nibbles to nonzero-power-of-two bits | `u4_nibbles_to_power_of_two(32)` | 440 | 50-item peak; one predicate bit per input |
 | 32 checked nibbles to modulo-three residues | `u4_nibbles_to_mod3(32)` | 440 | 50-item peak; one residue per input |
 | 32 checked nibbles to parity bits | `u4_nibbles_to_parity(32)` | 440 | 50-item peak; one output bit per input |
+| Fixed-symbol u4 occurrence count | `u4_nibbles_count(0, 16)` | <!-- metric:u4_symbol_count_16 -->266<!-- /metric:u4_symbol_count_16 --> | <!-- metric:u4_symbol_count_16_stack -->19<!-- /metric:u4_symbol_count_16_stack -->-item peak; one count output; target embedded; numeric equality |
 | 32 checked nibbles transition count | `u4_nibbles_transition_count(32)` | 588 | 35-item peak; 391 static non-push opcodes; one compact count; no table |
 | 32 checked nibbles to adjacent-equality bits | `u4_adjacent_equal_mask(32)` | 558 | 64-item peak; 31 output bits; 361 static non-push opcodes; no lookup table or hints |
 | Checked odd u4 inverse | `u4_odd_inverse_mod16` | 9 | 20-item peak; 16-item table; one data item; zero hints |

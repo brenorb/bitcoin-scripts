@@ -81,6 +81,8 @@ these operations, but this module contains no hash-specific round logic.
   reusable 16-item table generated for a public compile-time constant.
 - `square::u4_square_mod16()` checks one u4 input and queries a reusable
   16-item table for its square modulo 16.
+- `odd_inverse::u4_odd_inverse_mod16()` checks one odd u4 input and queries a
+  reusable 16-item inverse table.
 - `centered::u4_nibbles_to_centered(nibble_count)` maps checked nibbles to
   centered signed digits in `-8..=7`.
 - `bit_transitions::u4_nibbles_to_bit_transitions(nibble_count)` maps checked
@@ -162,6 +164,7 @@ each input with the same output-restoration boundary.
 | Checked modulo-16 sum, 32 nibbles | <!-- metric:u4_sum_mod16_batch32 -->592<!-- /metric:u4_sum_mod16_batch32 --> bytes | <!-- metric:u4_sum_mod16_batch32_stack -->66<!-- /metric:u4_sum_mod16_batch32_stack --> items | <!-- metric:u4_sum_mod16_batch32_opcodes -->400<!-- /metric:u4_sum_mod16_batch32_opcodes --> |
 | Checked constant multiplication query, `c=10` | <!-- metric:u4_mul_constant_mod16 -->6<!-- /metric:u4_mul_constant_mod16 --> bytes | <!-- metric:u4_mul_constant_mod16_stack -->20<!-- /metric:u4_mul_constant_mod16_stack --> items | <!-- metric:u4_mul_constant_mod16_opcodes -->4<!-- /metric:u4_mul_constant_mod16_opcodes --> |
 | Checked u4 square query modulo 16 | <!-- metric:u4_square_mod16 -->6<!-- /metric:u4_square_mod16 --> bytes | <!-- metric:u4_square_mod16_stack -->20<!-- /metric:u4_square_mod16_stack --> items | <!-- metric:u4_square_mod16_opcodes -->4<!-- /metric:u4_square_mod16_opcodes --> |
+| Checked odd-unit inverse modulo 16 | <!-- metric:u4_odd_inverse_mod16 -->9<!-- /metric:u4_odd_inverse_mod16 --> bytes | <!-- metric:u4_odd_inverse_mod16_stack -->20<!-- /metric:u4_odd_inverse_mod16_stack --> items | <!-- metric:u4_odd_inverse_mod16_opcodes -->7<!-- /metric:u4_odd_inverse_mod16_opcodes --> |
 | Canonical checked 32-nibble bit reversal | <!-- metric:u4_bit_reverse_canonical_batch32 -->504<!-- /metric:u4_bit_reverse_canonical_batch32 --> bytes | <!-- metric:u4_bit_reverse_canonical_batch32_stack -->51<!-- /metric:u4_bit_reverse_canonical_batch32_stack --> items | <!-- metric:u4_bit_reverse_canonical_batch32_opcodes -->360<!-- /metric:u4_bit_reverse_canonical_batch32_opcodes --> |
 
 The constant multiplication row measures only the checked reusable query;
@@ -171,6 +174,10 @@ the generated 16-item table setup is <!-- metric:u4_mul_constant_mod16_table -->
 The square row measures only the checked reusable query; its generated
 16-item table setup is <!-- metric:u4_square_mod16_table -->16<!-- /metric:u4_square_mod16_table --> bytes and can be shared across square queries. The representative witness is
 <!-- metric:u4_square_mod16_witness -->3<!-- /metric:u4_square_mod16_witness --> serialized bytes for one input item and has zero incremental hint items.
+
+The odd-unit inverse row measures only the checked reusable query. The
+generated table setup is <!-- metric:u4_odd_inverse_mod16_table -->16<!-- /metric:u4_odd_inverse_mod16_table --> bytes. Its representative witness contains one data item, zero hint items, and
+<!-- metric:u4_odd_inverse_mod16_witness -->3<!-- /metric:u4_odd_inverse_mod16_witness --> serialized bytes.
 
 <!-- metric:u4_popcount_batch32_witness -->65<!-- /metric:u4_popcount_batch32_witness --> serialized witness bytes for the representative checked popcount batch.
 
@@ -416,6 +423,15 @@ witness and adds one raw ScriptNum boundary check per nibble.
 The canonical altstack row adds one raw ScriptNum boundary check per nibble and
 stops before restoring the 128 output bits to the main stack. It measures 1,178
 bytes, 893 static non-push opcodes, and a 189-item peak.
+
+The odd-unit inverse query consumes its input as the `OP_PICK` index and leaves
+the selected inverse above the resident table. The query requires an odd numeric
+value in `1..=15`; it does not enforce byte-unique ScriptNum encoding. Move or
+consume the inverse before dropping the table. Tests copy-check all 16 table
+entries by index before cleanup. At pre-fix source commit
+`963e9aefb5a214eb323e750e45301e8412856945`, the complete setup/query/cleanup
+test failed for input 1 with `InvalidStackOperation` at the final equality check
+after cleanup; the fragment's `OP_SWAP OP_DROP` had removed a table entry.
 
 ## Security
 

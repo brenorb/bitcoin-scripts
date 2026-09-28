@@ -19,6 +19,7 @@ pub mod mirror;
 pub mod mod3;
 pub mod mul_constant;
 pub mod nondecreasing;
+pub mod odd_inverse;
 pub mod one_hot;
 pub mod pack;
 pub mod parity;

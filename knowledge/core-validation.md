@@ -145,6 +145,7 @@ Two fresh isolated-node runs produced byte-identical combined reports, SHA256
 | OP_SUCCESS after a nonminimal or oversized script push | Accept | Reject | Agree |
 | Malformed push before / after OP_SUCCESS | Reject / accept | Reject / reject | Agree |
 | Byte `7e` inside push data, followed by a false result | Reject | Reject | Agree |
+| Checked u4 LSB projection for `0x0123456789abcdef` | Accept | Accept | Agree |
 
 The scan decodes instructions, so an OP_SUCCESS-valued payload byte cannot
 trigger unconditional acceptance. Once an OP_SUCCESS is decoded, later

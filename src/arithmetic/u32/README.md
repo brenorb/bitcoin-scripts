@@ -73,6 +73,9 @@ they do not use BN254 or any other field modulus.
   planes, with plane seven on top and plane zero deepest.
 - `u32_conditional_select()` consumes `condition | when_true | when_false`,
   normalizes the condition with `OP_0NOTEQUAL`, and returns one complete word.
+- `u32::stack::u32_not()` checks four canonical byte limbs and replaces the word
+  with its bytewise complement. The SHA-256 kernel keeps its own unchecked
+  `sha2_u32::u32_not()` for internally produced byte limbs.
 - `byte_parity::u32_byte_parity()` consumes one four-byte word and returns one
   numeric parity bit per byte, with the least-significant byte's bit on top.
 - `zero::u32_iszero()` consumes one four-byte word, range-checks every byte,
@@ -139,6 +142,7 @@ as less-than-or-equal.
 | `u32_xnor(0, 1, 3)` (table excluded) | <!-- metric:u32_xnor -->222<!-- /metric:u32_xnor --> bytes | 0 bytes | <!-- metric:u32_xnor_stack -->272<!-- /metric:u32_xnor_stack --> items, including table; <!-- metric:u32_xnor_opcodes -->182<!-- /metric:u32_xnor_opcodes --> static non-push opcodes |
 | `u32_notequal()` | <!-- metric:u32_notequal -->19<!-- /metric:u32_notequal --> bytes | 0 bytes | <!-- metric:u32_notequal_stack -->9<!-- /metric:u32_notequal_stack --> items |
 | `u32_xor_constant(0x89abcdef)` | <!-- metric:u32_xor_constant -->660<!-- /metric:u32_xor_constant --> bytes | <!-- metric:u32_xor_constant_witness -->13<!-- /metric:u32_xor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xor_constant_stack -->272<!-- /metric:u32_xor_constant_stack --> items; <!-- metric:u32_xor_constant_opcodes -->488<!-- /metric:u32_xor_constant_opcodes --> static non-push opcodes |
+| `u32_not()` | <!-- metric:u32_not -->76<!-- /metric:u32_not --> bytes | <!-- metric:u32_not_witness -->13<!-- /metric:u32_not_witness --> bytes, 4 data items | <!-- metric:u32_not_stack -->7<!-- /metric:u32_not_stack --> items; <!-- metric:u32_not_opcodes -->40<!-- /metric:u32_not_opcodes --> static non-push opcodes |
 | `u32_equal()` | <!-- metric:u32_equal -->18<!-- /metric:u32_equal --> bytes | <!-- metric:u32_equal_witness -->17<!-- /metric:u32_equal_witness --> bytes (<!-- metric:u32_equal_witness_max -->25<!-- /metric:u32_equal_witness_max --> max), 8 data items, 0 hints | <!-- metric:u32_equal_stack -->9<!-- /metric:u32_equal_stack --> items |
 | `u32_equalverify()` | <!-- metric:u32_equalverify -->9<!-- /metric:u32_equalverify --> bytes | <!-- metric:u32_equalverify_witness -->17<!-- /metric:u32_equalverify_witness --> bytes (<!-- metric:u32_equalverify_witness_max -->25<!-- /metric:u32_equalverify_witness_max --> max), 8 data items, 0 hints | <!-- metric:u32_equalverify_stack -->9<!-- /metric:u32_equalverify_stack --> items |
 | `u32_compressed_equal()` | <!-- metric:u32_compressed_equal -->37<!-- /metric:u32_compressed_equal --> bytes | <!-- metric:u32_compressed_equal_witness -->11<!-- /metric:u32_compressed_equal_witness --> bytes | <!-- metric:u32_compressed_equal_stack -->5<!-- /metric:u32_compressed_equal_stack --> items |
@@ -491,6 +495,16 @@ byte-limb contract and does not itself range-check the four word limbs.
 `u32_push(0) + u32_equal()` baseline under the same policy compilation. The
 zero predicate contains <!-- metric:u32_iszero_opcodes -->4<!-- /metric:u32_iszero_opcodes -->
 static non-push opcodes; the baseline measures <!-- metric:u32_iszero_equal_baseline -->21<!-- /metric:u32_iszero_equal_baseline --> bytes.
+
+`u32_not()` is the checked reusable bytewise complement. It validates each
+limb's numeric range and minimal ScriptNum encoding before applying
+`255 - limb`, preserving the four-byte word shape for callers such as
+SHA-256's choose function. Its strict metric uses four canonical `0xff`
+witness limbs and includes no auxiliary hints. The SHA-256 kernel keeps its
+own unchecked `hashes::sha256::sha2_u32::u32_not()` helper, whose limbs are
+produced by the surrounding hash kernel; that helper is not a hostile-witness
+boundary, and callers with hostile word witnesses should use the checked
+`u32::stack::u32_not()` fragment.
 
 `u32_to_zero_byte_mask()` consumes the four canonical byte limbs and returns a
 numeric mask in `0..=15`; bit `i` corresponds to the word's `i`th byte in the

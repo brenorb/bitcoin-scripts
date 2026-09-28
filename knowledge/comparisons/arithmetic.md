@@ -27,6 +27,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | Canonical compressed-u32 decode | u32 raw-encoding boundary | 431 | 7-item peak; 7-byte maximum witness; rejects aliases |
 | Canonical nonnegative compressed-u32 decode | u32 narrow raw-encoding boundary | 405 | 7-item peak; 6-byte maximum witness; rejects negative values and aliases |
 | Canonical u32 byte-word compression | `u32_compress_canonical()` | 130 | 7-item peak; 9-byte representative/13-byte maximum witness; rejects raw limb aliases |
+| Public constant u32 AND | `u32_and_constant(value)` | 620 | 13-byte/4-item witness; 272-item peak; 256-item table |
 | Checked u31 width-9 decomposition | u31 range boundary | 85 | 10-item peak; 4-byte representative witness; numeric `0..=511` check |
 | Canonical checked u31 width-9 decomposition | u31 range plus raw ScriptNum boundary | <!-- metric:u31_bits_canonical_width9 -->90<!-- /metric:u31_bits_canonical_width9 --> | <!-- metric:u31_bits_canonical_width9_stack -->10<!-- /metric:u31_bits_canonical_width9_stack -->-item peak; 4-byte witness; rejects aliases; 0 hints |
 | Checked u4 nibble pair to byte | `u4_pair_to_u8(true)` | 20 | 5-item peak; 2 data items; 5-byte witness |
@@ -155,6 +156,12 @@ zero predicate: `u32_iszero()` is only 4 bytes because it discards position,
 while this construction spends 159 bytes to preserve the first nonzero index
 and validate limbs that are dropped after the decision. It also avoids the
 256-item table resident in the population-count construction.
+
+The embedded-constant u32 AND row specializes the table-backed Boolean path
+for a public mask. It uses 620 locking bytes, a 13-byte/4-item witness, and a
+272-item strict peak. It removes the second runtime word but still pays for a
+fresh 256-item table, so a caller with a reusable table or a runtime mask
+should keep the generic two-word operation.
 
 The 9,893-byte Ed25519 row is the current locking-script-size winner for this
 field. It keeps host values in the ordinary field domain but uses a unique

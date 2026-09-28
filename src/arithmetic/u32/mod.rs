@@ -1,5 +1,6 @@
 pub mod add;
 pub mod and;
+pub mod and_constant;
 pub mod bits;
 pub mod byte_eq_mask;
 pub mod byte_less_mask;

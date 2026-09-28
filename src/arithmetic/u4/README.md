@@ -59,6 +59,10 @@ these operations, but this module contains no hash-specific round logic.
   nibbles to their four-bit leading-zero count in `0..=4`.
 - `mod3::u4_nibbles_to_mod3(nibble_count)` maps checked nibbles to residues in
   `0..=2` using a 16-item lookup table.
+- `trichotomy::u4_nibbles_to_trichotomy(threshold, nibble_count)` takes a
+  public u4 threshold and a checked batch size in `1..=998`, returning `0`,
+  `1`, or `2` for less-than, equal, or greater-than. Callers preserving live
+  stack items must satisfy `nibble_count + 2 + preserved_items <= 1000`.
 - `bit_planes::u4_nibbles_to_bit_planes(nibble_count, check_inputs)` reuses
   checked nibble decomposition and transposes batches up to 234 nibbles.
 - `bit_planes::u4_nibbles_to_bit_planes_canonical(nibble_count)` additionally
@@ -140,6 +144,7 @@ each input with the same output-restoration boundary.
 | Checked inverse-Gray batch, 32 nibbles | <!-- metric:u4_gray_inverse_batch32 -->440<!-- /metric:u4_gray_inverse_batch32 --> bytes | <!-- metric:u4_gray_inverse_batch32_stack -->50<!-- /metric:u4_gray_inverse_batch32_stack --> items | <!-- metric:u4_gray_inverse_batch32_opcodes -->328<!-- /metric:u4_gray_inverse_batch32_opcodes --> |
 | Checked power-of-two batch, 32 nibbles | <!-- metric:u4_power_of_two_batch32 -->440<!-- /metric:u4_power_of_two_batch32 --> bytes | <!-- metric:u4_power_of_two_batch32_stack -->50<!-- /metric:u4_power_of_two_batch32_stack --> items | <!-- metric:u4_power_of_two_batch32_opcodes -->328<!-- /metric:u4_power_of_two_batch32_opcodes --> |
 | Checked modulo-three batch, 32 nibbles | <!-- metric:u4_mod3_batch32 -->440<!-- /metric:u4_mod3_batch32 --> bytes | <!-- metric:u4_mod3_batch32_stack -->50<!-- /metric:u4_mod3_batch32_stack --> items | <!-- metric:u4_mod3_batch32_opcodes -->328<!-- /metric:u4_mod3_batch32_opcodes --> |
+| Embedded trichotomy, 16 nibbles | <!-- metric:u4_trichotomy_16 -->398<!-- /metric:u4_trichotomy_16 --> bytes | <!-- metric:u4_trichotomy_16_stack -->18<!-- /metric:u4_trichotomy_16_stack --> items | <!-- metric:u4_trichotomy_16_opcodes -->286<!-- /metric:u4_trichotomy_16_opcodes --> |
 | Checked LSB batch, 32 nibbles | <!-- metric:u4_lsb_batch32 -->440<!-- /metric:u4_lsb_batch32 --> bytes | <!-- metric:u4_lsb_batch32_stack -->50<!-- /metric:u4_lsb_batch32_stack --> items | <!-- metric:u4_lsb_batch32_opcodes -->328<!-- /metric:u4_lsb_batch32_opcodes --> |
 | Checked zero-mask batch, 32 nibbles | <!-- metric:u4_zero_mask_batch32 -->414<!-- /metric:u4_zero_mask_batch32 --> bytes | <!-- metric:u4_zero_mask_batch32_stack -->35<!-- /metric:u4_zero_mask_batch32_stack --> items | <!-- metric:u4_zero_mask_batch32_opcodes -->318<!-- /metric:u4_zero_mask_batch32_opcodes --> |
 | Checked popcount batch, 32 nibbles | <!-- metric:u4_popcount_batch32 -->440<!-- /metric:u4_popcount_batch32 --> bytes | <!-- metric:u4_popcount_batch32_stack -->50<!-- /metric:u4_popcount_batch32_stack --> items | <!-- metric:u4_popcount_batch32_opcodes -->328<!-- /metric:u4_popcount_batch32_opcodes --> |
@@ -196,6 +201,8 @@ The square row measures only the checked reusable query; its generated
 <!-- metric:u4_power_of_two_batch32_witness -->65<!-- /metric:u4_power_of_two_batch32_witness --> serialized witness bytes for the representative power-of-two batch.
 
 <!-- metric:u4_mod3_batch32_witness -->65<!-- /metric:u4_mod3_batch32_witness --> serialized witness bytes for the representative modulo-three batch.
+
+The embedded-trichotomy fixture uses <!-- metric:u4_trichotomy_16_witness -->33<!-- /metric:u4_trichotomy_16_witness --> serialized witness bytes for <!-- metric:u4_trichotomy_16_witness_items -->16<!-- /metric:u4_trichotomy_16_witness_items --> canonical data items and returns one numeric three-way class per input. Numeric range checks accept non-minimal encodings; compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
 
 <!-- metric:u4_lsb_batch32_witness -->65<!-- /metric:u4_lsb_batch32_witness --> serialized witness bytes for the representative LSB batch.
 

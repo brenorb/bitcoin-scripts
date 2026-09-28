@@ -65,6 +65,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 checked nibbles to one-hot masks | `u4_nibbles_to_one_hot(32)` | 461 | 50-item peak; 16-bit numeric selector per input |
 | 32 checked nibbles to centered signed digits | `u4_nibbles_to_centered(32)` | 447 | 50-item peak; outputs `-8..=7` |
 | 32 checked nibbles to complement-reflected representatives | `u4_nibbles_to_mirror(32)` | 440 | 50-item peak; canonical `0..=7` representative |
+| 16 checked nibbles to embedded three-way classes | `u4_nibbles_to_trichotomy(5,16)` | <!-- metric:u4_trichotomy_16 -->398<!-- /metric:u4_trichotomy_16 --> | <!-- metric:u4_trichotomy_16_stack -->18<!-- /metric:u4_trichotomy_16_stack -->-item peak; `0/1/2` for `< /=/>`; threshold embedded |
 | u32 population count | `u32_popcount()` | 455 | 262-item peak; 256-item byte table |
 | u32 per-byte population counts | `u32_byte_popcounts()` | 452 | 262-item peak; four numeric outputs; 256-item byte table |
 | u32 leading zero-byte count | `u32_leading_zero_bytes()` | 159 | 7-item peak; table-free; validates all four byte limbs |

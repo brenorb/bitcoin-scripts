@@ -23,6 +23,9 @@ they do not use BN254 or any other field modulus.
 - `u32_sub_constant(value)` checks one hostile word and subtracts the public
   compile-time `value` modulo `2^32`; the constant contributes no witness
   items.
+- `u32_add_constant(value)` checks one hostile word and adds the public
+  compile-time `value` modulo `2^32`; the constant contributes no witness
+  items.
 - `u32_sub[_drop](a, b)` computes `a - b` modulo `2^32` for either ordering of
   two distinct offsets. The non-`drop` form preserves the minuend.
 - `u32_conditional_negate()` normalizes a top condition and negates the next
@@ -95,7 +98,7 @@ they do not use BN254 or any other field modulus.
 ## Script metrics
 
 These are serialized locking-script fragment sizes. The maximum stack column
-is measured by executing the fragment with its two input words; OR also
+is measured by executing each fragment with its documented inputs; OR also
 includes the required 256-item shared logic table. Strict greater-than has the
 same metrics as strict less-than, and greater-than-or-equal has the same metrics
 as less-than-or-equal.
@@ -107,6 +110,7 @@ as less-than-or-equal.
 | `u32_or_constant(0x89abcdef)` | <!-- metric:u32_or_constant -->776<!-- /metric:u32_or_constant --> bytes | <!-- metric:u32_or_constant_witness -->13<!-- /metric:u32_or_constant_witness --> bytes, 4 data items | <!-- metric:u32_or_constant_stack -->272<!-- /metric:u32_or_constant_stack --> items; <!-- metric:u32_or_constant_opcodes -->548<!-- /metric:u32_or_constant_opcodes --> static non-push opcodes |
 | `u32_and_constant(0x89abcdef)` | <!-- metric:u32_and_constant -->620<!-- /metric:u32_and_constant --> bytes | <!-- metric:u32_and_constant_witness -->13<!-- /metric:u32_and_constant_witness --> bytes, 4 data items | <!-- metric:u32_and_constant_stack -->272<!-- /metric:u32_and_constant_stack --> items; <!-- metric:u32_and_constant_opcodes -->448<!-- /metric:u32_and_constant_opcodes --> static non-push opcodes |
 | `u32_sub_constant(value)` | <!-- metric:u32_sub_constant -->149<!-- /metric:u32_sub_constant --> bytes | <!-- metric:u32_sub_constant_witness -->9<!-- /metric:u32_sub_constant_witness --> bytes (<!-- metric:u32_sub_constant_witness_max -->13<!-- /metric:u32_sub_constant_witness_max --> max) | <!-- metric:u32_sub_constant_stack -->9<!-- /metric:u32_sub_constant_stack --> items |
+| `u32_add_constant(value)` | <!-- metric:u32_add_constant -->146<!-- /metric:u32_add_constant --> bytes | <!-- metric:u32_add_constant_witness -->9<!-- /metric:u32_add_constant_witness --> bytes (<!-- metric:u32_add_constant_witness_max -->13<!-- /metric:u32_add_constant_witness_max --> max) | <!-- metric:u32_add_constant_stack -->10<!-- /metric:u32_add_constant_stack --> items |
 | `u32_compressed_add()` | <!-- metric:u32_compressed_add -->1016<!-- /metric:u32_compressed_add --> bytes | <!-- metric:u32_compressed_add_witness -->11<!-- /metric:u32_compressed_add_witness --> bytes (<!-- metric:u32_compressed_add_witness_max -->13<!-- /metric:u32_compressed_add_witness_max --> max) | <!-- metric:u32_compressed_add_stack -->11<!-- /metric:u32_compressed_add_stack --> items |
 | `u32_sub_drop(0, 1)` | <!-- metric:u32_sub_drop -->77<!-- /metric:u32_sub_drop --> bytes | 0 bytes | <!-- metric:u32_sub_drop_stack -->9<!-- /metric:u32_sub_drop_stack --> items |
 | `u32_conditional_negate()` | <!-- metric:u32_conditional_negate -->83<!-- /metric:u32_conditional_negate --> bytes | 0 bytes | <!-- metric:u32_conditional_negate_stack -->9<!-- /metric:u32_conditional_negate_stack --> items |
@@ -244,6 +248,24 @@ widths are rejected before expansion.
 The same representative byte baseline has
 <!-- metric:u32_add_drop_witness -->20<!-- /metric:u32_add_drop_witness --> serialized witness bytes and a
 <!-- metric:u32_add_drop_byte_stack -->10<!-- /metric:u32_add_drop_byte_stack --> item strict peak.
+
+`u32_add_constant(value)` consumes one hostile four-limb word, checks each
+limb, adds the public compile-time constant modulo `2^32`, and returns four
+limbs. The representative fixture embeds `0x89abcdef` and supplies
+`0x12345678` as four data items. It requires no hints and preserves unrelated
+main- and alt-stack state. The policy-compiled fragment is
+146 bytes with 9
+serialized witness bytes (13
+at the maximum canonical byte fixture), a strict combined peak of
+10 items, and
+<!-- metric:u32_add_constant_static_opcodes -->83<!-- /metric:u32_add_constant_static_opcodes --> static
+non-push opcodes. The closest generic two-word baseline is the existing
+`u32_add_drop(0, 1)`: its same-value witness is
+<!-- metric:u32_add_drop_constant_witness -->21<!-- /metric:u32_add_drop_constant_witness --> bytes
+across eight data items and peaks at
+<!-- metric:u32_add_drop_constant_stack -->10<!-- /metric:u32_add_drop_constant_stack --> items.
+This trades locking-script bytes for four fewer witness items and a narrower
+serialized witness; the constant is public and must not be treated as a secret.
 
 The conditional-negation fragment contains <!-- metric:u32_conditional_negate_opcodes -->52<!-- /metric:u32_conditional_negate_opcodes --> static non-push opcodes under the repository's compilation policy. The local tapscript executor does not expose a useful dynamic opcode counter for this fragment.
 

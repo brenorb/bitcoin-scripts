@@ -48,6 +48,7 @@ the source. Read a page together with its comparison page and evidence record.
 - [Embedded-constant u32 OR](u32-or-constant.md)
 - [Embedded-constant u32 AND](u32-and-constant.md)
 - [Embedded-constant u32 subtraction](u32-sub-constant.md)
+- [Embedded-constant u32 addition](u32-add-constant.md)
 - [Checked u32 zero-byte mask](u32-zero-byte-mask.md)
 - [Fused u32 XNOR adapter](u32-xnor.md)
 - [Embedded-constant u32 XNOR](u32-xnor-constant.md)

@@ -26,6 +26,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | 8 checked u32 words to byte planes | u32 stack permutation | 411 | 35-item combined peak; 97-byte minimal witness |
 | Canonical compressed-u32 decode | u32 raw-encoding boundary | 431 | 7-item peak; 7-byte maximum witness; rejects aliases |
 | Public constant u32 subtraction | `u32_sub_constant(value)` | 149 | 9-byte/4-item witness; 9-item peak; no hints |
+| Public constant u32 addition | `u32_add_constant(value)` | 146 | 9-byte/4-item witness; 10-item peak; no hints |
 | Canonical nonnegative compressed-u32 decode | u32 narrow raw-encoding boundary | 405 | 7-item peak; 6-byte maximum witness; rejects negative values and aliases |
 | Canonical u32 byte-word compression | `u32_compress_canonical()` | 130 | 7-item peak; 9-byte representative/13-byte maximum witness; rejects raw limb aliases |
 | Public constant u32 AND | `u32_and_constant(value)` | 620 | 13-byte/4-item witness; 272-item peak; 256-item table |
@@ -158,6 +159,13 @@ representative 9-byte/4-item witness, and a 9-item strict peak, versus 77
 bytes, 21 witness bytes/8 items, and a 9-item peak when the subtrahend is
 supplied as a second generic word. It is useful for witness-constrained
 callers only when the subtrahend is public and fixed at script-generation time.
+
+The embedded-constant u32 addition row makes the same tradeoff for a public
+addend: the checked four-limb adapter uses 146 locking bytes, a representative
+9-byte/4-item witness, and a 10-item strict peak, versus 78 bytes,
+21 witness bytes/8 items, and the same peak when the constant is supplied as a
+second generic word. It is useful for witness-constrained callers only when
+the addend is public and fixed at script-generation time.
 
 The leading-zero-byte count is a fixed-width prefix classifier rather than a
 zero predicate: `u32_iszero()` is only 4 bytes because it discards position,

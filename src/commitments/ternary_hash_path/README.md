@@ -80,9 +80,12 @@ integer is produced. Tests cover every codeword, integer boundaries, the
 `2^width-1` acceptance and `2^width` rejection at every width `1..=31` (widths
 1 and 31 additionally require the width check's `OP_VERIFY`, not a later
 ScriptNum overflow, to reject), surrounding-stack preservation, ScriptNum
-overflow, wrong openings, padded trits and out-of-range generic trits. The
-construction is dominated by the four-way path for ordinary 31-bit integers
-(NR-072).
+overflow, wrong openings, padded trits and out-of-range generic trits. Both
+branches of the width check are exercised at every width with an `OP_VERIFY`
+rejection: 58 values whose final-step accumulator exceeds the quotient
+(`(q+1)*3` and `3^t-1`; unreachable at widths 1 and 3) and 46 values whose
+accumulator equals it with a final trit above the remainder. The construction
+is dominated by the four-way path for ordinary 31-bit integers (NR-072).
 
 ## Knowledge-base integration
 

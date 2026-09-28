@@ -34,9 +34,11 @@ committed value while draining the saved trits from the altstack.
 ## Evidence and representative cost
 
 Evidence is `locally-reproduced`: all three codewords, integer boundaries at
-every supported width, surrounding-stack preservation, ScriptNum overflow,
-wrong openings, non-canonical encodings, and out-of-range trits pass focused
-tests. The local tests use the strict tapscript-context executor; no Bitcoin
+every supported width, out-of-range rejections on both branches of the
+integer-width check (accumulator above the quotient, and equal to it with a
+final trit above the remainder), surrounding-stack preservation, ScriptNum
+overflow, wrong openings, non-canonical encodings, and out-of-range trits pass
+focused tests. The local tests use the strict tapscript-context executor; no Bitcoin
 Core consensus or relay-policy comparison has been performed, so deployment is
 `unclassified`.
 

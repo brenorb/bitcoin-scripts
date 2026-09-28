@@ -47,10 +47,12 @@ public fixture.
 ## Falsification attempts
 
 Focused tests cover all codewords, integer boundaries, `2^width-1` acceptance
-and `2^width` rejection at every width `1..=31`, surrounding-stack
-preservation, ScriptNum overflow, wrong openings, padded encodings, and an
-out-of-range trit. The local strict executor accepts the
-valid fixtures and rejects those malformed witnesses. Bitcoin Core differential
+and `2^width` rejection at every width `1..=31`, rejection on both branches
+of the integer-width check (58 accumulator-above-quotient and 46
+final-trit-above-remainder values), surrounding-stack preservation, ScriptNum
+overflow, wrong openings, padded encodings, and an out-of-range trit. The local
+strict executor accepts the valid fixtures and rejects those malformed
+witnesses. Bitcoin Core differential
 validation and policy testing remain open.
 
 ## Conclusion and knowledge updates

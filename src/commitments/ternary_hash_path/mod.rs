@@ -349,6 +349,81 @@ mod tests {
     }
 
     #[test]
+    fn rejects_out_of_range_values_on_both_width_check_branches_at_every_width() {
+        let preimage = [0x42; 32];
+        let (mut quotient_rejections, mut remainder_rejections) = (0, 0);
+        for width in 1..=31 {
+            let trit_count = integer_trit_count(width) as u32;
+            let maximum = (1u64 << width) - 1;
+            let (quotient, remainder) = (maximum / 3, maximum % 3);
+            let capacity = 3u64.pow(trit_count);
+
+            // Valid control: the largest in-range value reconstructs exactly.
+            let trits = unchecked_integer_trits(maximum, width);
+            let commitment = ternary_hash_path_commitment(&preimage, &trits);
+            let result = execute_script_with_inputs_strict(
+                script! {
+                    { verify_ternary_hash_path_to_integer(width, commitment) }
+                    { maximum as u32 }
+                    OP_EQUAL
+                },
+                ternary_hash_path_witness(&preimage, &trits),
+            );
+            assert!(result.success, "control width={width}: {result}");
+
+            // Quotient branch: accumulator before the final step exceeds q.
+            // Candidates are (q+1)*3 and the all-2 path 3^t-1. Widths 1 and 3
+            // have no t-trit value with such an accumulator (3^(t-1)-1 <= q).
+            let mut quotient_values = vec![(quotient + 1) * 3, capacity - 1];
+            quotient_values.retain(|&value| value < capacity && value / 3 > quotient);
+            assert_eq!(capacity / 3 - 1 <= quotient, matches!(width, 1 | 3));
+            assert_eq!(
+                quotient_values.is_empty(),
+                matches!(width, 1 | 3),
+                "width={width}: unexpected quotient-branch coverage {quotient_values:?}"
+            );
+            // Remainder branch: accumulator equals q and the final trit exceeds r.
+            let remainder_values = ((remainder + 1)..3)
+                .map(|trit| quotient * 3 + trit)
+                .filter(|&value| value < capacity)
+                .collect::<Vec<_>>();
+            assert!(!remainder_values.is_empty(), "width={width}");
+
+            for (branch, value) in quotient_values
+                .iter()
+                .map(|&value| ("quotient", value))
+                .chain(remainder_values.iter().map(|&value| ("remainder", value)))
+            {
+                assert!(value > maximum);
+                let trits = unchecked_integer_trits(value, width);
+                let commitment = ternary_hash_path_commitment(&preimage, &trits);
+                let result = execute_script_with_inputs_strict(
+                    script! {
+                        { verify_ternary_hash_path_to_integer(width, commitment) }
+                        OP_DROP OP_TRUE
+                    },
+                    ternary_hash_path_witness(&preimage, &trits),
+                );
+                assert!(
+                    !result.success,
+                    "{branch}: value={value}, width={width} was accepted: {result}"
+                );
+                assert_eq!(
+                    result.error,
+                    Some(bitcoin_scriptexec::ExecError::Verify),
+                    "{branch}: value={value}, width={width} was not rejected by the width check: {result}"
+                );
+                if branch == "quotient" {
+                    quotient_rejections += 1;
+                } else {
+                    remainder_rejections += 1;
+                }
+            }
+        }
+        assert_eq!((quotient_rejections, remainder_rejections), (58, 46));
+    }
+
+    #[test]
     fn preserves_surrounding_main_and_alt_stack_state() {
         let width = 6;
         let value = 17;

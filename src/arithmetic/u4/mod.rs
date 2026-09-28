@@ -9,6 +9,7 @@ pub mod centered;
 pub mod clamp;
 pub mod compare;
 pub mod cyclic_equality;
+pub mod equality;
 pub mod gray;
 pub mod gray_inverse;
 pub mod interleave;

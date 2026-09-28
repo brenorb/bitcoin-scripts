@@ -4,6 +4,7 @@ pub mod four_way_hash_path;
 pub mod hash_path;
 pub mod preimage_length;
 pub mod tapbranch;
+pub mod ternary_hash_path;
 
 pub use four_way_hash_path::{
     four_way_hash_path_commitment, four_way_hash_path_integer_commitment,
@@ -21,3 +22,8 @@ pub use preimage_length::{
     DEFAULT_PREIMAGE_LENGTH_OFFSET, MAX_PREIMAGE_LENGTH,
 };
 pub use tapbranch::{tapbranch_hash_u4, tapbranch_hash_u4_witness};
+pub use ternary_hash_path::{
+    ternary_hash_path_commitment, ternary_hash_path_integer_commitment,
+    ternary_hash_path_integer_witness, ternary_hash_path_script, ternary_hash_path_witness,
+    verify_ternary_hash_path, verify_ternary_hash_path_to_integer,
+};

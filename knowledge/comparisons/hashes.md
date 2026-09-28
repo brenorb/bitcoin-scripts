@@ -9,8 +9,10 @@ Measured fragments exclude input pushes and output comparison.
 | BLAKE3 limb29 | 64-byte input | 72,293 | differentially-validated | Single 1,024-byte chunk only; includes table memory |
 | SHA-1 u32 | 32-byte input | 205,558 | differentially-validated | Collision-broken compatibility hash |
 | SHA-1 u32 prefix | 32-byte input, 8-byte prefix | 205,586 | differentially-validated | 32-bit collision bound; compression cost unchanged |
+| SHA-1 u32 midstate | 64-byte prefix + 16-byte suffix | 205,489 | differentially-validated | Requires authenticated H0..H4 after the prefix; collision-broken |
 | RIPEMD-160 u32 | 32-byte input | 240,223 | differentially-validated | 160-bit output |
 | RIPEMD-160 u32 prefix | 32-byte input, 8-byte prefix | 240,251 | differentially-validated | 32-bit collision bound; compression cost unchanged |
+| RIPEMD-160 u32 midstate | 64-byte prefix + 16-byte suffix | 240,152 | locally-reproduced | Requires an authenticated one-block midstate; 80-bit ideal collision bound |
 | HASH160 SHA-256 → RIPEMD-160 | 32-byte input | 752,651 | differentially-validated | Large composed research fragment |
 | HASH160 shared byte table | 32-byte input | 752,327 | differentially-validated | Saves 324 bytes by sharing the 256-item lookup |
 | SHA-256 u4 | 32-byte input | 332,942 | differentially-validated | Large research fragment |

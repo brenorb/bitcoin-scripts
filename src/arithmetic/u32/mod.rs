@@ -24,6 +24,7 @@ pub mod sub_constant;
 pub mod xnor;
 pub mod xnor_constant;
 pub mod xor;
+pub mod xor_constant;
 pub mod zero;
 pub mod zero_byte_mask;
 pub mod zip;

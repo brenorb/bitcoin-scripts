@@ -6,6 +6,8 @@ Each construction has its own implementation, tests, and parameter documentation
   RIPEMD-160 per bit; consume selectors, retain normalized bits, or return an integer.
 - [Four-way hash path](four_way_hash_path/README.md): fixed two-hash codewords
   per base-4 digit, with a tapscript-specific range check.
+- [Ternary hash path](ternary_hash_path/README.md): three canonical fixed
+  two-hash codewords per base-3 trit, with explicit trit and integer-width checks.
 - [Preimage length](preimage_length/README.md): authenticate a SHA-256 preimage
   and return its length minus an offset.
 - **TapBranch u4 hash:** compute BIP341's tagged hash over two already ordered

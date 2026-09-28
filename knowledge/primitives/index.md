@@ -21,6 +21,8 @@ the source. Read a page together with its comparison page and evidence record.
 - [Checked u4 nonzero-power-of-two predicate](u4-power-of-two.md)
 - [Checked u4 modulo-three projection](u4-mod3.md)
 - [Checked u4 parity projection](u4-parity.md)
+- [Checked fixed-symbol u4 occurrence count](u4-count.md)
+- [Checked u4 presence-bit projection](u4-presence.md)
 - [Checked u4 transition count](u4-transition-count.md)
 - [Checked u4 adjacent-equality mask](u4-adjacent-equality.md)
 - [Checked odd u4 inverse modulo 16](u4-odd-inverse-mod16.md)
@@ -62,6 +64,8 @@ the source. Read a page together with its comparison page and evidence record.
 - [Compressed total-domain u32 unsigned less-than](u32-compressed-lessthan.md)
 - [Checked compressed u32 less-than with an embedded threshold](u32-compressed-lessthan-constant.md)
 - [Checked u32 population count](u32-popcount.md)
+- [Checked u32 XOR with an embedded constant](u32-xor-constant.md)
+- [Checked u32 bytewise complement](u32-byte-not.md)
 - [Checked u32 per-byte population counts](u32-byte-popcounts.md)
 - [Checked u32 leading zero-byte count](u32-leading-zero-bytes.md)
 - [Checked u32 trailing zero-byte count](u32-trailing-zero-bytes.md)
@@ -91,6 +95,7 @@ the source. Read a page together with its comparison page and evidence record.
 
 - [Mixed-hash path commitment](hash-path-integer.md)
 - [Four-way mixed-hash integer path](four-way-hash-path-integer.md)
+- [Ternary mixed-hash integer path](ternary-hash-path-integer.md)
 - [Preimage-length integer](preimage-length.md)
 - [TapBranch tagged hash over u4 nodes](tapbranch-u4.md)
 

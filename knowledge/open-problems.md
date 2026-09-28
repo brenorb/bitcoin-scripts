@@ -3,14 +3,14 @@
 Each problem has a falsifiable completion criterion. Update comparisons and
 negative results when closing one.
 
-**Next priority (2026-09-25): OP-001, remaining Taproot transaction context.**
+**Next priority (2026-09-28): OP-001, remaining Taproot transaction context.**
 The interpreter repairs and explicit context-free consensus/policy profiles
 are adopted. Complete-witness budgeting and annex signature context now have
 an explicit constructor and a [funded comparison](tapscript-budget-validation.md).
 The complete-witness preflight now validates the revealed script and control
-block against the P2TR output, and the parity-mutated fixture agrees with pinned
-Core when that result is combined with leaf execution. This is
-`differentially-validated` for the recorded fixture, not a complete transaction
+block against the P2TR output. Seven funded depth-one fixtures compare valid,
+mutated, and malformed control paths with pinned Core. The recorded comparisons
+are `differentially-validated`; the preflight is not a complete transaction
 validator. Next, validate the remaining transaction context:
 **complete when** valid and mutated Taproot commitments, annexes and Schnorr
 signatures produce supported local verdicts that agree with pinned Core,
@@ -138,11 +138,12 @@ unsupported outcome when that chain context is absent. This remains under
 OP-001; the funded Core harness supplies complete-spend verdicts for the
 recorded CSV fixtures.
 
-The current [44-fixture Core experiment](core-validation.md) reproduces every
-consensus/policy expectation and rejection diagnostic, with all 88 combined
-local commitment/profile verdicts matching Core. Its control-block mutation
-also preserves the separate leaf result, demonstrating that successful leaf
-execution alone cannot establish commitment validity.
+The current [53-fixture Core experiment](core-validation.md) reproduces every
+consensus/policy expectation and rejection diagnostic, with all 106 combined
+local commitment/profile verdicts matching Core. Its depth-one mutations
+preserve the separate leaf result, demonstrating that successful leaf execution
+alone cannot establish commitment validity. The earlier 44- and 46-fixture
+reports remain historical snapshots.
 
 ## OP-002 — Bitcoin Core differential harness
 
@@ -921,17 +922,6 @@ matches the standard BLAKE3 digest in a focused execution, and reports a
 policy-produced leaf smaller than the 3,828,057-byte projection with the same 792 entry items
 and exactly 88 hints.
 
-## OP-019: Integrate signed-window decoding into a complete scalar schedule
-
-The new signed radix-32 decoder is only a representation bridge. Its local
-32-digit row saves 564 script bytes over conditional extraction but spends 348
-combined stack items, and no complete scalar multiplication currently consumes
-its sign/magnitude output. **Accept when:** a deterministic complete scalar
-window schedule uses the decoder with an explicit output contract, measures
-all surrounding state and terminal checks under the strict 1,000-item limit,
-and either beats the branch schedule for the same scalar objective or records
-the composed layout as dominated.
-
 ## OP-020 — Bound-start hash paths and Binohash composition
 
 The optional-SHA256 binary path has a deterministic first-bit substitution
@@ -942,6 +932,18 @@ pinned Bitcoin Core revision in each claimed script context. Report pinning,
 signature and binding costs, complete witness items (including zero or explicit
 hint counts), combined stack peak, static legacy opcodes and policy results.
 State the remaining cryptographic assumptions separately from execution tests.
+
+## OP-030 — Ternary commitment composition frontier
+
+Determine whether the ternary mixed-hash path becomes useful when a protocol
+consumes native three-valued state rather than reconstructing an ordinary
+integer (NR-072). **Complete when:** at least one ternary protocol composition
+is implemented with its terminal predicates and surrounding state, compared on
+a like-for-like boundary against binary and four-way alternatives with explicit
+hint-item counts and combined stack peaks, and the three-codeword mixed-hash
+binding assumption receives an independent analysis or a pinned Core
+differential fixture.
+
 ## OP-024 — BLAKE3 XOF output frontier
 
 Price a reusable BLAKE3 root-output continuation beyond the first 32-byte
@@ -949,3 +951,37 @@ digest. **Complete when:** a generation-time output length supports at least a
 64-byte XOF vector, matches the independent BLAKE3 implementation, records the
 additional output-block compression/routing/cleanup and witness shape, and
 passes the combined 1,000-item stack check for the documented composition.
+
+## OP-027 — Integrate signed-window decoding into a complete scalar schedule
+
+The signed radix-32 decoder is only a representation bridge. A deterministic
+composition now consumes its sign/magnitude output in a high-to-low U256 Horner
+reconstruction, checks the exact scalar, and leaves a clean terminal result.
+It is `locally-reproduced` under the strict combined stack limit: the table
+loses through eight digits, then saves 166 bytes at 16 digits and 598 bytes at
+32, while using 136 more peak items at both boundaries. **Accept when:** the
+decoder is integrated into an actual elliptic-curve scalar multiplication
+schedule with its existing point state, or a measured curve-level comparison
+shows the composed layout is dominated. The current result does not close this
+problem because the repository's curve schedules use width-8/9 windows and no
+Bitcoin Core differential validation has been performed. This entry supersedes
+the signed-window problem previously recorded under a second `OP-019` heading,
+which collided with the PRINCEv2 M-hat frontier; that entry's scalar-level
+criterion (a complete schedule measured under the strict limit that either
+beats the branch schedule or records the layout as dominated) is answered by
+the reconstruction above, so the remaining work is curve-level.
+
+The current CSFS curve-level probe is a negative result: parameterizing its
+fixed-base generator MSM for width 5 uses 52 windows and is 4,880,087 bytes,
+versus 3,557,157 bytes for width 8. It also grows from 16,129 to 25,489
+witness items. This makes the present CSFS target a no-go for radix-32
+integration; OP-027 remains open only for a different curve schedule whose
+window width and point-table costs are compatible.
+
+## OP-028 — BLAKE3 keyed-mode frontier
+
+Price a keyed BLAKE3 construction for the existing 32-byte input profile.
+**Complete when:** a deterministic key-and-message vector matches the
+independent BLAKE3 implementation, records the eight key words and
+`KEYED_HASH` flag handling, reports witness and combined-stack costs, and
+compares the result with the unkeyed profile under the same compilation policy.

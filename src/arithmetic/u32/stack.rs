@@ -70,6 +70,23 @@ pub fn u32_notequal() -> Script {
     }
 }
 
+/// Replaces the top four-byte word with its bytewise complement.
+///
+/// The input and output use the module's most-significant-byte-first word
+/// layout. Each iteration rolls the next original limb to the top and fails
+/// unless it is a minimally encoded numeric byte in `0..=255`, so all four
+/// hostile limbs are checked before subtraction. The fragment leaves the four
+/// result limbs and no terminal predicate.
+pub fn u32_not() -> Script {
+    script! {
+        for _ in 0..4 {
+            3 OP_ROLL
+            { verify_canonical_byte() }
+            255 OP_SWAP OP_SUB
+        }
+    }
+}
+
 fn certify_compressed_word() -> Script {
     script! {
         OP_DUP
@@ -328,7 +345,12 @@ pub fn u32_pick(n: u32) -> Script {
     }
 }
 
-/// Compresses the top u32 element into a single element
+/// Compresses the top u32 element into a single signed ScriptNum item.
+///
+/// The four MSB-first byte items are interpreted as a u32 and then mapped to
+/// `value as i32`; the result uses minimal signed ScriptNum encoding. The
+/// helper does not validate byte range, canonical encoding, or the unsigned
+/// domain.
 pub fn u32_compress() -> Script {
     script! {
         OP_SWAP OP_2SWAP OP_SWAP
@@ -358,6 +380,10 @@ pub fn u32_compress_canonical() -> Script {
     }
 }
 
+/// Expands a ScriptNum of at most five bytes into four byte items.
+///
+/// Any five-byte input takes the special `-2^31` branch; callers must enforce
+/// the intended signed representation and canonical encoding first.
 pub fn u32_uncompress() -> Script {
     script! {
         OP_SIZE OP_5 OP_EQUAL
@@ -432,9 +458,10 @@ pub fn u32_uncompress_canonical() -> Script {
 mod tests {
     use super::*;
     use crate::support::execution::{
-        execute_raw_script_with_inputs_strict, execute_script, execute_script_with_inputs_strict,
-        run,
+        execute_raw_script_with_inputs_strict, execute_script, execute_script_buf_with_options,
+        execute_script_with_inputs_strict, run,
     };
+    use bitcoin_scriptexec::Options;
 
     fn scriptnum(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
@@ -506,6 +533,235 @@ mod tests {
                 OP_EQUAL
             };
             run(script);
+        }
+    }
+
+    #[test]
+    fn complements_boundary_and_pattern_words() {
+        for value in [0, 1, 0x0102_0304, 0x8000_0000, u32::MAX] {
+            let script = script! {
+                { u32_push(value) }
+                { u32_not() }
+                { u32_push(!value) }
+                { u32_equal() }
+                OP_VERIFY
+                OP_TRUE
+            };
+            run(script);
+        }
+    }
+
+    #[test]
+    fn checked_complement_rejects_non_byte_limbs() {
+        let pushed_limbs = |limbs: [i64; 4]| {
+            crate::support::execution::execute_script(script! {
+                for limb in limbs {
+                    { limb }
+                }
+                { u32_not() }
+                { u32_drop() }
+                OP_TRUE
+            })
+        };
+        let control = pushed_limbs([1, 2, 3, 4]);
+        assert!(control.success, "rejected valid pushed limbs: {control}");
+        for invalid_index in 0..4 {
+            let mut limbs = [1i64, 2, 3, 4];
+            limbs[invalid_index] = if invalid_index % 2 == 0 { -1 } else { 256 };
+            let result = pushed_limbs(limbs);
+            assert!(
+                !result.success,
+                "accepted invalid limb {invalid_index}: {result}"
+            );
+        }
+
+        let checked_script = script! {
+            { u32_not() }
+            OP_2DROP OP_2DROP OP_TRUE
+        }
+        .compile_with_policy()
+        .to_bytes();
+        let options = Options {
+            require_minimal: false,
+            enforce_stack_limit: true,
+            ..Default::default()
+        };
+        let valid = execute_script_buf_with_options(
+            bitcoin::ScriptBuf::from_bytes(checked_script.clone()),
+            vec![vec![1u8]; 4],
+            options.clone(),
+        )
+        .expect("valid checked complement execution");
+        assert!(valid.success, "rejected valid byte word: {valid}");
+
+        for invalid in [vec![1, 0], vec![0x80], vec![0xff], vec![0, 1]] {
+            for invalid_index in 0..4 {
+                let mut witness = vec![vec![1u8]; 4];
+                witness[invalid_index] = invalid.clone();
+                let result = execute_script_buf_with_options(
+                    bitcoin::ScriptBuf::from_bytes(checked_script.clone()),
+                    witness,
+                    options.clone(),
+                )
+                .expect("malformed checked complement execution");
+                assert!(
+                    !result.success,
+                    "malformed byte at position {invalid_index} was not rejected: {result}"
+                );
+            }
+        }
+
+        let short = execute_script_buf_with_options(
+            bitcoin::ScriptBuf::from_bytes(checked_script),
+            vec![vec![1u8]; 3],
+            options,
+        )
+        .expect("short checked complement execution");
+        assert_eq!(
+            short.error,
+            Some(bitcoin_scriptexec::ExecError::InvalidStackOperation)
+        );
+    }
+
+    #[test]
+    fn checked_complement_preserves_surrounding_stacks() {
+        let value = 0x1020_3040;
+        let result = crate::support::execution::execute_script(script! {
+            77 OP_TOALTSTACK
+            { u32_push(value) }
+            { u32_not() }
+            { u32_push(!value) }
+            { u32_equalverify() }
+            OP_FROMALTSTACK 77 OP_EQUALVERIFY
+            OP_TRUE
+        });
+        assert!(
+            result.success,
+            "stack-preserving complement failed: {result}"
+        );
+    }
+
+    #[test]
+    fn checked_complement_rejects_malformed_and_nonminimal_limbs() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptOutcome, TapscriptProfile};
+        use bitcoin::ScriptBuf;
+        use bitcoin_scriptexec::ExecError;
+
+        fn complete_leaf(fragment: Script) -> ScriptBuf {
+            script! {
+                { fragment }
+                { u32_drop() }
+                OP_TRUE
+            }
+            .compile_with_policy()
+        }
+
+        fn executed_success(leaf: &ScriptBuf, witness: Vec<Vec<u8>>) -> bool {
+            matches!(
+                execute_tapscript(leaf.clone(), witness, TapscriptProfile::Consensus).outcome,
+                TapscriptOutcome::Executed(info) if info.success
+            )
+        }
+
+        fn all_nonminimal_aliases_rejected(leaf: &ScriptBuf) -> bool {
+            let canonical = vec![vec![1]; 4];
+            let control =
+                execute_tapscript(leaf.clone(), canonical.clone(), TapscriptProfile::Consensus);
+            let TapscriptOutcome::Executed(info) = &control.outcome else {
+                panic!("control leaf had no execution verdict: {control:?}");
+            };
+            assert!(info.success, "control leaf failed: {control:?}");
+            assert!(info.stack_limit_enforced);
+            assert_eq!(info.final_stack.len(), 1);
+            assert_eq!(info.final_stack.get(0), vec![1]);
+
+            (0..4).all(|index| {
+                let mut witness = canonical.clone();
+                witness[index] = vec![1, 0];
+                matches!(
+                    execute_tapscript(leaf.clone(), witness, TapscriptProfile::Consensus).outcome,
+                    TapscriptOutcome::Executed(ref info)
+                        if !info.success && info.error == Some(ExecError::EqualVerify)
+                )
+            })
+        }
+
+        let leaf = complete_leaf(u32_not());
+        let canonical = vec![vec![1]; 4];
+        assert!(executed_success(&leaf, canonical.clone()));
+        for (raw, expected_error) in [
+            (vec![0x81], ExecError::Verify),
+            (vec![0xff], ExecError::Verify),
+            (vec![0, 1], ExecError::Verify),
+            (vec![0x80], ExecError::EqualVerify),
+            (vec![1, 0], ExecError::EqualVerify),
+            (vec![0, 0, 0, 0, 1], ExecError::ScriptIntNumericOverflow),
+        ] {
+            for index in 0..4 {
+                let mut witness = canonical.clone();
+                witness[index] = raw.clone();
+                let result = execute_tapscript(leaf.clone(), witness, TapscriptProfile::Consensus);
+                assert!(
+                    matches!(
+                        result.outcome,
+                        TapscriptOutcome::Executed(ref info)
+                            if !info.success && info.error == Some(expected_error.clone())
+                    ),
+                    "limb {index} with {raw:02x?} produced unexpected outcome: {result:?}"
+                );
+            }
+        }
+
+        assert!(all_nonminimal_aliases_rejected(&leaf));
+
+        // Top-limb-only validator: all four checks inspect the same original
+        // limb, so the all-position predicate above must fail for positions 0–2.
+        let top_limb_only_mutant = complete_leaf(script! {
+            for _ in 0..4 {
+                { verify_canonical_byte() }
+            }
+            for _ in 0..4 {
+                3 OP_ROLL
+                255 OP_SWAP OP_SUB
+            }
+        });
+        assert!(executed_success(&top_limb_only_mutant, canonical.clone()));
+        assert!(!all_nonminimal_aliases_rejected(&top_limb_only_mutant));
+        for index in 0..4 {
+            let mut witness = canonical.clone();
+            witness[index] = vec![1, 0];
+            let result = execute_tapscript(
+                top_limb_only_mutant.clone(),
+                witness,
+                TapscriptProfile::Consensus,
+            );
+            if index < 3 {
+                assert!(
+                    matches!(result.outcome, TapscriptOutcome::Executed(ref info) if info.success),
+                    "top-limb-only mutant did not accept limb {index}: {result:?}"
+                );
+            } else {
+                assert!(
+                    matches!(
+                        result.outcome,
+                        TapscriptOutcome::Executed(ref info)
+                            if !info.success && info.error == Some(ExecError::EqualVerify)
+                    ),
+                    "top-limb-only mutant changed top-limb behavior: {result:?}"
+                );
+            }
+        }
+
+        for value in [0, 127, 128, 255] {
+            for index in 0..4 {
+                let mut witness = [0x12, 0x34, 0x56, 0x78].map(scriptnum).to_vec();
+                witness[index] = scriptnum(value);
+                let result = execute_tapscript(leaf.clone(), witness, TapscriptProfile::Consensus);
+                assert!(
+                    matches!(result.outcome, TapscriptOutcome::Executed(ref info) if info.success),
+                    "rejected canonical limb {value} at {index}: {result:?}"
+                );
+            }
         }
     }
 
@@ -585,6 +841,71 @@ mod tests {
         for value in [0, 127, 128, 0x7fff_ffff, 0x8000_0000, u32::MAX] {
             accepts_canonical(value);
         }
+    }
+
+    #[test]
+    fn compress_emits_signed_scriptnum_encodings() {
+        for (value, expected) in [
+            (0, vec![]),
+            (1, vec![0x01]),
+            (0x7f, vec![0x7f]),
+            (0x80, vec![0x80, 0x00]),
+            (0xff, vec![0xff, 0x00]),
+            (0x100, vec![0x00, 0x01]),
+            (0x7fff_ffff, vec![0xff, 0xff, 0xff, 0x7f]),
+            (0x8000_0000, vec![0x00, 0x00, 0x00, 0x80, 0x80]),
+            (u32::MAX, vec![0x81]),
+        ] {
+            let result = execute_script(script! {
+                { u32_push(value) }
+                { u32_compress() }
+            });
+            assert!(
+                result.error.is_none(),
+                "compression failed for {value:#x}: {result}"
+            );
+            assert_eq!(
+                result.final_stack.get(0),
+                expected,
+                "wrong encoding for {value:#x}"
+            );
+        }
+    }
+
+    #[test]
+    fn uncompress_treats_any_five_byte_input_as_the_signed_boundary() {
+        for raw in [
+            scriptnum(-2_147_483_648),
+            scriptnum(2_147_483_648),
+            vec![1, 2, 3, 4, 5],
+        ] {
+            let result = execute_script_with_inputs_strict(
+                script! {
+                    { u32_uncompress() }
+                    { u32_push(0x8000_0000) }
+                    { u32_equalverify() }
+                    OP_TRUE
+                },
+                vec![raw],
+            );
+            assert!(result.success, "unexpected five-byte behavior: {result}");
+        }
+    }
+
+    #[test]
+    fn uncompress_rejects_scriptnums_wider_than_five_bytes() {
+        let result = execute_script_with_inputs_strict(
+            script! {
+                { u32_uncompress() }
+                { u32_drop() }
+                OP_TRUE
+            },
+            vec![vec![0, 0, 0, 0, 0, 0]],
+        );
+        assert_eq!(
+            result.error,
+            Some(bitcoin_scriptexec::ExecError::ScriptIntNumericOverflow)
+        );
     }
 
     #[test]

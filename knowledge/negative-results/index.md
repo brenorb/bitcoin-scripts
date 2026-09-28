@@ -1710,6 +1710,54 @@ composition is distinct from Taproot `TapBranch`; see [NR-057](#nr-057-native-ta
 [OP-021](../open-problems.md#op-021--taproot-merkle-path-verifier), and the
 [full record](merkle-branch-composition.md).
 
+## NR-067: Signed-window tables are not a universal scalar-schedule win
+
+Composing the signed-radix-32 decoder with an exact U256 Horner consumer and
+terminal equality check produces a real scalar-reconstruction boundary, but the
+156-item table remains dominated through eight digits: it measures
+1,545/5,271/10,238 bytes versus 1,336/5,137/10,204 for conditional branches at
+1/4/8 digits. It wins by 166 bytes at 16 digits and 598 bytes at 32, while
+adding 136 peak combined stack items; both 32-digit schedules remain below
+1,000 items. This is `locally-reproduced` and `unclassified`, and does not
+establish a drop-in elliptic-curve multiplication or complete-transaction
+construction.
+
+## NR-068: Width-5 fixed-base CSFS is dominated by width 8
+
+The existing fixed-base secp256k1 generator MSM was parameterized for a
+five-bit signed window as a curve-level integration probe. It executes
+successfully under the relaxed tapscript helper, but 52 width-5 windows cost
+4,880,087 script bytes, 63,917 witness bytes, and 25,489 witness items; the
+like-for-like 32-window width-8 schedule costs 3,557,157 bytes, 40,471 bytes,
+and 16,129 items. Width 5 is therefore 37.1% larger in script and 58.0%
+larger in witness items before adding any shared signed-window decoder.
+Evidence is `locally-reproduced`; execution is `research-unlimited` and the
+result is not a consensus or policy deployment claim. Reproduce it with:
+`cargo test --locked 'signatures::schnorr::csfs::tests::generator_window_width5_probe' --lib -- --ignored`.
+
+## NR-069: BLAKE3 keyed mode is outside the current generator contract
+
+The local BLAKE3 generators accept no key and set no `KEYED_HASH` mode flag.
+A deterministic probe over `00 01 ... 1f` with a 32-byte `0x42` key produces a
+keyed digest different from the current unkeyed digest, while the existing
+32-byte compute profile remains the only priced script. This is a
+`locally-reproduced` interface boundary and not an impossibility proof; the
+missing key-word layout, flags, witness shape, and stack/routing cost remain
+to be priced under OP-028. See [the probe](../../examples/blake3_keyed_boundary.rs).
+
+## NR-072: Ternary mixed-hash paths lose to four-way integer paths
+
+The ternary path was implemented as a native three-valued alternative using
+`0 -> SS`, `1 -> SR`, and `2 -> RS`, with explicit canonical trit checks and
+an integer-width check before the final `3*acc + trit` step. At 31 bits and a
+32-byte preimage it measures 947 script bytes, 63 serialized witness bytes,
+21 data items with zero hints, and a 24-item combined peak, versus 438/61/17/19
+for the four-way path. It is therefore dominated for the measured ordinary
+integer objective and is not retained as a byte-efficiency improvement. The
+result does not rule out a ternary path when protocol state is naturally
+three-valued or when a different consumer amortizes its dispatcher; see
+[OP-030](../open-problems.md#op-030--ternary-commitment-composition-frontier).
+
 ## NR-070: Output prefixes do not reduce fixed-hash compression cost
 
 The RIPEMD-160, SHA-1, and SHA-256 byte/u4 prefix adapters execute the complete

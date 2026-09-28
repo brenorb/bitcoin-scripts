@@ -2,9 +2,10 @@
 
 Question: do explicit local consensus and policy profiles agree with Bitcoin
 Core on resource limits, minimal encoding, OP_SUCCESS ordering and one complete
-constant-composition Winternitz spend? The current experiment establishes those
-outcomes for **44 deterministic fixtures**, including rejected inputs. The
-original 24-fixture report is retained as a historical dependency baseline.
+constant-composition Winternitz spend? The recorded 44-fixture experiment
+established those outcomes, including rejected inputs. The current 53-fixture
+extension also checks depth-one Taproot commitments against Core. The original
+24- and 44-fixture reports remain historical baselines.
 It does not generalize one successful profile to the entire primitive catalog.
 
 The separate [funded signature experiment](tapscript-signature-validation.md)
@@ -42,7 +43,7 @@ Block times, keys, messages, transaction amounts and fixture ordering are fixed.
 - [Runner](../tools/core_regtest.py) and [release manifest](../tools/bitcoin_core_release.json).
 - [Rust fixture generator](../examples/core_validation_fixtures.rs): full bytecode,
   data witnesses, Taproot commitments, local outcomes and explicit expectations.
-- [Current profile report](../tests/data/core-validation-v30.3.profiles.json): source/binary pins,
+- [44-fixture profile report](../tests/data/core-validation-v30.3.profiles.json): source/binary pins,
   fixture SHA256, transaction identities/weights, raw Core results and local differences.
 - [Historical 24-fixture report](../tests/data/core-validation-v30.3.json): the
   original `ba96bc2` interpreter observations, preserved without regeneration.
@@ -231,7 +232,7 @@ pin; neither report assumes these PRs have merged upstream.
 
 ## Integrated fixture suite
 
-The suite now includes both the checked u4 LSB and u32 popcount fixtures, for
+The 2026-09-27 integrated suite includes both the checked u4 LSB and u32 popcount fixtures, for
 46 total cases. Each new case also receives the commitment preflight before
 its combined local/Core comparison. The recorded 44-fixture report and its
 hash above remain historical evidence; rerunning the harness produces a new
@@ -242,3 +243,43 @@ The integrated suite was rerun on 2026-09-27 against pinned Core v30.3: all
 passed. The [integrated report](../tests/data/core-validation-v30.3.integrated-20260927.json) SHA256 is
 `5e5cd789eb6e1253cbab92702cda78eb193ed376940fa9a63aca50c1df1b6d75`.
 
+## Depth-one Taproot commitment differential, 2026-09-28
+
+Question: does the host-side commitment preflight agree with pinned Core when
+the revealed leaf has a Merkle sibling, and does it distinguish malformed
+control-block size from a well-formed but incorrect commitment? The comparison
+objective is exact consensus/policy acceptance and rejection diagnostics for
+funded transactions. No Script optimization is involved: the one-byte `OP_TRUE`
+leaf and `OP_FALSE` sibling use exact literal bytecode.
+
+Seven fixtures extend the integrated corpus to **53 complete spends** and
+**106 combined local/Core comparisons**. The valid depth-one path has a 65-byte
+control block and is `policy-validated`. Flipping output parity, substituting a
+different valid internal key, changing the revealed leaf to the also-truthy
+`OP_2`, or changing one sibling-hash bit leaves local leaf execution successful
+but breaks the commitment. Core and the preflight both reject those four with
+`Witness program hash mismatch`. Truncating the control block to 32 or 34 bytes
+instead produces Core's distinct `Invalid Taproot control block size` error;
+the preflight returns `InvalidControlBlock`. Each rejected spend is
+`consensus-incompatible` for this exact fixture. The seven fixtures are
+`differentially-validated`; preflight success alone remains `unclassified`.
+
+Every new fixture has **zero data witness items and zero hint items**. The leaf
+is 1 byte and the local combined main-plus-alt-stack peak is 1 item. The
+complete serialized witness is 69 bytes with the valid-length control block,
+or 36/38 bytes with the truncated controls, including item counts and length
+prefixes. Transaction weights are 447/414/416 WU respectively. Dynamic
+executed-opcode counts remain unavailable in the local report; the static
+non-push count is zero. No data or hint items enter the leaf; script and control
+block are included in complete-witness serialization. The terminal `OP_TRUE`/
+`OP_2` result is a clean single truthy item when the leaf runs.
+
+The [stored depth-one report](../tests/data/core-validation-v30.3.depth-one-20260928.json)
+retains the Core v30.3 binary and commit pins, full transaction identities,
+local leaf and commitment outcomes, and exact Core diagnostics. Two fresh
+isolated-node runs were byte-identical (SHA256
+`4d936200ce3530b78b350f5bbc8cba820329131de67ae199b13acd93e60fae6e`).
+The earlier 44- and 46-case reports remain historical. This extension tests
+Merkle depth one and control shape for these exact leaves; it does not validate
+annex signature binding, future leaf execution, transaction finality, or full
+relay policy in the local API.

@@ -9,4 +9,4 @@ This is an interface boundary, not an impossibility proof. Supporting keyed
 mode requires pricing the key's eight words, the `KEYED_HASH` flags, witness
 shape, and the resulting stack/routing changes. Evidence is
 `locally-reproduced`; see [the probe](../../examples/blake3_keyed_boundary.rs)
-and [OP-027](../open-problems.md#op-027--blake3-keyed-mode-frontier).
+and [OP-028](../open-problems.md#op-028--blake3-keyed-mode-frontier).

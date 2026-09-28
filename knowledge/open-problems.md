@@ -950,7 +950,7 @@ digest. **Complete when:** a generation-time output length supports at least a
 additional output-block compression/routing/cleanup and witness shape, and
 passes the combined 1,000-item stack check for the documented composition.
 
-## OP-027 — BLAKE3 keyed-mode frontier
+## OP-028 — BLAKE3 keyed-mode frontier
 
 Price a keyed BLAKE3 construction for the existing 32-byte input profile.
 **Complete when:** a deterministic key-and-message vector matches the

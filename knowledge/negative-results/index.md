@@ -1718,4 +1718,4 @@ keyed digest different from the current unkeyed digest, while the existing
 32-byte compute profile remains the only priced script. This is a
 `locally-reproduced` interface boundary and not an impossibility proof; the
 missing key-word layout, flags, witness shape, and stack/routing cost remain
-to be priced under OP-027. See [the probe](../../examples/blake3_keyed_boundary.rs).
+to be priced under OP-028. See [the probe](../../examples/blake3_keyed_boundary.rs).

@@ -54,8 +54,12 @@ leave `n + 19 + unrelated_live_items <= 1000`, counting both stacks.
 The threat model treats every nibble as hostile raw ScriptNum data. The
 canonical variant rejects redundant sign bytes and negative zero as well as
 negative and out-of-range values. Focused tests execute the exact 981-item
-strict frontier at a 1,000-item peak and cover malformed raw encodings at every
-position and preserved main/alt-stack state. The fragment-only boundary includes table setup, canonical
+strict frontier at a 1,000-item peak, a 979-item batch with one main-stack and
+one alt-stack item preserved at the 1,000-item peak, the 980-item batch with
+the same state rejected for stack size, malformed raw encodings at every
+position under the local consensus profile (so rejection comes from the
+fragment, not MINIMALDATA), and an alias that the numeric-range API accepts
+but the canonical API rejects under that profile. The fragment-only boundary includes table setup, canonical
 checks, queries, cleanup, and output restoration; it excludes witness pushes,
 terminal predicates, unrelated live state, and transaction context.
 

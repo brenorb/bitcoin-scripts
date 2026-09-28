@@ -87,7 +87,7 @@ integration commit
 [`4b7269a415f21be3fccee9730547f1426eb80326`](https://github.com/adrienlacombe/rust-bitcoin-scriptexec/commit/4b7269a415f21be3fccee9730547f1426eb80326),
 which incorporates the three separately submitted interpreter corrections below.
 The later signature integration `702544c9` also passed all 44 fixtures and 86
-applicable local/Core fragment comparisons. The current combined report uses
+applicable local/Core fragment comparisons. The recorded 44-fixture combined report uses
 interpreter [`a09e87af444034698697f0a2267e755cf72f9aed`](https://github.com/adrienlacombe/rust-bitcoin-scriptexec/commit/a09e87af444034698697f0a2267e755cf72f9aed) and adds a separate
 Taproot commitment preflight, so all 88 local/Core comparisons are applicable.
 The runner verifies the resolved graph through `cargo metadata --locked`: exactly
@@ -113,7 +113,7 @@ script. Consensus MINIMALIF remains enabled when numeric minimality is disabled.
 Push encoding is checked only when a push executes, so a nonminimal push in a
 skipped branch passes both profiles.
 
-All **44 Core consensus/policy expectations and exact rejection diagnostics
+In that recorded report, all **44 Core consensus/policy expectations and exact rejection diagnostics
 pass**. The local preflight gates acceptance on each script-path commitment
 while retaining the leaf profile verdict as a separate diagnostic. All 44
 combined local verdicts agree with Core, including the fixture that changes
@@ -228,3 +228,11 @@ followed by [executed-push minimality #20](https://github.com/BitVM/rust-bitcoin
 The historical report retains the original dependency and local resource
 wrapper repair. The current profile report uses the explicit fork integration
 pin; neither report assumes these PRs have merged upstream.
+
+## Integrated fixture suite
+
+The suite now includes both the checked u4 LSB and u32 popcount fixtures, for
+46 total cases. Each new case also receives the commitment preflight before
+its combined local/Core comparison. The recorded 44-fixture report and its
+hash above remain historical evidence; rerunning the harness produces a new
+46-fixture report.

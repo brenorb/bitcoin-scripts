@@ -76,7 +76,10 @@ they do not use BN254 or any other field modulus.
 - `u32_rrot8()`, `u32_rrot16()`, and `u32_rrot(24)` are unchecked fixed-byte
   permutations; callers own byte-range and canonical ScriptNum validation.
 - `u32_rrot7()` is the unchecked fixed seven-bit right rotation used by
-  SHA-256; callers own byte-range and canonical ScriptNum validation.
+  SHA-256; callers own byte-range and canonical ScriptNum validation. Its
+  byte step `u8_rrot7(i)` does not rotate a word: it moves the byte at stack
+  depth `i` to the top and replaces it with `(x & 0x7f) (x >> 7)`, high bit on
+  top, growing the stack by one item.
 - `byte_planes::u32_words_to_byte_planes(word_count, check_inputs)` transposes
   contiguous MSB-first words into byte-major planes. Checked batches are
   limited to 249 words by the combined stack bound.

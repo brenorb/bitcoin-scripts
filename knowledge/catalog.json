@@ -949,6 +949,7 @@
         "arithmetic::u32::rotate::tests::fixed_rotation7_matches_reference_boundaries",
         "arithmetic::u32::rotate::tests::fixed_rotation7_preserves_runtime_stack_state",
         "arithmetic::u32::rotate::tests::fixed_rotation7_rejects_a_short_word_with_an_execution_error",
+        "arithmetic::u32::rotate::tests::u8_rrot7_splits_only_the_selected_byte",
         "arithmetic::u32::stack::tests::test_u32_equality_boundaries_and_raw_encoding",
         "arithmetic::u32::stack::tests::equality_rejects_short_words_with_an_execution_error",
         "primitive_metrics::u32_equality_metrics_are_current",

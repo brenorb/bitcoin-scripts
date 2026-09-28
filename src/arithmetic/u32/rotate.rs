@@ -44,7 +44,20 @@ pub fn u32_rrot8_checked() -> Script {
     }
 }
 
-/// Right rotation of a u32 word by the fixed seven-bit SHA-256 rotation.
+/// Splits the byte limb at stack depth `i` (0 = top) into its low seven bits
+/// and its high bit; the byte-level step of `u32_rrot7()`.
+///
+/// Stack effect, with `x = x_i`:
+/// `x_i x_{i-1} .. x_0 -> x_{i-1} .. x_0 (x & 0x7f) (x >> 7)`.
+/// The selected item is moved to the top and replaced by two items, high bit
+/// on top, so the stack grows by one; the other items keep their values and
+/// relative order. It does not rotate a u32 word, nor does it recombine the
+/// byte: `u32_rrot7()` joins each high bit with the next limb's doubled low
+/// bits (`2 * low + high`).
+///
+/// Unchecked: for an item outside `0..=255` it still yields `(x - 128, 1)`
+/// when `x >= 128` and `(x, 0)` otherwise, which is not a bit split, so
+/// callers own byte-range and canonical ScriptNum validation.
 pub fn u8_rrot7(i: u32) -> Script {
     let roll_script = match i {
         0 => script! {},
@@ -339,6 +352,48 @@ mod tests {
                 OP_VERIFY OP_TRUE
             });
         }
+    }
+
+    #[test]
+    fn u8_rrot7_splits_only_the_selected_byte() {
+        const OTHERS: [u32; 5] = [0x11, 0x22, 0x33, 0x44, 0x55];
+        for depth in 0..5 {
+            for byte in [0, 1, 0x7f, 0x80, 0xa5, 0xfe, 0xff] {
+                // `limbs[d]` is the item at stack depth `d` (0 = top).
+                let mut limbs = OTHERS;
+                limbs[depth] = byte;
+                let result = crate::support::execution::execute_script_with_inputs_strict(
+                    script! {
+                        99 OP_TOALTSTACK
+                        for d in (0..5).rev() { { limbs[d] } }
+                        { u8_rrot7(depth as u32) }
+                        { byte >> 7 } OP_EQUALVERIFY
+                        { byte & 0x7f } OP_EQUALVERIFY
+                        // The untouched limbs keep their relative order.
+                        for d in (0..5).filter(|&d| d != depth) { { limbs[d] } OP_EQUALVERIFY }
+                        OP_DEPTH OP_0 OP_EQUALVERIFY
+                        OP_FROMALTSTACK 99 OP_EQUAL
+                    },
+                    vec![],
+                );
+                assert!(
+                    result.success,
+                    "u8_rrot7({depth}) did not split byte {byte:#04x}: {result}"
+                );
+            }
+        }
+
+        // Unchecked: an out-of-range item is not split into bits.
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                0x100
+                { u8_rrot7(0) }
+                1 OP_EQUALVERIFY
+                0x80 OP_EQUAL
+            },
+            vec![],
+        );
+        assert!(result.success, "out-of-range behavior changed: {result}");
     }
 
     #[test]

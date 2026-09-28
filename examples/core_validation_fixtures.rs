@@ -20,8 +20,8 @@ use bitcoin::{
     Address, Network, ScriptBuf, TapLeafHash, Witness,
 };
 use bitcoin_lab::{
-    arithmetic::u4::lsb::u4_nibbles_to_lsb,
     arithmetic::u32::popcount::u32_popcount,
+    arithmetic::u4::lsb::u4_nibbles_to_lsb,
     signatures::winternitz::{ConstantCompositionWinternitz20, Hash160, Preimage16},
     support::{
         execution::execute_raw_script_with_inputs_strict,

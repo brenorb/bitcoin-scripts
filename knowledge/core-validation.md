@@ -236,3 +236,9 @@ The suite now includes both the checked u4 LSB and u32 popcount fixtures, for
 its combined local/Core comparison. The recorded 44-fixture report and its
 hash above remain historical evidence; rerunning the harness produces a new
 46-fixture report.
+
+The integrated suite was rerun on 2026-09-27 against pinned Core v30.3: all
+46 consensus/policy expectations and all 92 combined local/Core comparisons
+passed. The report SHA256 is
+`5e5cd789eb6e1253cbab92702cda78eb193ed376940fa9a63aca50c1df1b6d75`.
+

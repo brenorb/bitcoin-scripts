@@ -13,6 +13,15 @@ ceiling of 998 items. With preserved live state, callers must satisfy
 `nibble_count + 2 + preserved_items <= 1000`. The fragment preserves unrelated
 lower main-stack and alt-stack state and returns classes in the original order.
 
+Order is checked with asymmetric witness vectors: threshold `5` over
+`[9, 5, 0, 5, 15, 3]` (bottom to top) must return `[2, 1, 0, 1, 2, 0]`, whose
+reversal differs at every position, with one preserved main-stack item and one
+alt-stack item; the reversed and less-than/greater-than-swapped vectors are
+rejected. A 16-nibble permutation is also checked for every threshold `0..=15`.
+The preserved-state frontier is exact for main, alt, and mixed preserved state
+(`(1, 0)`, `(0, 1)`, `(1, 1)`, `(3, 2)` items): the maximum batch reaches a
+1,000-item combined peak, and one more nibble fails with `StackSize`.
+
 The numeric range check does not enforce byte-unique ScriptNum encoding. A
 permissive execution profile therefore accepts non-minimal numeric aliases such
 as `[1, 0]` for one and `[0x80]` for zero. A caller that needs canonical witness

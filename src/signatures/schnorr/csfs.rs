@@ -1403,6 +1403,34 @@ mod tests {
             .all(|table| table.len() == 129));
         assert_eq!(tables[WINDOW_COUNT - 1].len(), 257);
 
+        // Every entry must be magnitude * 2^(WINDOW_BITS * window) * G,
+        // checked against libsecp256k1 rather than the host point arithmetic.
+        let secp = Secp256k1::new();
+        for (window_index, table) in tables.iter().enumerate() {
+            assert!(table[0].is_none(), "window {window_index} zero entry");
+            for (magnitude, entry) in table.iter().enumerate().skip(1) {
+                let scalar =
+                    (BigUint::from(magnitude) << (WINDOW_BITS * window_index)) % group_order();
+                let scalar_bytes = scalar.to_bytes_be();
+                let mut secret = [0u8; 32];
+                secret[32 - scalar_bytes.len()..].copy_from_slice(&scalar_bytes);
+                let expected = bitcoin::secp256k1::PublicKey::from_secret_key(
+                    &secp,
+                    &SecretKey::from_slice(&secret).unwrap(),
+                )
+                .serialize_uncompressed();
+                let point = entry.as_ref().expect("nonzero table multiple is finite");
+                assert_eq!(
+                    (point.x.clone(), point.y.clone()),
+                    (
+                        BigUint::from_bytes_be(&expected[1..33]),
+                        BigUint::from_bytes_be(&expected[33..65])
+                    ),
+                    "window {window_index} magnitude {magnitude} table entry"
+                );
+            }
+        }
+
         for value in [
             BigUint::from(0u8),
             BigUint::from(1u8),

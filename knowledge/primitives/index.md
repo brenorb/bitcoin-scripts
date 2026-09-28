@@ -42,6 +42,7 @@ the source. Read a page together with its comparison page and evidence record.
 - [u32 word arithmetic](u32.md)
 - [Checked u32 zero-byte mask](u32-zero-byte-mask.md)
 - [Fused u32 XNOR adapter](u32-xnor.md)
+- [Embedded-constant u32 XNOR](u32-xnor-constant.md)
 - [u32 word arithmetic](u32.md) — includes the checked seven-bit rotation boundary
 - [Compressed total-domain u32 addition](u32-compressed-add.md)
 - [Compressed total-domain u32 equality](u32-compressed-equal.md)

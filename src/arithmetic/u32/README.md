@@ -11,6 +11,9 @@ they do not use BN254 or any other field modulus.
   the word below it, and so on.
 - `u32_add[_drop](a, b)` accepts two distinct word offsets and wraps modulo
   `2^32`. The non-`drop` form preserves the word selected by `a`.
+- `u32_xnor_constant(value)` checks one hostile word and XNORs it with the
+  public compile-time `value`; the shared 256-entry table is local to the
+  fragment and the mask contributes no witness items.
 - `u32_sub[_drop](a, b)` computes `a - b` modulo `2^32` for either ordering of
   two distinct offsets. The non-`drop` form preserves the minuend.
 - `u32_conditional_negate()` normalizes a top condition and negates the next
@@ -91,6 +94,7 @@ as less-than-or-equal.
 | Fragment | Locking script | Witness bytes (see boundary below) | Combined stack peak |
 | --- | ---: | ---: | ---: |
 | `u32_add_drop(0, 1)` | <!-- metric:u32_add_drop -->78<!-- /metric:u32_add_drop --> bytes | 0 bytes | <!-- metric:u32_add_drop_stack -->10<!-- /metric:u32_add_drop_stack --> items |
+| `u32_xnor_constant(0x89abcdef)` | <!-- metric:u32_xnor_constant -->686<!-- /metric:u32_xnor_constant --> bytes | <!-- metric:u32_xnor_constant_witness -->13<!-- /metric:u32_xnor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xnor_constant_stack -->272<!-- /metric:u32_xnor_constant_stack --> items; <!-- metric:u32_xnor_constant_opcodes -->502<!-- /metric:u32_xnor_constant_opcodes --> static non-push opcodes |
 | `u32_compressed_add()` | <!-- metric:u32_compressed_add -->1016<!-- /metric:u32_compressed_add --> bytes | <!-- metric:u32_compressed_add_witness -->11<!-- /metric:u32_compressed_add_witness --> bytes (<!-- metric:u32_compressed_add_witness_max -->13<!-- /metric:u32_compressed_add_witness_max --> max) | <!-- metric:u32_compressed_add_stack -->11<!-- /metric:u32_compressed_add_stack --> items |
 | `u32_sub_drop(0, 1)` | <!-- metric:u32_sub_drop -->77<!-- /metric:u32_sub_drop --> bytes | 0 bytes | <!-- metric:u32_sub_drop_stack -->9<!-- /metric:u32_sub_drop_stack --> items |
 | `u32_conditional_negate()` | <!-- metric:u32_conditional_negate -->83<!-- /metric:u32_conditional_negate --> bytes | 0 bytes | <!-- metric:u32_conditional_negate_stack -->9<!-- /metric:u32_conditional_negate_stack --> items |
@@ -161,6 +165,17 @@ large batches have quadratic cumulative stack-shifting work even though the
 generated script contains only `4*n` `OP_ROLL` operations. The 97-byte witness
 uses minimal one-byte encodings; accepted four-byte numeric aliases can reach
 161 bytes.
+
+`u32_xnor_constant(value)` is a checked fixed-mask adapter. It validates all
+four original limbs before any arithmetic normalizes them, uses the shared XOR
+table for the embedded public mask, removes the table, then complements each
+output byte. The representative metric fixture uses mask `0x89abcdef`, four
+witness data items, and zero hint items. Those items coexist at script entry;
+the fixture serializes to 13 witness bytes and peaks at 272 combined
+main-plus-alt-stack items. The policy-compiled fragment is 686 bytes with 502
+static non-push opcodes. A separate complete-leaf regression consumes all four
+outputs and ends in `OP_TRUE` while checking raw aliases under the local
+consensus-oriented tapscript profile.
 
 `u32_compressed_add()` is a checked wire adapter: it accepts two canonical
 compressed u32 ScriptNums, expands them through the existing byte carry chain,

@@ -10,9 +10,9 @@ items required by the generic two-word borrow chain?
 
 `u32_sub_constant(value)` consumes the top four canonical byte limbs, validates
 each original hostile limb with `verify_canonical_byte()` before stack
-rearrangement, and pushes the public
-compile-time `value`, and reuses `u32_sub_drop(0, 1)` for subtraction modulo
-`2^32`. It returns the four most-significant-byte-first result limbs. The
+rearrangement, pushes the public compile-time `value`, and reuses
+`u32_sub_drop(1, 0)` (input word minus embedded constant) for subtraction
+modulo `2^32`. It returns the four most-significant-byte-first result limbs. The
 constant is script data, not a secret. Temporary borrow values use the
 altstack and are removed before return; unrelated main- and alt-stack items
 are preserved.
@@ -43,11 +43,26 @@ canonicality checks are part of this checked boundary.
 ## Evidence and execution class
 
 Evidence is `locally-reproduced`; deployment is `unclassified`. The measured
-fixture uses `value = 0x12345678` and `constant = 0x89abcdef`. Correctness
-tests cover zero, maximum values, underflow, borrow propagation, wraparound,
-and a mixed pair. Adversarial tests cover negative, out-of-range, and
-non-minimal raw limb encodings at every position, canonical 128 and 255
-boundary limbs at every position, plus surrounding main- and alt-stack state.
+fixture uses `value = 0x12345678` and `constant = 0x89abcdef`.
+
+Correctness tests supply the hostile word as runtime witness items to a
+complete leaf that compares all four output limbs with an independently
+computed expected word, through the shared strict harness (tapscript context,
+stack limit enforced, final stack exactly `[1]`). The explicit vectors cover
+`0 - c` wraparound for constants in every limb, a single borrow across each of
+the three limb boundaries, borrow propagation through two and three
+boundaries, a borrow out of the top limb with and without lower borrows, and
+the `0xffffffff` boundaries; 100 further cases use a fixed RNG seed.
+Adversarial tests execute a complete leaf that consumes all four outputs
+before `OP_TRUE` under the local Tapscript `Consensus` profile, which does not
+enforce global numeric minimality. At every one of the four positions they
+check -1 and 256 (`Verify`), negative zero and non-minimal one (`EqualVerify`),
+and a five-byte overflow (`ScriptIntNumericOverflow`), with a succeeding
+canonical control and canonical 0, 127, 128, and 255 limbs at every position.
+A test-only mutant that repeats the check on the top limb without rotating
+accepts the non-minimal alias at positions 0-2, so the all-position predicate
+is not vacuous. Surrounding main- and alt-stack state is preserved for
+borrowing and non-borrowing cases.
 
 The strict metric fixture executes through the repository's locked
 `bitcoin-scriptexec` dependency in a tapscript context with the combined

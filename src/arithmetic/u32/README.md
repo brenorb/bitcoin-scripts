@@ -170,7 +170,8 @@ main- and alt-stack state. The fragment is
 <!-- metric:u32_sub_constant_static_opcodes -->83<!-- /metric:u32_sub_constant_static_opcodes --> static
 non-push opcodes, with 149 locking-script bytes, 9 serialized
 witness bytes (13 at the maximum canonical byte fixture), and a strict
-combined peak of 10 items. The closest
+combined peak of
+<!-- metric:u32_sub_constant_stack -->9<!-- /metric:u32_sub_constant_stack --> items. The closest
 generic two-word baseline uses
 <!-- metric:u32_sub_drop_constant_witness -->21<!-- /metric:u32_sub_drop_constant_witness -->
 witness bytes across eight data items and peaks at

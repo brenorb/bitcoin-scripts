@@ -144,7 +144,7 @@ adder. It is retained for witness-constrained composition, not as a general
 locking-byte winner.
 
 The embedded-constant u32 subtraction row makes the same tradeoff for a public
-subtrahend: the checked four-limb adapter uses 141 locking bytes, a
+subtrahend: the checked four-limb adapter uses 149 locking bytes, a
 representative 9-byte/4-item witness, and a 9-item strict peak, versus 77
 bytes, 21 witness bytes/8 items, and a 9-item peak when the subtrahend is
 supplied as a second generic word. It is useful for witness-constrained

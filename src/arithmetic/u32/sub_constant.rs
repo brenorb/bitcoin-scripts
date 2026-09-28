@@ -26,10 +26,16 @@ pub fn u32_sub_constant(value: u32) -> Script {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::arithmetic::u32::stack::{u32_equal, u32_equalverify};
-    use crate::support::execution::{execute_script, execute_script_buf_with_options};
+    use crate::arithmetic::test_helpers::{run_with_witness, word_witness};
+    use crate::arithmetic::u32::stack::{u32_drop, u32_equal, u32_equalverify};
+    use crate::support::execution::execute_script;
     use crate::support::script::ScriptCompilation;
-    use bitcoin_scriptexec::Options;
+    use crate::support::tapscript::{execute_tapscript, TapscriptOutcome, TapscriptProfile};
+    use bitcoin::ScriptBuf;
+    use bitcoin_scriptexec::ExecError;
+    use rand::{rngs::StdRng, Rng, SeedableRng};
+
+    const CONSTANT: u32 = 0x89ab_cdef;
 
     fn scriptnum(value: u32) -> Vec<u8> {
         let mut bytes = [0u8; 8];
@@ -46,88 +52,192 @@ mod tests {
         ]
     }
 
+    /// Complete leaf: consume all four outputs, then leave exactly `OP_TRUE`.
+    fn complete_leaf(fragment: Script) -> ScriptBuf {
+        script! {
+            { fragment }
+            { u32_drop() }
+            OP_TRUE
+        }
+        .compile_with_policy()
+    }
+
+    /// Complete leaf that also checks the four output limbs against the
+    /// independently computed `expected` word.
+    fn complete_result_leaf(constant: u32, expected: u32) -> ScriptBuf {
+        script! {
+            { u32_sub_constant(constant) }
+            { u32_push(expected) }
+            { u32_equal() }
+            OP_VERIFY
+            OP_TRUE
+        }
+        .compile_with_policy()
+    }
+
+    fn executed_success(script: &ScriptBuf, witness: Vec<Vec<u8>>) -> bool {
+        matches!(
+            execute_tapscript(script.clone(), witness, TapscriptProfile::Consensus).outcome,
+            TapscriptOutcome::Executed(info) if info.success
+        )
+    }
+
+    fn all_nonminimal_aliases_rejected(script: &ScriptBuf) -> bool {
+        let canonical = vec![vec![1]; 4];
+        let control = execute_tapscript(
+            script.clone(),
+            canonical.clone(),
+            TapscriptProfile::Consensus,
+        );
+        let TapscriptOutcome::Executed(info) = &control.outcome else {
+            panic!("control leaf had no execution verdict: {control:?}");
+        };
+        assert!(info.success, "control leaf failed: {control:?}");
+        assert!(info.stack_limit_enforced);
+        assert_eq!(info.final_stack.len(), 1);
+        assert_eq!(info.final_stack.get(0), vec![1]);
+        assert!(info.stats.max_nb_stack_items <= 1000);
+
+        (0..4).all(|index| {
+            let mut witness = canonical.clone();
+            witness[index] = vec![1, 0];
+            matches!(
+                execute_tapscript(script.clone(), witness, TapscriptProfile::Consensus).outcome,
+                TapscriptOutcome::Executed(ref info)
+                    if !info.success && info.error == Some(ExecError::EqualVerify)
+            )
+        })
+    }
+
     #[test]
     fn subtracts_boundaries_and_wraps() {
-        for (word, constant) in [
-            (0, 0),
-            (0, u32::MAX),
-            (1, u32::MAX),
-            (0x7fff_ffff, 1),
-            (0x8000_0000, 0x8000_0000),
-            (u32::MAX, 1),
-            (0x0123_4567, 0x89ab_cdef),
-        ] {
-            let result = execute_script(script! {
-                { u32_push(word) }
-                { u32_sub_constant(constant) }
-                { u32_push(word.wrapping_sub(constant)) }
-                { u32_equal() }
-                OP_VERIFY
-                OP_TRUE
-            });
-            assert!(
-                result.success,
-                "constant sub failed: {word:08x}-{constant:08x}: {result}"
-            );
+        // (word, constant, expected): explicit wrap and borrow vectors.
+        let mut cases = vec![
+            // One borrow across exactly one limb boundary (low, middle, high);
+            // listed first so a dropped borrow reports its own boundary.
+            (0x0000_0100, 0x0000_0001, 0x0000_00ff),
+            (0x0001_0000, 0x0000_0100, 0x0000_ff00),
+            (0x0100_0000, 0x0001_0000, 0x00ff_0000),
+            // Identities and the 0xffffffff boundary.
+            (0, 0, 0),
+            (u32::MAX, 0, u32::MAX),
+            (u32::MAX, u32::MAX, 0),
+            (u32::MAX, 1, 0xffff_fffe),
+            (0xffff_fffe, u32::MAX, u32::MAX),
+            (0x0101_0101, 0x0101_0101, 0),
+            // 0 - c wraps modulo 2^32.
+            (0, 1, u32::MAX),
+            (0, 0x80, 0xffff_ff80),
+            (0, 0x100, 0xffff_ff00),
+            (0, 0x1_0000, 0xffff_0000),
+            (0, 0x100_0000, 0xff00_0000),
+            (0, 0x8000_0000, 0x8000_0000),
+            (0, u32::MAX, 1),
+            (1, u32::MAX, 2),
+            // Borrow propagating through two and three boundaries.
+            (0x0001_0000, 0x0000_0001, 0x0000_ffff),
+            (0x0100_0000, 0x0000_0001, 0x00ff_ffff),
+            (0x0100_0000, 0x0000_0100, 0x00ff_ff00),
+            // Borrow out of the top limb (wrap) without and with lower borrows.
+            (0x0000_0000, 0x0100_0000, 0xff00_0000),
+            (0x00ff_ffff, 0x0100_0000, 0xffff_ffff),
+            (0x0000_00ff, 0x0000_0100, 0xffff_ffff),
+            // Previously covered sign/midpoint and mixed patterns.
+            (0x7fff_ffff, 1, 0x7fff_fffe),
+            (0x8000_0000, 1, 0x7fff_ffff),
+            (0x8000_0000, 0x8000_0000, 0),
+            (0x0123_4567, 0x89ab_cdef, 0x7777_7778),
+        ];
+        for &(word, constant, expected) in &cases {
+            assert_eq!(word.wrapping_sub(constant), expected, "bad vector");
+        }
+        let mut rng = StdRng::seed_from_u64(0x7533_325f_7375_6263);
+        for _ in 0..100 {
+            let (word, constant): (u32, u32) = (rng.gen(), rng.gen());
+            cases.push((word, constant, word.wrapping_sub(constant)));
+        }
+        for (word, constant, expected) in cases {
+            let leaf = complete_result_leaf(constant, expected);
+            run_with_witness(&leaf.to_bytes(), word_witness(word));
         }
     }
 
     #[test]
     fn rejects_malformed_and_nonminimal_limbs() {
-        let options = Options {
-            require_minimal: false,
-            enforce_stack_limit: true,
-            ..Default::default()
-        };
-        let sub_script = u32_sub_constant(0x89ab_cdef)
-            .compile_with_policy()
-            .to_bytes();
-        for (index, raw) in [
-            (0, vec![0x80]),
-            (1, vec![0, 1]),
-            (2, vec![1, 0]),
-            (3, vec![0, 1]),
+        let leaf = complete_leaf(u32_sub_constant(CONSTANT));
+        let canonical = vec![vec![1]; 4];
+        assert!(executed_success(&leaf, canonical.clone()));
+        for (raw, expected_error) in [
+            (vec![0x81], ExecError::Verify),
+            (vec![0, 1], ExecError::Verify),
+            (vec![0x80], ExecError::EqualVerify),
+            (vec![1, 0], ExecError::EqualVerify),
+            (vec![0, 0, 0, 0, 1], ExecError::ScriptIntNumericOverflow),
         ] {
-            let mut witness = byte_word(0x1234_5678).to_vec();
-            witness[index] = raw;
-            let result = execute_script_buf_with_options(
-                bitcoin::ScriptBuf::from_bytes(sub_script.clone()),
-                witness,
-                options.clone(),
-            )
-            .expect("malformed limb execution");
-            assert!(
-                result.error.is_some(),
-                "accepted malformed limb {index}: {result}"
-            );
+            for index in 0..4 {
+                let mut witness = canonical.clone();
+                witness[index] = raw.clone();
+                let result = execute_tapscript(leaf.clone(), witness, TapscriptProfile::Consensus);
+                assert!(
+                    matches!(
+                        result.outcome,
+                        TapscriptOutcome::Executed(ref info)
+                            if !info.success && info.error == Some(expected_error.clone())
+                    ),
+                    "limb {index} with {raw:02x?} produced unexpected outcome: {result:?}"
+                );
+            }
         }
+
+        assert!(all_nonminimal_aliases_rejected(&leaf));
+
+        // Historical implementation shape: all four checks inspect the same
+        // top limb, so the regression predicate above must fail for positions
+        // 0-2 while the canonical control still succeeds.
+        let historical_mutant = complete_leaf(script! {
+            for _ in 0..4 {
+                { verify_canonical_byte() }
+            }
+            { u32_push(CONSTANT) }
+            { u32_sub_drop(1, 0) }
+        });
+        assert!(!all_nonminimal_aliases_rejected(&historical_mutant));
+        assert!(executed_success(&historical_mutant, canonical.clone()));
         for index in 0..4 {
-            let mut witness = byte_word(0x1234_5678).to_vec();
+            let mut witness = canonical.clone();
             witness[index] = vec![1, 0];
-            let result = execute_script_buf_with_options(
-                bitcoin::ScriptBuf::from_bytes(sub_script.clone()),
+            let result = execute_tapscript(
+                historical_mutant.clone(),
                 witness,
-                options.clone(),
-            )
-            .expect("nonminimal limb execution");
-            assert!(
-                result.error.is_some(),
-                "accepted nonminimal limb {index}: {result}"
+                TapscriptProfile::Consensus,
             );
+            if index < 3 {
+                assert!(
+                    matches!(result.outcome, TapscriptOutcome::Executed(ref info) if info.success),
+                    "historical mutant did not accept limb {index}: {result:?}"
+                );
+            } else {
+                assert!(
+                    matches!(
+                        result.outcome,
+                        TapscriptOutcome::Executed(ref info)
+                            if !info.success && info.error == Some(ExecError::EqualVerify)
+                    ),
+                    "historical mutant changed top-limb behavior: {result:?}"
+                );
+            }
         }
-        for value in [128, 255] {
+
+        // Canonical controls at every position, including one-byte and
+        // two-byte ScriptNum boundaries, must succeed.
+        for value in [0, 127, 128, 255] {
             for index in 0..4 {
                 let mut witness = byte_word(0x1234_5678).to_vec();
                 witness[index] = scriptnum(value);
-                let result = execute_script_buf_with_options(
-                    bitcoin::ScriptBuf::from_bytes(sub_script.clone()),
-                    witness,
-                    options.clone(),
-                )
-                .expect("canonical boundary limb execution");
+                let result = execute_tapscript(leaf.clone(), witness, TapscriptProfile::Consensus);
                 assert!(
-                    result.error.is_none(),
-                    "rejected canonical limb {value} at {index}: {result}"
+                    matches!(result.outcome, TapscriptOutcome::Executed(ref info) if info.success),
+                    "rejected canonical limb {value} at {index}: {result:?}"
                 );
             }
         }
@@ -135,22 +245,22 @@ mod tests {
 
     #[test]
     fn preserves_surrounding_main_and_alt_stack_items() {
-        let word = 0x1020_3040;
-        let constant = 0x5566_7788;
-        let result = execute_script(script! {
-            77 OP_TOALTSTACK
-            99
-            { u32_push(word) }
-            { u32_sub_constant(constant) }
-            { u32_push(word.wrapping_sub(constant)) }
-            { u32_equalverify() }
-            99 OP_EQUALVERIFY
-            OP_FROMALTSTACK 77 OP_EQUALVERIFY
-            OP_TRUE
-        });
-        assert!(
-            result.success,
-            "constant sub did not preserve stack state: {result}"
-        );
+        for (word, constant) in [(0x1020_3040, 0x5566_7788), (0, 1), (0, u32::MAX)] {
+            let result = execute_script(script! {
+                77 OP_TOALTSTACK
+                99
+                { u32_push(word) }
+                { u32_sub_constant(constant) }
+                { u32_push(word.wrapping_sub(constant)) }
+                { u32_equalverify() }
+                99 OP_EQUALVERIFY
+                OP_FROMALTSTACK 77 OP_EQUALVERIFY
+                OP_TRUE
+            });
+            assert!(
+                result.success,
+                "constant sub did not preserve stack state for {word:08x}-{constant:08x}: {result}"
+            );
+        }
     }
 }

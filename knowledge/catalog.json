@@ -262,8 +262,9 @@
       "limitations": [
         "Fixed-width u4 vectors only",
         "Numeric nibble checks do not prove unique raw ScriptNum byte encodings",
-        "4,354 static non-push opcodes exceed the 201-opcode legacy/P2SH/P2WSH policy boundary",
-        "Bitcoin Core consensus and relay-policy validation have not been performed"
+        "4,354 static non-push opcodes exceed the 201-opcode legacy/P2SH/P2WSH consensus boundary",
+        "Legacy/P2WSH 10,000-byte and 201-opcode limits do not apply to tapscript; Bitcoin Core consensus and relay-policy validation have not been performed",
+        "Widths are limited to 1..=498 because the standalone combined stack peak is 2*n + 3"
       ],
       "open_problems": [
         "OP-001",
@@ -300,7 +301,7 @@
         "tracked-stack"
       ],
       "security": "No independent cryptographic claim. Checked bit conversion, bit-plane transposition, and bit reversal enforce numeric nibble range before table indexing; the zero-mask projection performs canonical-nibble checks without a lookup table; unchecked conversion and other u4 operations require callers to supply certified canonical nibbles. Byte-unique ScriptNum encoding remains a protocol obligation where applicable.",
-      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The zero-mask projection consumes canonical nibbles and returns one numeric zero predicate per input without resident table memory. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table.",
+      "stack_contract": "Values are expanded into four-bit stack digits. The batch bit converter consumes contiguous nibbles, uses a temporary 61-item table, and returns four bits per input on the main or altstack as selected by the API; the API chooses big- or little-endian bit order within each nibble. The bit-plane adapter preserves unrelated state and groups those bits by bit position. The bit-reversal adapter preserves nibble order while replacing each value with its four-bit reversal. The zero-mask projection consumes canonical nibbles and returns one numeric zero predicate per input without resident table memory. The per-nibble popcount projection returns one checked weight per input, while u4_popcount folds those weights to one total. The modulo-16 sum reducer consumes a checked batch and returns one accumulator while using a temporary 31-item table.",
       "configurations": [
         {
           "id": "addition-memory",
@@ -432,6 +433,7 @@
           "per_use_script_bytes": null,
           "metric_keys": [
             "u4_bit_planes_batch16",
+            "u4_bit_planes_batch16_witness",
             "u4_bit_planes_batch16_stack",
             "u4_bit_planes_batch16_opcodes"
           ],
@@ -490,6 +492,34 @@
             "u4_popcount_batch32_opcodes"
           ],
           "static_non_push_opcodes": 328
+        },
+        {
+          "id": "nibble-popcount-total-batch32-checked",
+          "label": "Checked total popcount of 32 nibbles",
+          "parameters": {
+            "nibble_count": 32,
+            "check_inputs": true,
+            "table_items": 16,
+            "data_items": 32,
+            "hint_items": 0,
+            "output_range": "0..=128"
+          },
+          "includes": "fragment-only: shared 16-item popcount table, 32 range-checked queries, table cleanup, output folding, and one returned total; excludes terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 471,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 50,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 16,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u4_popcount_total_batch32",
+            "u4_popcount_total_batch32_witness",
+            "u4_popcount_total_batch32_stack",
+            "u4_popcount_total_batch32_opcodes"
+          ],
+          "static_non_push_opcodes": 359
         },
         {
           "id": "nibble-to-le-bits-batch32-checked",
@@ -769,10 +799,80 @@
       ]
     },
     {
+      "id": "arithmetic/u4-cyclic-equality",
+      "name": "Checked u4 cyclic lag-equality mask",
+      "class": "arithmetic/word",
+      "summary": "Range-checked fixed-width u4 projection to equality bits at a wrapped caller-selected lag.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-26",
+      "knowledge_page": "knowledge/primitives/u4-cyclic-equality.md",
+      "implementation": "src/arithmetic/u4/cyclic_equality.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "src/arithmetic/u4/cyclic_equality.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "stack-scheduling",
+        "permutation",
+        "cyclic-comparison",
+        "digit-arithmetic"
+      ],
+      "security": "Every hostile source nibble is range-checked once before numeric comparison. Non-minimal in-range ScriptNum aliases are accepted numerically, so callers needing byte-unique encodings must validate that boundary separately; the mask does not authenticate vector length or provide a terminal predicate.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | equal[0] ... equal[n-1], with the last result on top. The standalone schedule stages all equality results on the altstack before restoration.",
+      "configurations": [
+        {
+          "id": "checked-batch32-lag7",
+          "label": "u4_nibbles_to_cyclic_equality(32, 7)",
+          "parameters": {
+            "nibble_count": 32,
+            "offset": 7,
+            "data_items": 32,
+            "output_items": 32,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 32 numeric range checks, 32 wrapped direct comparisons, altstack result staging, input cleanup, and output restoration; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 569,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 65,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 569,
+          "metric_keys": [
+            "u4_cyclic_equality_batch32",
+            "u4_cyclic_equality_batch32_witness",
+            "u4_cyclic_equality_batch32_stack",
+            "u4_cyclic_equality_batch32_opcodes"
+          ],
+          "static_non_push_opcodes": 368
+        }
+      ],
+      "limitations": [
+        "Outputs are one ScriptNum bit per input rather than a packed mask",
+        "At 499 inputs the measured peak is 999 items; one additional preserved item reaches 1,000 and two trigger StackSize at 1,001",
+        "Offset is reduced modulo the vector length and is not itself witness-bound",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
       "id": "arithmetic/u4-parity",
       "name": "Checked u4 parity projection",
       "class": "arithmetic/word",
-      "summary": "Range-checked batch projection from canonical u4 nibbles to numeric parity bits.",
+      "summary": "Range-checked batch projection from numeric u4 nibbles to numeric parity bits.",
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
@@ -826,6 +926,82 @@
         "Numeric parity outputs are ScriptNum bits, not raw byte elements",
         "Lookup table and outputs consume combined stack capacity",
         "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-trichotomy",
+      "name": "Checked u4 embedded-threshold trichotomy",
+      "class": "arithmetic/word",
+      "summary": "Range-checked per-nibble three-way classification against one public generation-time threshold.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-27",
+      "knowledge_page": "knowledge/primitives/u4-trichotomy.md",
+      "implementation": "src/arithmetic/u4/trichotomy.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "arithmetic::u4::trichotomy::tests::asymmetric_vector_covers_all_classes_in_documented_order",
+        "arithmetic::u4::trichotomy::tests::every_threshold_preserves_asymmetric_input_order",
+        "arithmetic::u4::trichotomy::tests::preserved_state_stack_frontier_is_exact",
+        "arithmetic::u4::trichotomy::tests::classifies_all_three_relations_in_order",
+        "arithmetic::u4::trichotomy::tests::rejects_invalid_nibbles_and_generation_bounds",
+        "arithmetic::u4::trichotomy::tests::handles_threshold_endpoints",
+        "arithmetic::u4::trichotomy::tests::preserves_surrounding_main_and_alt_stack_items",
+        "arithmetic::u4::trichotomy::tests::compares_nonminimal_numeric_encodings_and_preserves_boundary_state",
+        "primitive_metrics::u4_trichotomy_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "digit-arithmetic",
+        "range-check",
+        "stack-scheduling"
+      ],
+      "security": "Every hostile nibble is range-checked before two numeric comparisons against the embedded threshold; the threshold is validated at generation time, non-minimal numeric encodings are accepted unless callers compose canonical-nibble validation, outputs are bounded numeric classes, and no terminal predicate is supplied.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | class[0] ... class[n-1], with class 0 for less-than, 1 for equal, 2 for greater-than and the last class on top.",
+      "configurations": [
+        {
+          "id": "checked-threshold5-batch16",
+          "label": "u4_nibbles_to_trichotomy(5, 16)",
+          "parameters": {
+            "nibble_count": 16,
+            "threshold": 5,
+            "input_check": true,
+            "data_items": 16,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 16 numeric range checks, two comparisons and branch selection per nibble, output restoration, and input consumption; excludes input pushes, witness serialization, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 398,
+          "witness_bytes": 33,
+          "witness_bytes_max": 33,
+          "max_stack_items": 18,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 398,
+          "metric_keys": [
+            "u4_trichotomy_16",
+            "u4_trichotomy_16_witness",
+            "u4_trichotomy_16_stack",
+            "u4_trichotomy_16_opcodes"
+          ],
+          "static_non_push_opcodes": 286
+        }
+      ],
+      "limitations": [
+        "The threshold is fixed at generation time rather than supplied dynamically",
+        "Numeric class outputs are not byte-oriented masks",
+        "Static non-push opcode count is not a dynamic execution measurement",
         "No Bitcoin Core consensus or relay-policy validation"
       ],
       "open_problems": [
@@ -901,6 +1077,72 @@
       ]
     },
     {
+      "id": "arithmetic/u4-transition-count",
+      "name": "Checked u4 transition count",
+      "class": "arithmetic/word",
+      "summary": "Range-checked u4 vector projection to the count of unequal adjacent pairs.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-18",
+      "knowledge_page": "knowledge/primitives/u4-transition-count.md",
+      "implementation": "src/arithmetic/u4/transition_count.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "src/arithmetic/u4/transition_count.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "stack-scheduling",
+        "digit-arithmetic"
+      ],
+      "security": "Every hostile input is range-checked before pair comparison; numeric range checking does not prove byte-unique ScriptNum encoding or a terminal predicate.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | one ScriptNum transition count. The accumulator is temporary altstack state and unrelated surrounding state is preserved.",
+      "configurations": [
+        {
+          "id": "checked-batch32",
+          "label": "u4_nibbles_transition_count(32)",
+          "parameters": {
+            "nibble_count": 32,
+            "data_items": 32,
+            "output_items": 1,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 32 numeric range checks, 31 adjacent inequality comparisons, one altstack count accumulator, and input cleanup; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 588,
+          "witness_bytes": 65,
+          "witness_bytes_max": null,
+          "max_stack_items": 35,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 588,
+          "metric_keys": [
+            "u4_transition_count_batch32",
+            "u4_transition_count_batch32_witness",
+            "u4_transition_count_batch32_stack",
+            "u4_transition_count_batch32_opcodes"
+          ],
+          "static_non_push_opcodes": 391
+        }
+      ],
+      "limitations": [
+        "Returns only the number of transitions, not their locations",
+        "The 997-input standalone ceiling must be reduced when unrelated stack state is live",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
       "id": "arithmetic/u32",
       "name": "u32 byte-word arithmetic",
       "class": "arithmetic/word",
@@ -914,6 +1156,7 @@
       "documentation": "src/arithmetic/u32/README.md",
       "tests": [
         "src/arithmetic/u32",
+        "primitive_metrics::u32_reverse_byte_adapter_metrics_are_current",
         "arithmetic::u32::stack::tests::test_u32_iszero",
         "arithmetic::u32::stack::tests::test_u32_iszero_does_not_treat_invalid_nonzero_limbs_as_zero",
         "arithmetic::u32::shift::tests::checked_shift_accepts_boundaries",
@@ -923,7 +1166,24 @@
         "arithmetic::u32::shift_left::tests::checked_shift_accepts_boundaries",
         "arithmetic::u32::shift_left::tests::checked_shift_rejects_malformed_bytes",
         "arithmetic::u32::shift_left::tests::checked_shift_preserves_surrounding_stacks",
-        "primitive_metrics::u32_lshift8_checked_metrics_are_current"
+        "primitive_metrics::u32_lshift8_checked_metrics_are_current",
+        "arithmetic::u32::byte_planes::tests::transposes_words_in_msb_first_order",
+        "arithmetic::u32::byte_planes::tests::preserves_unrelated_main_and_alt_stack_items",
+        "arithmetic::u32::byte_planes::tests::checked_mode_rejects_malformed_byte_items_at_every_position",
+        "arithmetic::u32::byte_planes::tests::unchecked_mode_preserves_hostile_items_for_certified_callers",
+        "arithmetic::u32::byte_planes::tests::batch_guard_matches_the_strict_peak",
+        "primitive_metrics::u32_byte_planes_metrics_are_current",
+        "arithmetic::u32::cmp::tests::test_u32_signed_less_than",
+        "primitive_metrics::u32_signed_lessthan_metrics_are_current",
+        "arithmetic::u32::rotate::tests::fixed_byte_rotations_match_reference",
+        "primitive_metrics::u32_fixed_rotation_metrics_are_current",
+        "arithmetic::u32::rotate::tests::fixed_rotation7_matches_reference_boundaries",
+        "arithmetic::u32::rotate::tests::fixed_rotation7_preserves_runtime_stack_state",
+        "arithmetic::u32::rotate::tests::fixed_rotation7_rejects_a_short_word_with_an_execution_error",
+        "arithmetic::u32::rotate::tests::u8_rrot7_splits_only_the_selected_byte",
+        "arithmetic::u32::stack::tests::test_u32_equality_boundaries_and_raw_encoding",
+        "arithmetic::u32::stack::tests::equality_rejects_short_words_with_an_execution_error",
+        "primitive_metrics::u32_equality_metrics_are_current"
       ],
       "references": [
         "bitcoin-script-locked",
@@ -933,8 +1193,8 @@
         "digit-arithmetic",
         "lookup-table"
       ],
-      "security": "No independent cryptographic claim; every byte item must be canonical and in range. The canonical rrot8 adapter performs that byte boundary before rotation. The canonical rrot16 adapter performs that byte boundary before rotation.",
-      "stack_contract": "A u32 occupies four byte-valued items; ordering varies only through documented stack helpers. The zero predicate consumes four limbs and returns one boolean. The checked byte-equality mask consumes two words and returns one four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane. The checked MSB mask consumes one word and returns a four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane.",
+      "security": "No independent cryptographic claim; arithmetic consumers require canonical byte items in range. The raw reverse-byte adapter deliberately does not validate or normalize its moved items. Checked byte-plane inputs are constrained to numeric 0..=255, while the unchecked form preserves hostile items and requires a caller-proven byte invariant. The signed less-than comparator requires canonical in-range byte limbs and additionally interprets each word as a two's-complement i32. The canonical rrot8 and rrot16 adapters perform their byte boundary before rotation.",
+      "stack_contract": "A u32 occupies four byte-valued items; ordering varies only through documented stack helpers. u8_reverse_toaltstack moves raw items to the alt stack and restores their top-first order while preserving unrelated state. The checked byte-plane transposition consumes contiguous MSB-first words and returns byte-major planes while preserving unrelated main-stack and altstack state. The zero predicate consumes four limbs and returns one boolean. The checked byte-equality mask consumes two words and returns one four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane. The checked MSB mask consumes one word and returns a four-bit numeric mask with bit 3 for the most-significant lane and bit 0 for the least-significant lane. Unsigned and signed comparisons consume two words and return one Boolean. u32_equal consumes two words and returns one Boolean raw-byte equality result; u32_equalverify consumes both words and leaves no result on success. The unchecked fixed rotations preserve the four-item word shape and do not validate inputs.",
       "configurations": [
         {
           "id": "add-drop",
@@ -1072,6 +1332,29 @@
           "per_use_script_bytes": null,
           "metric_keys": [
             "u8_logic_table_push"
+          ]
+        },
+        {
+          "id": "reverse-byte-adapter",
+          "label": "u8_reverse_toaltstack(4)",
+          "parameters": {
+            "byte_items": 4,
+            "preserves_unrelated_state": true,
+            "validates_inputs": false
+          },
+          "includes": "fragment-only: moves four raw stack items from the main stack to the alt stack and restores their top-first order; representative witness is four one-byte items; maximum witness is 13 bytes for four canonical byte-valued ScriptNums; excludes input pushes and output checks",
+          "script_bytes": 8,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 5,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 8,
+          "metric_keys": [
+            "u8_reverse_toaltstack_4",
+            "u8_reverse_toaltstack_4_witness",
+            "u8_reverse_toaltstack_4_stack"
           ]
         },
         {
@@ -1278,7 +1561,7 @@
         },
         {
           "id": "iszero",
-          "label": "u32_iszero()",
+          "label": "stack::u32_iszero()",
           "parameters": {
             "representation": "four big-endian byte limbs",
             "predicate": "all four limbs numerically zero"
@@ -1610,6 +1893,218 @@
             "u32_byte_reorder_witness_3",
             "u32_byte_reorder_stack_3"
           ]
+        },
+        {
+          "id": "byte-planes-words8-checked",
+          "label": "Checked 8-word byte-plane transposition",
+          "parameters": {
+            "word_count": 8,
+            "check_inputs": true,
+            "data_items": 32,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: internal delimiter, byte range checks, generated stack permutation, and output restoration; representative witness supplies 32 minimally encoded byte data items; accepted four-byte numeric aliases can reach 161 witness bytes; static non-push opcode count is 252; excludes terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 411,
+          "witness_bytes": 97,
+          "witness_bytes_max": 161,
+          "max_stack_items": 35,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u32_byte_planes_words8",
+            "u32_byte_planes_words8_witness",
+            "u32_byte_planes_words8_stack",
+            "u32_byte_planes_words8_opcodes"
+          ],
+          "static_non_push_opcodes": 252
+        },
+        {
+          "id": "signed-lessthan",
+          "label": "u32_signed_lessthan()",
+          "parameters": {
+            "representation": "four big-endian byte limbs",
+            "interpretation": "signed two's-complement i32",
+            "random_generator": "ChaCha20Rng",
+            "random_seed": "0x5532434f4d500001",
+            "random_case_count": 256,
+            "boundary_pair_count": 36,
+            "oracle": "(a as i32) < (b as i32)",
+            "hint_items": 0
+          },
+          "includes": "fragment-only: sign-bit extraction and signed comparison over two canonical four-byte words; excludes operand pushes, terminal predicate, and transaction context",
+          "script_bytes": 63,
+          "witness_bytes": 21,
+          "witness_bytes_max": 25,
+          "max_stack_items": 11,
+          "executed_opcodes": null,
+          "static_non_push_opcodes": 49,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 63,
+          "metric_keys": [
+            "u32_signed_lessthan",
+            "u32_signed_lessthan_witness",
+            "u32_signed_lessthan_stack",
+            "u32_signed_lessthan_opcodes"
+          ]
+        },
+        {
+          "id": "equality",
+          "label": "u32_equal()",
+          "parameters": {
+            "input_items": 8,
+            "output_items": 1,
+            "data_items": 8,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: four raw byte comparisons and Boolean reduction; representative witness has eight data items and is 17 bytes, with a 25-byte maximum for eight canonical byte-valued ScriptNums; excludes input pushes, terminal predicate, and output checks",
+          "script_bytes": 18,
+          "witness_bytes": 17,
+          "witness_bytes_max": 25,
+          "max_stack_items": 9,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 18,
+          "metric_keys": [
+            "u32_equal",
+            "u32_equal_witness",
+            "u32_equal_witness_max",
+            "u32_equal_stack"
+          ]
+        },
+        {
+          "id": "equality-verify",
+          "label": "u32_equalverify()",
+          "parameters": {
+            "input_items": 8,
+            "output_items": 0,
+            "data_items": 8,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: four raw byte comparisons with failure on mismatch and no result on success; representative witness has eight data items and is 17 bytes, with a 25-byte maximum for eight canonical byte-valued ScriptNums; excludes input pushes, terminal predicate, and output checks",
+          "script_bytes": 9,
+          "witness_bytes": 17,
+          "witness_bytes_max": 25,
+          "max_stack_items": 9,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 9,
+          "metric_keys": [
+            "u32_equalverify",
+            "u32_equalverify_witness",
+            "u32_equalverify_witness_max",
+            "u32_equalverify_stack"
+          ]
+        },
+        {
+          "id": "fixed-rotation-7",
+          "label": "u32_rrot7()",
+          "parameters": {
+            "rotation": 7,
+            "input_items": 4,
+            "output_items": 4,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: unchecked fixed seven-bit right rotation used by SHA-256; representative witness has four one-byte data items and the maximum is 13 bytes for four canonical byte-valued ScriptNums; excludes input pushes and output checks",
+          "script_bytes": 76,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 8,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 76,
+          "metric_keys": [
+            "u32_rrot7",
+            "u32_rrot7_witness",
+            "u32_rrot7_witness_max",
+            "u32_rrot7_stack"
+          ]
+        },
+        {
+          "id": "fixed-rotation-8",
+          "label": "u32_rrot8()",
+          "parameters": {
+            "rotation": 8,
+            "input_items": 4,
+            "output_items": 4,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: unchecked fixed byte rotation; representative witness has four one-byte data items and the maximum is 13 bytes for four canonical byte-valued ScriptNums; excludes input pushes and output checks",
+          "script_bytes": 3,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 5,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 3,
+          "metric_keys": [
+            "u32_rrot8",
+            "u32_rrot8_witness",
+            "u32_rrot8_witness_max",
+            "u32_rrot8_stack"
+          ]
+        },
+        {
+          "id": "fixed-rotation-16",
+          "label": "u32_rrot16()",
+          "parameters": {
+            "rotation": 16,
+            "input_items": 4,
+            "output_items": 4,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: unchecked fixed byte rotation; representative witness has four one-byte data items and the maximum is 13 bytes for four canonical byte-valued ScriptNums; excludes input pushes and output checks",
+          "script_bytes": 1,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 4,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 1,
+          "metric_keys": [
+            "u32_rrot16",
+            "u32_rrot16_witness",
+            "u32_rrot16_witness_max",
+            "u32_rrot16_stack"
+          ]
+        },
+        {
+          "id": "fixed-rotation-24",
+          "label": "u32_rrot(24)",
+          "parameters": {
+            "rotation": 24,
+            "input_items": 4,
+            "output_items": 4,
+            "hint_items": 0,
+            "canonicality": "caller supplied"
+          },
+          "includes": "fragment-only: public dispatcher selecting the unchecked fixed byte rotation; representative witness has four one-byte data items and the maximum is 13 bytes for four canonical byte-valued ScriptNums; excludes input pushes and output checks",
+          "script_bytes": 2,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 5,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 2,
+          "metric_keys": [
+            "u32_rrot24",
+            "u32_rrot24_witness",
+            "u32_rrot24_witness_max",
+            "u32_rrot24_stack"
+          ]
         }
       ],
       "limitations": [
@@ -1618,6 +2113,78 @@
         "Not validated against Bitcoin Core"
       ],
       "open_problems": [
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u32-xnor-constant",
+      "name": "Embedded-constant u32 XNOR",
+      "class": "arithmetic/word",
+      "summary": "Checked four-byte u32 bitwise XNOR with one public compile-time mask embedded in the locking script.",
+      "status": "experimental",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-xnor-constant.md",
+      "implementation": "src/arithmetic/u32/xnor_constant.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "arithmetic::u32::xnor_constant::tests::masks_boundaries_and_patterns",
+        "arithmetic::u32::xnor_constant::tests::rejects_malformed_and_nonminimal_limbs",
+        "arithmetic::u32::xnor_constant::tests::preserves_surrounding_main_and_alt_stack_items",
+        "primitive_metrics::u32_xnor_constant_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "batch-lookup",
+        "canonical-encoding",
+        "range-check"
+      ],
+      "security": "No independent cryptographic claim. The public mask is embedded in the script. Runtime witness limbs are checked for numeric byte range and canonical ScriptNum encoding before the table query.",
+      "stack_contract": "Consumes four canonical most-significant-byte-first limbs and returns four limbs for the input XNOR the embedded mask. A generated 256-item table is removed before return; unrelated caller state is preserved.",
+      "configurations": [
+        {
+          "id": "checked-mask-89abcdef",
+          "label": "Embedded public mask",
+          "parameters": {
+            "mask": "0x89abcdef",
+            "byte_count": 4,
+            "table_items": 256,
+            "data_items": 4,
+            "hint_items_per_invocation": 0,
+            "complete_input_items": 4
+          },
+          "includes": "fragment-with-memory: four numeric range and raw-encoding checks, Boolean table setup, four XOR queries, table cleanup, byte complements, and output routing; excludes witness serialization, terminal predicate/output comparison, unrelated live state, and transaction context",
+          "script_bytes": 686,
+          "witness_bytes": 13,
+          "witness_bytes_max": 13,
+          "max_stack_items": 272,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 686,
+          "metric_keys": [
+            "u32_xnor_constant",
+            "u32_xnor_constant_witness",
+            "u32_xnor_constant_stack",
+            "u32_xnor_constant_opcodes"
+          ],
+          "static_non_push_opcodes": 502
+        }
+      ],
+      "limitations": [
+        "The 502 static non-push opcodes exceed the 201-opcode limit for legacy and P2WSH scripts",
+        "Useful only when the mask is public and witness width matters",
+        "Static opcode count is not a dynamic execution measurement",
+        "Bitcoin Core consensus and relay-policy validation remain open"
+      ],
+      "open_problems": [
+        "OP-001",
         "OP-002",
         "OP-003"
       ]
@@ -1698,17 +2265,19 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-11",
+      "as_of": "2026-09-26",
       "knowledge_page": "knowledge/primitives/u32-popcount.md",
       "implementation": "src/arithmetic/u32/popcount.rs",
       "documentation": "src/arithmetic/u32/README.md",
       "tests": [
         "src/arithmetic/u32/popcount.rs",
-        "tests/primitive_metrics.rs"
+        "tests/primitive_metrics.rs",
+        "examples/core_validation_fixtures.rs"
       ],
       "references": [
         "bitcoin-script-locked",
-        "bitcoin-scriptexec-locked"
+        "bitcoin-scriptexec-locked",
+        "bitcoin-core-v30.3-regtest"
       ],
       "techniques": [
         "batch-lookup",
@@ -1742,13 +2311,42 @@
             "u32_popcount_witness",
             "u32_popcount_stack"
           ]
+        },
+        {
+          "id": "u32-popcount-0x12345678",
+          "label": "Core v30.3 complete u32 popcount Taproot leaf for 0x12345678",
+          "parameters": {
+            "input_hex": "12345678",
+            "expected_count": 13,
+            "data_items": 4,
+            "hint_items": 0,
+            "terminal_predicate": "13 OP_EQUAL",
+            "core_version": "30.3",
+            "core_commit": "49faec4f87f5cd19c88db01a82e5c68b087c8227",
+            "data_witness_bytes": 9,
+            "complete_taproot_witness_items": 6,
+            "core_acceptance": "consensus and default relay policy"
+          },
+          "includes": "complete-leaf: u32_popcount(), terminal 13 OP_EQUAL, and complete serialized Taproot witness with four data items, leaf script, control block, and witness framing; excludes remaining transaction overhead",
+          "script_bytes": 457,
+          "witness_bytes": 503,
+          "witness_bytes_max": null,
+          "max_stack_items": 262,
+          "executed_opcodes": null,
+          "static_non_push_opcodes": 172,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 457,
+          "metric_keys": [],
+          "evidence": "differentially-validated",
+          "execution": "policy-validated"
         }
       ],
       "limitations": [
         "The byte table consumes 256 persistent stack items",
         "Numeric result is a ScriptNum count, not a packed byte vector",
         "Static non-push opcode count is not an executed-opcode measurement",
-        "No Bitcoin Core consensus or relay-policy validation"
+        "Only the separately scoped 0x12345678 complete-leaf Core configuration is differentially validated and policy-validated; the fragment configuration retains its local evidence and deployment scope"
       ],
       "open_problems": [
         "OP-001",
@@ -1964,6 +2562,7 @@
       "tests": [
         "fields::ed25519::u5_balanced_table::tests",
         "fields::ed25519::bigint9::tests",
+        "fields::ed25519::u5_packed_grouped::tests",
         "examples/ed25519_packed_grouped_decode_probe.rs",
         "tests/primitive_metrics.rs"
       ],
@@ -2094,6 +2693,9 @@
             "temporary_powers_removed_before_return": true,
             "preserved_items_at_999_item_frontier": 937,
             "strict_combined_peak_at_preserved_frontier": 999,
+            "generator_max_preserved_items": 938,
+            "strict_combined_peak_at_generator_frontier": 1000,
+            "runtime_overflow_preserved_items": 939,
             "witness_fixture": "word0..6=0x80000000, word7=0x7ffffffe; minimal signed compressed-u32 encodings",
             "witness_serialization_boundary": "complete eight-item vector: one count byte, eight length bytes, seven five-byte words and one four-byte top word",
             "terminal_predicate_included": false
@@ -2144,6 +2746,9 @@
             "temporary_powers_removed_before_return": true,
             "preserved_items_at_999_item_frontier": 906,
             "strict_combined_peak_at_preserved_frontier": 999,
+            "generator_max_preserved_items": 907,
+            "strict_combined_peak_at_generator_frontier": 1000,
+            "runtime_overflow_preserved_items": 908,
             "witness_fixture": "word0..6=0x80000000, word7=0x7ffffffe; minimal signed compressed-u32 encodings",
             "witness_serialization_boundary": "complete eight-item vector: one count byte, eight length bytes, seven five-byte words and one four-byte top word",
             "terminal_predicate_included": false
@@ -3170,7 +3775,7 @@
       "id": "commitment/four-way-hash-path-integer",
       "name": "Four-way mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
+      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -3179,7 +3784,8 @@
       "implementation": "src/commitments/four_way_hash_path/mod.rs",
       "documentation": "src/commitments/four_way_hash_path/README.md",
       "tests": [
-        "commitments::four_way_hash_path::tests"
+        "commitments::four_way_hash_path::tests",
+        "primitive_metrics::commitment_metrics_are_current"
       ],
       "references": [
         "bip-342"
@@ -3212,6 +3818,31 @@
             "four_way_hash_path_integer_witness_31",
             "four_way_hash_path_integer_stack_31"
           ]
+        },
+        {
+          "id": "retained-digits-16",
+          "label": "16 retained four-way hash-path digits",
+          "parameters": {
+            "digit_count": 16,
+            "bit_width": 31,
+            "preimage_bytes": 32,
+            "retained_items": 16
+          },
+          "includes": "fragment-only: four-way verifier retaining raw digit encodings on altstack; excludes staging, retained-digit cleanup, and terminal predicate; witness has 16 digit items and one preimage, zero hints",
+          "script_bytes": 360,
+          "witness_bytes": 61,
+          "witness_bytes_max": 66,
+          "max_stack_items": 20,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 360,
+          "metric_keys": [
+            "four_way_hash_path_altstack_16",
+            "four_way_hash_path_altstack_witness_16",
+            "four_way_hash_path_altstack_witness_max_16",
+            "four_way_hash_path_altstack_stack_16"
+          ]
         }
       ],
       "limitations": [
@@ -3224,10 +3855,87 @@
       "open_problems": []
     },
     {
+      "id": "commitment/tapbranch-u4",
+      "name": "TapBranch tagged hash over u4 nodes",
+      "class": "commitment/taproot",
+      "summary": "Computes BIP341's TapBranch tagged hash over two already-ordered 32-byte nodes using the existing u4 SHA-256 circuit.",
+      "status": "experimental",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-18",
+      "knowledge_page": "knowledge/primitives/tapbranch-u4.md",
+      "implementation": "src/commitments/tapbranch.rs",
+      "documentation": "src/commitments/README.md",
+      "tests": [
+        "commitments::tapbranch::tests::matches_bip341_tagged_hash_for_ordered_nodes",
+        "commitments::tapbranch::tests::rejects_runtime_malformed_nibbles_at_every_position",
+        "commitments::tapbranch::tests::rejects_short_witness",
+        "commitments::tapbranch::tests::wrong_node_order_changes_the_digest",
+        "commitments::tapbranch::tests::preserves_surrounding_main_and_alt_stack_items",
+        "primitive_metrics::tapbranch_metrics_are_current"
+      ],
+      "references": [
+        "bip-341",
+        "bitcoin-script-stack-locked",
+        "fips-180-4"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "digit-arithmetic",
+        "tagged-hash"
+      ],
+      "security": "The digest inherits SHA-256's generic 128-bit collision and 256-bit preimage bounds, subject to correct TapBranch domain separation. The function does not compare nodes; callers must bind lexicographic ordering before invoking it.",
+      "stack_contract": "left[0] ... left[63] right[0] ... right[63] -> digest[0] ... digest[63], where each item is range-checked to 0..=15 and digest order is most-significant first",
+      "configurations": [
+        {
+          "id": "ordered-32-byte-nodes",
+          "label": "Two ordered 32-byte nodes",
+          "parameters": {
+            "tag": "TapBranch",
+            "node_bytes": 32,
+            "input_items": 128,
+            "output_items": 64,
+            "ordering": "left <= right, caller-enforced"
+          },
+          "includes": "fragment-with-memory: fixed tagged-hash prefix, node routing, full u4 SHA-256 circuit, table cleanup, and 128-item range-checked witness; excludes ordering comparator, terminal output check, tapleaf/control-block wrapper, and transaction context",
+          "script_bytes": 1106723,
+          "witness_bytes": 161,
+          "witness_bytes_max": 257,
+          "witness_items": 128,
+          "hints": 0,
+          "max_stack_items": 969,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 1106723,
+          "metric_keys": [
+            "tapbranch_hash_u4",
+            "tapbranch_hash_u4_witness",
+            "tapbranch_hash_u4_stack",
+            "tapbranch_hash_u4_opcodes"
+          ],
+          "static_non_push_opcodes": 671155
+        }
+      ],
+      "limitations": [
+        "The generated script exceeds the repository's 32-KiB optimizer cutoff and is reported unoptimized",
+        "Standard transaction-weight policy and complete-spend consensus validation have not been performed",
+        "Strict local peak leaves only the measured remainder of the 1,000-item combined stack limit for surrounding state",
+        "Lexicographic node ordering and terminal output comparison are external caller responsibilities",
+        "Numeric range checks do not establish byte-unique ScriptNum encoding"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003",
+        "OP-021"
+      ]
+    },
+    {
       "id": "commitment/hash-path-integer",
       "name": "Mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1\u201331-bit integer.",
+      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1–31-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -3236,7 +3944,8 @@
       "implementation": "src/commitments/hash_path/mod.rs",
       "documentation": "src/commitments/hash_path/README.md",
       "tests": [
-        "commitments::hash_path::tests"
+        "commitments::hash_path::tests",
+        "primitive_metrics::commitment_metrics_are_current"
       ],
       "references": [
         "bip-342",
@@ -3247,7 +3956,7 @@
         "nested-hash-state"
       ],
       "security": "Starting preimage must be independently bound: (x, 1) and (SHA256(x), 0) otherwise open the same state. Hiding depends on opening entropy; mixed-hash binding remains experimental, with at most 80-bit generic collision resistance.",
-      "stack_contract": "... bitN-1 ... bit0 preimage -> ... value",
+      "stack_contract": "... bitN-1 ... bit0 preimage -> ... value; retained verification leaves true on main and normalized bitN-1 ... bit0 on altstack, with the starting preimage still caller-bound",
       "configurations": [
         {
           "id": "integer-31",
@@ -3269,6 +3978,30 @@
             "hash_path_integer_31",
             "hash_path_integer_witness_31",
             "hash_path_integer_stack_31"
+          ]
+        },
+        {
+          "id": "retained-bits-31",
+          "label": "31-bit retained hash-path bits",
+          "parameters": {
+            "bit_width": 31,
+            "preimage_bytes": 32,
+            "retained_items": 31
+          },
+          "includes": "fragment-only: hash-path verifier retaining normalized bits on altstack; excludes staging, initial-state binding, retained-bit cleanup, and terminal predicate; witness has 31 selector items and one preimage, zero hints",
+          "script_bytes": 302,
+          "witness_bytes": 78,
+          "witness_bytes_max": 96,
+          "max_stack_items": 33,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 302,
+          "metric_keys": [
+            "hash_path_altstack_31",
+            "hash_path_altstack_witness_31",
+            "hash_path_altstack_witness_max_31",
+            "hash_path_altstack_stack_31"
           ]
         },
         {
@@ -3325,7 +4058,8 @@
       "implementation": "src/commitments/preimage_length/mod.rs",
       "documentation": "src/commitments/preimage_length/README.md",
       "tests": [
-        "commitments::preimage_length::tests"
+        "commitments::preimage_length::tests",
+        "primitive_metrics::commitment_metrics_are_current"
       ],
       "references": [
         "bip-342",
@@ -3335,7 +4069,7 @@
         "constant-embedding"
       ],
       "security": "Binding uses SHA-256; hiding depends on unpredictable preimage bytes and the length is revealed on opening.",
-      "stack_contract": "... preimage -> ... len(preimage)-offset",
+      "stack_contract": "... preimage -> ... len(preimage)-offset; the result is a non-negative integer, not a success Boolean, and the caller supplies any terminal predicate",
       "configurations": [
         {
           "id": "offset-16",
@@ -3359,6 +4093,50 @@
             "preimage_length_witness_min",
             "preimage_length_witness_max",
             "preimage_length_stack"
+          ]
+        },
+        {
+          "id": "offset-0-boundary",
+          "label": "Empty preimage at offset 0",
+          "parameters": {
+            "offset": 0,
+            "preimage_bytes": 0
+          },
+          "includes": "fragment-only: preimage hash and zero-length result; excludes terminal predicate; one empty data item and zero hints",
+          "script_bytes": 42,
+          "witness_bytes": 2,
+          "witness_bytes_max": 2,
+          "max_stack_items": 3,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 42,
+          "metric_keys": [
+            "preimage_length_offset0",
+            "preimage_length_offset0_witness",
+            "preimage_length_offset0_stack"
+          ]
+        },
+        {
+          "id": "offset-520-boundary",
+          "label": "520-byte preimage at offset 520",
+          "parameters": {
+            "offset": 520,
+            "preimage_bytes": 520
+          },
+          "includes": "fragment-only: consensus-size preimage hash and zero-length result; excludes terminal predicate; one 520-byte data item and zero hints; no relay-policy claim",
+          "script_bytes": 46,
+          "witness_bytes": 524,
+          "witness_bytes_max": 524,
+          "max_stack_items": 3,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 46,
+          "metric_keys": [
+            "preimage_length_offset520",
+            "preimage_length_offset520_witness",
+            "preimage_length_offset520_stack"
           ]
         }
       ],
@@ -3692,7 +4470,9 @@
       "implementation": "src/hashes/sha256/sha2_u32.rs",
       "documentation": "src/hashes/sha256/README.md",
       "tests": [
-        "hashes::sha256::sha2_u32::tests::test_sha256"
+        "hashes::sha256::sha2_u32::tests::test_sha256",
+        "hashes::sha256::sha2_u32::tests::test_sha256_80bytes_from_midstate",
+        "hashes::sha256::sha2_u32::tests::test_sha256_tagged_hash_matches_multiple_vectors"
       ],
       "references": [
         "fips-180-4",
@@ -3723,10 +4503,61 @@
           "metric_keys": [
             "sha2_u32_32"
           ]
+        },
+        {
+          "id": "midstate-16-suffix",
+          "label": "64-byte prefix midstate plus 16-byte suffix",
+          "parameters": {
+            "prefix_bytes": 64,
+            "suffix_bytes": 16,
+            "total_message_bytes": 80
+          },
+          "includes": "fragment-only: one-block continuation; excludes midstate generation, prefix binding, message pushes, and digest comparison",
+          "script_bytes": 530686,
+          "witness_bytes": 33,
+          "witness_bytes_max": 49,
+          "max_stack_items": 856,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 530686,
+          "metric_keys": [
+            "sha2_u32_80_midstate",
+            "sha2_u32_80_midstate_witness",
+            "sha2_u32_80_midstate_stack"
+          ]
+        },
+        {
+          "id": "bip340-tagged-32",
+          "label": "BIP340-style tagged hash over a 32-byte message",
+          "parameters": {
+            "tag_hash_bytes": 32,
+            "message_bytes": 32,
+            "total_message_bytes": 96,
+            "data_items": 32,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: host-precomputed tag block plus one Script continuation block; excludes message pushes and digest comparison",
+          "script_bytes": 530755,
+          "witness_bytes": 65,
+          "witness_bytes_max": 97,
+          "max_stack_items": 856,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 530755,
+          "execution_class": "research-unlimited",
+          "strict_stack_limit_test": true,
+          "metric_keys": [
+            "sha2_u32_tagged_32",
+            "sha2_u32_tagged_32_witness",
+            "sha2_u32_tagged_32_stack"
+          ]
         }
       ],
       "limitations": [
         "Larger than local u4 configuration",
+        "Caller must bind the supplied midstate to the fixed prefix",
         "Strict complete-leaf feasibility unclassified"
       ],
       "open_problems": [
@@ -3747,7 +4578,9 @@
       "implementation": "src/hashes/sha256/sha2_u4.rs",
       "documentation": "src/hashes/sha256/README.md",
       "tests": [
-        "hashes::sha256::sha2_u4::tests::test_sha256_strs"
+        "hashes::sha256::sha2_u4::tests::test_sha256_strs",
+        "hashes::sha256::sha2_u4::tests::test_sha256_80bytes_from_midstate",
+        "hashes::sha256::sha2_u4::tests::test_sha256_80bytes_from_midstate_has_strict_stack_profile"
       ],
       "references": [
         "fips-180-4",
@@ -3806,10 +4639,41 @@
           "metric_keys": [
             "sha2_u4_32"
           ]
+        },
+        {
+          "id": "midstate-16-suffix",
+          "label": "64-byte prefix midstate plus 16-byte suffix",
+          "parameters": {
+            "prefix_bytes": 64,
+            "suffix_bytes": 16,
+            "total_message_bytes": 80,
+            "suffix_witness_items": 32,
+            "midstate_fixture": "SHA-256 compress of 64 bytes of 0x42"
+          },
+          "includes": "fragment-only: one-block continuation from a caller-supplied midstate; excludes midstate generation, prefix binding, suffix pushes, and digest comparison",
+          "script_bytes": 332830,
+          "witness_bytes": 48,
+          "witness_bytes_max": 65,
+          "max_stack_items": 969,
+          "executed_opcodes": 195219,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 332830,
+          "opcode_measurement": "static non-push opcode count",
+          "execution_class": "research-unlimited",
+          "strict_stack_limit_test": true,
+          "hint_stack_items": 0,
+          "metric_keys": [
+            "sha2_u4_80_midstate",
+            "sha2_u4_80_midstate_witness",
+            "sha2_u4_80_midstate_stack",
+            "sha2_u4_80_midstate_opcodes"
+          ]
         }
       ],
       "limitations": [
         "Table configuration affects stack peak",
+        "Caller must bind the supplied midstate to the fixed 64-byte prefix",
         "Strict complete-leaf feasibility unclassified"
       ],
       "open_problems": [
@@ -4252,6 +5116,44 @@
             "aes128_witness_min",
             "aes128_witness_max",
             "aes128_stack"
+          ]
+        },
+        {
+          "id": "fips-key",
+          "label": "Embedded FIPS-197 key 00..0f",
+          "parameters": {
+            "key_hex": "000102030405060708090a0b0c0d0e0f"
+          },
+          "includes": "fragment-with-memory: full encryption including shared table memory; witness serializes plaintext nibbles",
+          "script_bytes": 25449,
+          "witness_bytes": 33,
+          "witness_bytes_max": 65,
+          "max_stack_items": 908,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 25449,
+          "metric_keys": [
+            "aes128_fips_encrypt"
+          ]
+        },
+        {
+          "id": "all-ones-key",
+          "label": "Embedded all-ones key",
+          "parameters": {
+            "key_hex": "ffffffffffffffffffffffffffffffff"
+          },
+          "includes": "fragment-with-memory: full encryption including shared table memory; witness serializes plaintext nibbles",
+          "script_bytes": 25520,
+          "witness_bytes": 33,
+          "witness_bytes_max": 65,
+          "max_stack_items": 908,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 25520,
+          "metric_keys": [
+            "aes128_all_ones_encrypt"
           ]
         },
         {
@@ -5056,7 +5958,9 @@
       "implementation": "src/signatures/hors/mod.rs",
       "documentation": "src/signatures/hors/README.md",
       "tests": [
-        "signatures::hors::tests"
+        "signatures::hors::tests",
+        "primitive_metrics::hors_index_boundary_metrics_are_current",
+        "primitive_metrics::hors_witness_boundary_metrics_are_current"
       ],
       "references": [
         "binohash-paper"
@@ -5065,7 +5969,7 @@
         "hash-chain"
       ],
       "security": "Strictly one-time; concrete forgery probability depends on n, t, index derivation, disclosures, and HASH160.",
-      "stack_contract": "Witness supplies reverse-ordered index/preimage pairs; verifier consumes commitments and leaves true.",
+      "stack_contract": "Witness supplies reverse-ordered index/preimage pairs; verifier consumes commitments and leaves true. Host indices are minimally serialized, but the verifier clamps with OP_MIN and does not independently require canonical index bytes.",
       "configurations": [
         {
           "id": "n32-t8",
@@ -5078,15 +5982,45 @@
           "includes": "fragment-only: locking verifier and serialized subset witness",
           "script_bytes": 809,
           "witness_bytes": 280,
-          "witness_bytes_max": 280,
-          "max_stack_items": null,
+          "witness_bytes_max": 281,
+          "max_stack_items": 50,
           "executed_opcodes": null,
           "validation_weight": null,
           "setup_script_bytes": 0,
           "per_use_script_bytes": 809,
           "metric_keys": [
             "hors_lock_n32_t8",
-            "hors_witness_n32_t8"
+            "hors_witness_n32_t8",
+            "hors_witness_n32_t8_max",
+            "hors_stack_n32_t8"
+          ]
+        },
+        {
+          "id": "n129-t1-index-boundary",
+          "label": "n=129, t=1 HORS index serialization boundary",
+          "parameters": {
+            "n": 129,
+            "t": 1,
+            "preimage_bytes": 32,
+            "indices": [
+              127,
+              128
+            ]
+          },
+          "includes": "fragment-only: locking verifier and canonical index boundary witnesses; index 127 is one byte and index 128 is two bytes; zero hints; verifier clamps out-of-range indices with OP_MIN",
+          "script_bytes": 2792,
+          "witness_bytes": 36,
+          "witness_bytes_max": 37,
+          "max_stack_items": 133,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 2792,
+          "metric_keys": [
+            "hors_lock_n129_t1",
+            "hors_witness_n129_t1_index127",
+            "hors_witness_n129_t1_index128",
+            "hors_stack_n129_t1"
           ]
         }
       ],
@@ -9213,20 +10147,24 @@
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-11",
+      "as_of": "2026-09-26",
       "knowledge_page": "knowledge/primitives/shake256-prefix.md",
       "implementation": "src/hashes/shake256/mod.rs",
       "documentation": "src/hashes/shake256/README.md",
       "tests": [
         "hashes::shake256::tests::hashes_prefixes_to_the_standard_output",
         "hashes::shake256::tests::small_prefix_stays_below_the_stack_limit",
+        "hashes::shake256::tests::funded_prefix_leaf_stays_below_the_stack_limit",
         "hashes::shake256::tests::rejects_invalid_prefix_lengths",
         "primitive_metrics::shake256_prefix_metrics_are_current",
-        "examples/shake256_prefix_benchmark.rs"
+        "examples/shake256_prefix_benchmark.rs",
+        "examples/shake256_prefix_consensus_fixture.rs",
+        "tools/shake256_prefix_regtest.py"
       ],
       "references": [
         "fips-202",
-        "bitcoin-scriptexec-locked"
+        "bitcoin-scriptexec-locked",
+        "bitcoin-core-v30.3-regtest"
       ],
       "techniques": [
         "sponge",
@@ -9279,13 +10217,40 @@
             "shake256_prefix_witness_32",
             "shake256_prefix_stack_32_137"
           ]
+        },
+        {
+          "id": "complete-leaf-core-v30.3",
+          "label": "Core v30.3 complete SHAKE256 prefix Taproot leaf",
+          "parameters": {
+            "message_bytes": 32,
+            "output_bytes": 32,
+            "terminal_consumer": "drop all 32 hash outputs and OP_TRUE",
+            "core_version": "30.3",
+            "core_commit": "49faec4f87f5cd19c88db01a82e5c68b087c8227",
+            "data_witness_bytes": 65,
+            "complete_taproot_witness_items": 34,
+            "local_stack_limit_enforced": true,
+            "core_acceptance": "complete funded Taproot spend via generateblock"
+          },
+          "includes": "complete-leaf: generated 32-byte prefix, terminal consumer, OP_TRUE, complete Taproot witness with 32 data items, leaf script, control block, and witness framing; excludes funding transaction and transaction-envelope costs",
+          "script_bytes": 2000144,
+          "witness_bytes": 2000248,
+          "witness_bytes_max": null,
+          "max_stack_items": 813,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 2000144,
+          "metric_keys": [],
+          "evidence": "differentially-validated",
+          "execution": "consensus-validated"
         }
       ],
       "limitations": [
         "Only the 32-byte and rate-crossing 137-byte prefixes have strict local stack measurements",
-        "The prefix fragments remain impractical for ordinary script-size and relay-policy limits",
-        "Executed-opcode counter is unavailable in the local tapscript interpreter",
-        "Bitcoin Core consensus and policy validation not performed"
+        "The 2,000,127-byte fragment is not suitable for bare script, P2SH, or P2WSH and relay policy was not measured",
+        "Executed-opcode count was not measured and is not claimed",
+        "Only the separately scoped complete-leaf Core configuration is differentially validated and consensus-validated; local fragment evidence remains locally-reproduced / unclassified"
       ],
       "open_problems": [
         "OP-001",
@@ -9298,29 +10263,40 @@
       "id": "arithmetic/u4-lsb",
       "name": "Checked u4 least-significant-bit projection",
       "class": "arithmetic/word",
-      "summary": "Range-checked batch projection from canonical u4 nibbles to their least-significant bits.",
+      "summary": "Range-checked batch projection from numeric u4 nibbles to their least-significant bits.",
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-17",
+      "as_of": "2026-09-28",
       "knowledge_page": "knowledge/primitives/u4-lsb.md",
       "implementation": "src/arithmetic/u4/lsb.rs",
       "documentation": "src/arithmetic/u4/README.md",
       "tests": [
         "src/arithmetic/u4/lsb.rs",
-        "tests/primitive_metrics.rs"
+        "tests/primitive_metrics.rs",
+        "arithmetic::u4::lsb::tests::projects_all_nibble_least_significant_bits_in_order",
+        "arithmetic::u4::lsb::tests::rejects_out_of_range_nibbles_at_each_position",
+        "arithmetic::u4::lsb::tests::respects_stack_frontier_and_preserves_state",
+        "primitive_metrics::u4_lsb_metrics_are_current",
+        "arithmetic::u4::lsb::tests::canonical_batch_boundary_is_one_item_smaller",
+        "arithmetic::u4::lsb::tests::canonical_projection_matches_reference_values",
+        "arithmetic::u4::lsb::tests::canonical_projection_rejects_malformed_nibbles",
+        "arithmetic::u4::lsb::tests::canonical_projection_preserves_surrounding_stacks",
+        "primitive_metrics::u4_lsb_canonical_metrics_are_current",
+        "examples/core_validation_fixtures.rs"
       ],
       "references": [
         "bitcoin-script-locked",
-        "bitcoin-scriptexec-locked"
+        "bitcoin-scriptexec-locked",
+        "bitcoin-core-v30.3-regtest"
       ],
       "techniques": [
         "batch-lookup",
         "digit-arithmetic",
         "lookup-table"
       ],
-      "security": "Every hostile input is range-checked before OP_PICK; the check proves numeric nibble range but not byte-unique ScriptNum encoding or a terminal predicate.",
-      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | lsb[0] ... lsb[n-1], with the last item on top. The standalone batch keeps a 16-item lookup table resident.",
+      "security": "Every hostile input is range-checked before OP_PICK; the check proves numeric nibble range but not byte-unique ScriptNum encoding or a terminal predicate. The separate u4_nibbles_to_lsb_canonical API additionally rejects non-minimal ScriptNum encodings (redundant sign bytes and negative zero) before OP_PICK; it still does not supply a terminal predicate.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | lsb[0] ... lsb[n-1], with the last item on top. The standalone batch keeps a 16-item lookup table resident. The range-checked u4_nibbles_to_lsb accepts 1..=982 inputs; u4_nibbles_to_lsb_canonical keeps the same stack contract but accepts 1..=981 because its canonicality check adds one combined-stack item, so compositions must keep n + 19 + unrelated_live_items <= 1000.",
       "configurations": [
         {
           "id": "checked-batch32",
@@ -9373,13 +10349,53 @@
             "u4_lsb_canonical_batch32_opcodes"
           ],
           "static_non_push_opcodes": 360
+        },
+        {
+          "id": "u4-lsb-0123456789abcdef",
+          "label": "Core v30.3 complete u4 LSB Taproot leaf for 0x0123456789abcdef",
+          "parameters": {
+            "nibble_count": 16,
+            "input_hex": "0123456789abcdef",
+            "table_items": 16,
+            "input_check": true,
+            "data_items": 16,
+            "hint_items": 0,
+            "terminal_predicate": "reversed output equality checks",
+            "core_version": "30.3",
+            "core_commit": "49faec4f87f5cd19c88db01a82e5c68b087c8227",
+            "data_witness_bytes": 32,
+            "complete_taproot_witness_items": 18,
+            "script_sha256": "58fcbbe71361ce2f2c80fc73f80724ad10870e97696ffcfce14cd24fa7e3f708",
+            "tapleaf_hash": "089b76bd44cf4b1a078d2605a9555dbf1391aba5bba682b48f16c48ccb2ae160",
+            "witness_items_coexist_at_entry": true,
+            "local_helper": "execute_raw_script_with_inputs_strict",
+            "local_context": "tapscript",
+            "local_stack_limit_enforced": true,
+            "local_peak_counts_main_and_alt_stack": true,
+            "local_compilation_policy": "ScriptCompilation::compile_with_policy",
+            "core_acceptance": "consensus and default relay policy"
+          },
+          "includes": "complete-leaf: u4_nibbles_to_lsb(16), terminal equality checks for all sixteen outputs, and complete serialized Taproot witness with sixteen data items, leaf script, control block, and witness framing; excludes remaining transaction overhead",
+          "script_bytes": 264,
+          "witness_bytes": 333,
+          "witness_bytes_max": null,
+          "max_stack_items": 34,
+          "executed_opcodes": null,
+          "static_non_push_opcodes": 184,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 264,
+          "metric_keys": [],
+          "evidence": "differentially-validated",
+          "execution": "policy-validated"
         }
       ],
       "limitations": [
         "Numeric LSB outputs are ScriptNum bits, not raw byte elements",
         "Lookup table and outputs consume combined stack capacity",
         "Static non-push opcode count is not an executed-opcode measurement",
-        "No Bitcoin Core consensus or relay-policy validation"
+        "Only u4_nibbles_to_lsb_canonical enforces canonical ScriptNum encoding; the range-checked u4_nibbles_to_lsb and the Core complete-leaf fixture built on it do not",
+        "Only the separately scoped 0x0123456789abcdef complete-leaf Core configuration is differentially validated and policy-validated; the 32-nibble fragment retains its local evidence and deployment scope"
       ],
       "open_problems": [
         "OP-001",
@@ -10756,14 +11772,17 @@
       "class": "arithmetic/word",
       "summary": "Range-checked even-width u4 vector packing to byte-valued ScriptNums.",
       "status": "active",
-      "evidence": "inspected",
+      "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-17",
+      "as_of": "2026-09-26",
       "knowledge_page": "knowledge/primitives/u4-batch-pack.md",
       "implementation": "src/arithmetic/u4/pack.rs",
       "documentation": "src/arithmetic/u4/README.md",
       "tests": [
-        "src/arithmetic/u4/pack.rs",
+        "arithmetic::u4::pack::tests::packs_all_pairs_in_input_order",
+        "arithmetic::u4::pack::tests::packs_scriptnum_boundary_encodings",
+        "arithmetic::u4::pack::tests::rejects_runtime_malformed_nibbles_at_every_position",
+        "arithmetic::u4::pack::tests::maximum_batch_reaches_but_does_not_exceed_stack_limit",
         "tests/primitive_metrics.rs"
       ],
       "references": [
@@ -12019,6 +13038,796 @@
         "OP-002",
         "OP-003",
         "OP-026"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-adjacent-equality",
+      "name": "Checked u4 adjacent-equality mask",
+      "class": "arithmetic/word",
+      "summary": "Range-checked batch projection from u4 nibbles to equality bits for adjacent pairs.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u4-adjacent-equality.md",
+      "implementation": "src/arithmetic/u4/adjacent_eq.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "src/arithmetic/u4/adjacent_eq.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "stack-scheduling",
+        "digit-arithmetic"
+      ],
+      "security": "Every hostile input is range-checked before pair comparison; numeric range checking does not prove byte-unique ScriptNum encoding or a terminal predicate.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | equal[0] ... equal[n-2], with the last adjacent result on top. The standalone schedule keeps the input and result items below the 1,000-item stack limit.",
+      "configurations": [
+        {
+          "id": "checked-batch32",
+          "label": "u4_adjacent_equal_mask(32)",
+          "parameters": {
+            "nibble_count": 32,
+            "data_items": 32,
+            "output_items": 31,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 32 numeric range checks, 31 direct adjacent comparisons, result storage on the altstack, and input cleanup; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 558,
+          "witness_bytes": 65,
+          "witness_bytes_max": null,
+          "max_stack_items": 64,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 558,
+          "metric_keys": [
+            "u4_adjacent_equal_batch32",
+            "u4_adjacent_equal_batch32_witness",
+            "u4_adjacent_equal_batch32_stack",
+            "u4_adjacent_equal_batch32_opcodes"
+          ],
+          "static_non_push_opcodes": 361
+        }
+      ],
+      "limitations": [
+        "Outputs are one ScriptNum bit per adjacent pair rather than a packed bitstring",
+        "The 499-input standalone ceiling must be reduced when unrelated stack state is live",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-odd-inverse-mod16",
+      "name": "Checked odd u4 inverse modulo 16",
+      "class": "arithmetic/word",
+      "summary": "Range-checks an odd u4 input and selects its multiplicative inverse modulo 16 from a reusable 16-item table.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-26",
+      "knowledge_page": "knowledge/primitives/u4-odd-inverse-mod16.md",
+      "implementation": "src/arithmetic/u4/odd_inverse.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "src/arithmetic/u4/odd_inverse.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "checked-lookup",
+        "digit-arithmetic",
+        "lookup-table"
+      ],
+      "security": "The input is range-checked before OP_PICK and even values map to a rejecting zero table entry; this proves odd numeric u4 validity but not byte-unique ScriptNum encoding or a terminal predicate.",
+      "stack_contract": "Consumes preserved | table[16] | odd value and returns preserved | table[16] | value^-1 mod 16; move or consume the result before dropping the table.",
+      "configurations": [
+        {
+          "id": "checked-query",
+          "label": "u4_odd_inverse_mod16",
+          "parameters": {
+            "table_items": 16,
+            "data_items": 1,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: one numeric range check, odd-unit check, and table query; excludes witness pushes, table setup and cleanup from the query script size, terminal predicate, and transaction context",
+          "script_bytes": 9,
+          "witness_bytes": 3,
+          "witness_bytes_max": null,
+          "max_stack_items": 20,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 16,
+          "per_use_script_bytes": 9,
+          "metric_keys": [
+            "u4_odd_inverse_mod16",
+            "u4_odd_inverse_mod16_table",
+            "u4_odd_inverse_mod16_witness",
+            "u4_odd_inverse_mod16_stack",
+            "u4_odd_inverse_mod16_opcodes"
+          ],
+          "static_non_push_opcodes": 7
+        }
+      ],
+      "limitations": [
+        "Only odd u4 values are supported",
+        "The 16-item table remains resident until the caller drops it",
+        "Numeric range checks do not establish byte-unique ScriptNum encoding",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-mul-mod16",
+      "name": "Checked modulo-16 u4 multiplication",
+      "class": "arithmetic/word",
+      "summary": "Range-checks two u4 limbs and multiplies them modulo 16 through a reusable 256-entry product table.",
+      "status": "experimental",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-26",
+      "knowledge_page": "knowledge/primitives/u4-mul-mod16.md",
+      "implementation": "src/arithmetic/u4/mul.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "arithmetic::u4::mul::tests::multiplies_every_nibble_pair",
+        "arithmetic::u4::mul::tests::preserves_every_product_table_entry_across_all_pairs_and_cleanup",
+        "arithmetic::u4::mul::tests::faithful_historical_add_chain_is_caught_by_the_positive_product_assertion",
+        "arithmetic::u4::mul::tests::rejects_out_of_range_nibbles",
+        "arithmetic::u4::mul::tests::preserves_surrounding_main_and_alt_stack_items",
+        "primitive_metrics::u4_mul_mod16_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "lookup-table",
+        "range-check",
+        "stack-scheduling"
+      ],
+      "security": "Every hostile numeric input is range-checked before forming the table index, but those checks do not establish canonical ScriptNum encoding; acceptance of non-minimal aliases depends on the execution profile. Terminal predicates remain caller obligations.",
+      "stack_contract": "Consumes two numeric ScriptNum values in 0..=15 above a resident 256-item product table and returns their product modulo 16 while retaining the table; move or consume the result before dropping the table.",
+      "configurations": [
+        {
+          "id": "single-product",
+          "label": "Checked u4 product modulo 16",
+          "parameters": {
+            "modulus": 16,
+            "table_items": 256,
+            "data_items": 2,
+            "hint_items_per_invocation": 0,
+            "complete_input_items": 2
+          },
+          "includes": "fragment-only: two range checks, row-major index formation, and product lookup; excludes table setup/cleanup, input pushes, terminal predicate, and transaction context",
+          "script_bytes": 21,
+          "witness_bytes": 5,
+          "witness_bytes_max": null,
+          "max_stack_items": 261,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 21,
+          "metric_keys": [
+            "u4_mul_mod16",
+            "u4_mul_mod16_witness",
+            "u4_mul_mod16_stack",
+            "u4_mul_mod16_opcodes"
+          ],
+          "static_non_push_opcodes": 17
+        }
+      ],
+      "limitations": [
+        "Requires a resident 256-item product table",
+        "Repeated composition must account for the table and all live operands under the 1,000-item stack limit",
+        "Static opcode count is not a dynamic execution measurement",
+        "Bitcoin Core consensus and relay-policy validation remain open"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u32-or-constant",
+      "name": "Embedded-constant u32 OR",
+      "class": "arithmetic/word",
+      "summary": "Checked four-byte u32 bitwise OR with one public compile-time mask embedded in the locking script.",
+      "status": "experimental",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-26",
+      "knowledge_page": "knowledge/primitives/u32-or-constant.md",
+      "implementation": "src/arithmetic/u32/or_constant.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "arithmetic::u32::or_constant::tests::masks_boundaries_and_patterns",
+        "arithmetic::u32::or_constant::tests::rejects_malformed_and_nonminimal_limbs",
+        "arithmetic::u32::or_constant::tests::preserves_surrounding_main_and_alt_stack_items",
+        "primitive_metrics::u32_or_constant_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "batch-lookup",
+        "canonical-encoding",
+        "range-check"
+      ],
+      "security": "No independent cryptographic claim. The embedded mask is public; hostile input limbs are checked for numeric byte range and minimal ScriptNum encoding. Callers still provide terminal predicates and complete protocol binding.",
+      "stack_contract": "Consumes four canonical most-significant-byte-first limbs from the main stack and returns four limbs for the input OR the embedded mask. A generated 256-item Boolean table and temporary routing occupy the combined main-plus-alt-stack during the fragment and are removed before return; unrelated caller state is preserved.",
+      "configurations": [
+        {
+          "id": "checked-mask-89abcdef",
+          "label": "Embedded public mask",
+          "parameters": {
+            "mask": "0x89abcdef",
+            "byte_count": 4,
+            "table_items": 256,
+            "data_items": 4,
+            "hint_items_per_invocation": 0,
+            "complete_input_items": 4
+          },
+          "includes": "fragment-with-memory: script bytes and static opcode count include four canonical byte checks, generated shared Boolean table, four OR queries, table cleanup, and output routing; the 272-item peak is measured with four OP_DROP operations and a truthy terminal. Fixture witness has four canonical 0xff data items, 13 serialized bytes, and zero hints; excludes unrelated live state and transaction context",
+          "script_bytes": 776,
+          "witness_bytes": 13,
+          "witness_bytes_max": 13,
+          "max_stack_items": 272,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 776,
+          "metric_keys": [
+            "u32_or_constant",
+            "u32_or_constant_witness",
+            "u32_or_constant_stack",
+            "u32_or_constant_opcodes"
+          ],
+          "static_non_push_opcodes": 548
+        }
+      ],
+      "limitations": [
+        "The 256-item table and table-backed opcode count make this unsuitable as a standalone legacy P2SH/P2WSH fragment",
+        "Only useful when the mask is public and witness width or item count matters",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "Bitcoin Core consensus and relay-policy validation remain open"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u32-and-constant",
+      "name": "Embedded-constant u32 AND",
+      "class": "arithmetic/word",
+      "summary": "Checked four-byte u32 bitwise AND with one public compile-time mask embedded in the locking script.",
+      "status": "experimental",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-and-constant.md",
+      "implementation": "src/arithmetic/u32/and_constant.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "arithmetic::u32::and_constant::tests::masks_boundaries_and_patterns",
+        "arithmetic::u32::and_constant::tests::rejects_malformed_and_nonminimal_limbs",
+        "arithmetic::u32::and_constant::tests::preserves_surrounding_main_and_alt_stack_items",
+        "primitive_metrics::u32_and_constant_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "batch-lookup",
+        "canonical-encoding",
+        "range-check"
+      ],
+      "security": "No independent cryptographic claim. The embedded mask is public; hostile input limbs are checked for numeric byte range and minimal ScriptNum encoding. Callers still provide terminal predicates and complete protocol binding.",
+      "stack_contract": "Consumes four canonical most-significant-byte-first limbs from the main stack and returns four limbs for the input AND the embedded mask. A generated 256-item Boolean table and temporary routing occupy the combined main-plus-alt-stack during the fragment and are removed before return; unrelated caller state is preserved.",
+      "configurations": [
+        {
+          "id": "checked-mask-89abcdef",
+          "label": "Embedded public mask",
+          "parameters": {
+            "mask": "0x89abcdef",
+            "byte_count": 4,
+            "table_items": 256,
+            "data_items": 4,
+            "hint_items_per_invocation": 0,
+            "complete_input_items": 4
+          },
+          "includes": "fragment-with-memory: four canonical byte checks, generated shared Boolean table, four AND queries, table cleanup, and output routing; excludes input pushes, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 620,
+          "witness_bytes": 13,
+          "witness_bytes_max": 13,
+          "max_stack_items": 272,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": 620,
+          "metric_keys": [
+            "u32_and_constant",
+            "u32_and_constant_witness",
+            "u32_and_constant_stack",
+            "u32_and_constant_opcodes"
+          ],
+          "static_non_push_opcodes": 448
+        }
+      ],
+      "limitations": [
+        "The 256-item table and table-backed opcode count make this unsuitable as a standalone legacy P2SH/P2WSH fragment",
+        "Only useful when the mask is public and witness width or item count matters",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "Bitcoin Core consensus and relay-policy validation remain open"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u32-sub-constant",
+      "name": "Embedded-constant u32 subtraction",
+      "class": "arithmetic/word",
+      "summary": "Checked four-byte u32 subtraction with one public compile-time subtrahend embedded in the locking script.",
+      "status": "experimental",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-sub-constant.md",
+      "implementation": "src/arithmetic/u32/sub_constant.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "arithmetic::u32::sub_constant::tests::subtracts_boundaries_and_wraps",
+        "arithmetic::u32::sub_constant::tests::rejects_malformed_and_nonminimal_limbs",
+        "arithmetic::u32::sub_constant::tests::preserves_surrounding_main_and_alt_stack_items",
+        "primitive_metrics::u32_sub_constant_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "carry-arithmetic",
+        "canonical-encoding",
+        "range-check"
+      ],
+      "security": "No independent cryptographic claim. The embedded subtrahend is public; hostile input limbs are checked for numeric byte range and minimal ScriptNum encoding. Callers still provide terminal predicates and complete protocol binding.",
+      "stack_contract": "Consumes four canonical most-significant-byte-first limbs from the main stack and returns four limbs for the input minus the embedded value modulo 2^32. Temporary borrow items use the altstack and are removed before return; unrelated main- and alt-stack state is preserved.",
+      "configurations": [
+        {
+          "id": "representative-12345678-minus-89abcdef",
+          "label": "Embedded constant subtraction versus two-word baseline",
+          "parameters": {
+            "value": "0x12345678",
+            "constant": "0x89abcdef",
+            "modulus": "2^32",
+            "byte_order": "most-significant byte first",
+            "data_items": 4,
+            "hint_items_per_invocation": 0,
+            "complete_input_items": 4
+          },
+          "includes": "fragment-with-memory: four canonical byte checks, public constant push, modulo-2^32 borrow chain, and temporary borrow cleanup; excludes witness pushes, terminal predicate, transaction framing, and unrelated live state",
+          "script_bytes": 149,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 9,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 149,
+          "metric_keys": [
+            "u32_sub_constant",
+            "u32_sub_constant_witness",
+            "u32_sub_constant_witness_max",
+            "u32_sub_constant_stack",
+            "u32_sub_constant_static_opcodes"
+          ],
+          "static_non_push_opcodes": 83
+        }
+      ],
+      "limitations": [
+        "Dominated by the generic two-word subtractor for locking-script bytes and strict local peak",
+        "Only useful when the subtrahend is public and witness width or item count matters",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "Bitcoin Core consensus and relay-policy validation remain open"
+      ],
+      "open_problems": [
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u32-add-constant",
+      "name": "Embedded-constant u32 addition",
+      "class": "arithmetic/word",
+      "summary": "Checked four-byte u32 addition with one public compile-time operand embedded in the locking script.",
+      "status": "experimental",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u32-add-constant.md",
+      "implementation": "src/arithmetic/u32/add_constant.rs",
+      "documentation": "src/arithmetic/u32/README.md",
+      "tests": [
+        "arithmetic::u32::add_constant::tests::adds_boundaries_wraps_and_carries",
+        "arithmetic::u32::add_constant::tests::carry_vectors_match_reference",
+        "arithmetic::u32::add_constant::tests::rejects_malformed_and_nonminimal_limbs",
+        "arithmetic::u32::add_constant::tests::preserves_surrounding_main_and_alt_stack_items",
+        "primitive_metrics::u32_add_constant_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "carry-arithmetic",
+        "canonical-encoding",
+        "range-check"
+      ],
+      "security": "No independent cryptographic claim. The embedded operand is public; hostile input limbs are checked for numeric byte range and minimal ScriptNum encoding. Callers still provide terminal predicates and complete protocol binding.",
+      "stack_contract": "Consumes four canonical most-significant-byte-first limbs from the main stack and returns four limbs for the input plus the embedded value modulo 2^32. Temporary carry items use the altstack and are removed before return; unrelated main- and alt-stack state is preserved.",
+      "configurations": [
+        {
+          "id": "representative-12345678-plus-89abcdef",
+          "label": "Embedded constant addition versus two-word baseline",
+          "parameters": {
+            "value": "0x12345678",
+            "constant": "0x89abcdef",
+            "modulus": "2^32",
+            "byte_order": "most-significant byte first",
+            "data_items": 4,
+            "hint_items_per_invocation": 0,
+            "complete_input_items": 4
+          },
+          "includes": "fragment-with-memory: four canonical byte checks, public constant push, modulo-2^32 carry chain, and temporary carry cleanup; excludes witness pushes, terminal predicate, transaction framing, and unrelated live state",
+          "script_bytes": 146,
+          "witness_bytes": 9,
+          "witness_bytes_max": 13,
+          "max_stack_items": 10,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 146,
+          "metric_keys": [
+            "u32_add_constant",
+            "u32_add_constant_witness",
+            "u32_add_constant_witness_max",
+            "u32_add_constant_stack",
+            "u32_add_constant_static_opcodes"
+          ],
+          "static_non_push_opcodes": 83
+        }
+      ],
+      "limitations": [
+        "Dominated by the generic two-word adder for locking-script bytes and strict local peak",
+        "Only useful when the added operand is public and witness width or item count matters",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "Bitcoin Core consensus and relay-policy validation remain open"
+      ],
+      "open_problems": [
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-clamp",
+      "name": "Checked u4 embedded-cap clamp",
+      "class": "arithmetic/word",
+      "summary": "Range-checked per-nibble saturation to one public generation-time u4 cap.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-27",
+      "knowledge_page": "knowledge/primitives/u4-clamp.md",
+      "implementation": "src/arithmetic/u4/clamp.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "arithmetic::u4::clamp::tests::clamps_all_nibbles_to_an_embedded_cap_in_order",
+        "arithmetic::u4::clamp::tests::keeps_asymmetric_witness_order_with_preserved_state",
+        "arithmetic::u4::clamp::tests::preserved_state_stack_frontier_is_exact",
+        "arithmetic::u4::clamp::tests::rejects_invalid_nibbles_and_generation_bounds",
+        "arithmetic::u4::clamp::tests::handles_cap_endpoints",
+        "arithmetic::u4::clamp::tests::preserves_surrounding_main_and_alt_stack_items",
+        "arithmetic::u4::clamp::tests::compares_nonminimal_numeric_encodings_and_preserves_boundary_state",
+        "primitive_metrics::u4_clamp_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "digit-arithmetic",
+        "range-check",
+        "stack-scheduling"
+      ],
+      "security": "Every hostile nibble is range-checked before the embedded numeric cap comparison; the cap is validated at generation time, non-minimal numeric encodings are accepted below or at the cap and preserved as supplied, outputs remain in 0..=15, and no terminal predicate is supplied.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | min(nibble[0], maximum) ... min(nibble[n-1], maximum), with the last result on top.",
+      "configurations": [
+        {
+          "id": "checked-cap4-batch16",
+          "label": "u4_nibbles_to_clamp(4, 16)",
+          "parameters": {
+            "nibble_count": 16,
+            "maximum": 4,
+            "input_check": true,
+            "data_items": 16,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 16 numeric range checks, 16 cap comparisons, conditional replacement, output restoration, and input consumption; excludes input pushes, witness serialization, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 270,
+          "witness_bytes": 33,
+          "witness_bytes_max": 33,
+          "max_stack_items": 18,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 270,
+          "metric_keys": [
+            "u4_clamp_16",
+            "u4_clamp_16_witness",
+            "u4_clamp_16_stack",
+            "u4_clamp_16_opcodes"
+          ],
+          "static_non_push_opcodes": 206
+        }
+      ],
+      "limitations": [
+        "The cap is fixed at generation time rather than supplied dynamically",
+        "Saturation deliberately loses information above the cap",
+        "Static non-push opcode count is not a dynamic execution measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-equality",
+      "name": "Checked u4 embedded-equality mask",
+      "class": "arithmetic/word",
+      "summary": "Range-checked per-nibble equality mask against one public generation-time symbol.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u4-equality.md",
+      "implementation": "src/arithmetic/u4/equality.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "arithmetic::u4::equality::tests::projects_one_hot_equality_mask_in_order",
+        "arithmetic::u4::equality::tests::rejects_invalid_nibbles_and_generation_bounds",
+        "arithmetic::u4::equality::tests::handles_target_endpoints",
+        "arithmetic::u4::equality::tests::preserves_surrounding_main_and_alt_stack_items",
+        "arithmetic::u4::equality::tests::compares_nonminimal_numeric_encodings_and_preserves_boundary_state",
+        "arithmetic::u4::equality::tests::numeric_aliases_follow_an_asymmetric_mask_in_input_order",
+        "arithmetic::u4::equality::tests::historical_byte_equality_and_reversed_schedule_mutants_fail",
+        "primitive_metrics::u4_eq_mask_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "constant-embedding",
+        "digit-arithmetic",
+        "range-check",
+        "stack-scheduling"
+      ],
+      "security": "Every hostile nibble is range-checked before numeric equality; the target is validated at generation time, non-minimal numeric encodings are accepted unless callers compose canonical-nibble validation, outputs are numeric Booleans, and no terminal predicate is supplied.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | mask[0] ... mask[n-1], with mask[i] equal to nibble[i] == value and the last mask on top.",
+      "configurations": [
+        {
+          "id": "checked-target5-batch16",
+          "label": "u4_nibbles_to_eq_mask(5, 16)",
+          "parameters": {
+            "nibble_count": 16,
+            "target": 5,
+            "input_check": true,
+            "data_items": 16,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 16 numeric range checks, 16 embedded equality tests, output restoration, and input consumption; excludes input pushes, witness serialization, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 190,
+          "witness_bytes": 33,
+          "witness_bytes_max": null,
+          "max_stack_items": 18,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 190,
+          "metric_keys": [
+            "u4_eq_mask_16",
+            "u4_eq_mask_16_witness",
+            "u4_eq_mask_16_stack",
+            "u4_eq_mask_16_opcodes"
+          ],
+          "static_non_push_opcodes": 142
+        }
+      ],
+      "limitations": [
+        "The target is fixed at generation time rather than supplied dynamically",
+        "Numeric Boolean outputs are not byte-oriented masks",
+        "Static non-push opcode count is not a dynamic execution measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-threshold",
+      "name": "Checked u4 embedded-threshold mask",
+      "class": "arithmetic/word",
+      "summary": "Range-checked per-nibble less-than mask against one public generation-time threshold.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u4-threshold.md",
+      "implementation": "src/arithmetic/u4/threshold.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "arithmetic::u4::threshold::tests::projects_all_threshold_boundaries_in_order",
+        "arithmetic::u4::threshold::tests::rejects_invalid_nibbles_and_generation_bounds",
+        "arithmetic::u4::threshold::tests::handles_threshold_endpoints",
+        "arithmetic::u4::threshold::tests::preserves_surrounding_main_and_alt_stack_items",
+        "arithmetic::u4::threshold::tests::composes_with_preserved_state_at_the_stack_boundary",
+        "arithmetic::u4::threshold::tests::asymmetric_boundary_vectors_keep_positions_for_every_threshold",
+        "arithmetic::u4::threshold::tests::exact_stack_frontier_admits_max_preserved_and_rejects_one_more",
+        "primitive_metrics::u4_lt_mask_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "digit-arithmetic",
+        "constant-embedding",
+        "range-check",
+        "stack-scheduling"
+      ],
+      "security": "Every hostile nibble is range-checked before the embedded threshold comparison; the threshold is validated at generation time, outputs are numeric Booleans, and no terminal predicate is supplied.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | mask[0] ... mask[n-1], with mask[i] equal to nibble[i] < threshold and the last mask on top.",
+      "configurations": [
+        {
+          "id": "checked-threshold5-batch16",
+          "label": "u4_nibbles_to_lt_mask(5, 16)",
+          "parameters": {
+            "nibble_count": 16,
+            "threshold": 5,
+            "input_check": true,
+            "data_items": 16,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 16 numeric range checks, 16 embedded-threshold comparisons, output restoration, and input consumption; excludes input pushes, witness serialization, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 190,
+          "witness_bytes": 33,
+          "witness_bytes_max": 33,
+          "max_stack_items": 18,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 190,
+          "metric_keys": [
+            "u4_lt_mask_16",
+            "u4_lt_mask_16_witness",
+            "u4_lt_mask_16_stack",
+            "u4_lt_mask_16_opcodes"
+          ],
+          "static_non_push_opcodes": 142
+        }
+      ],
+      "limitations": [
+        "The threshold is fixed at generation time rather than supplied dynamically",
+        "Numeric Boolean outputs are not byte-oriented masks",
+        "Static non-push opcode count is not a dynamic execution measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-msb",
+      "name": "Checked u4 most-significant-bit projection",
+      "class": "arithmetic/word",
+      "summary": "Range-checked batch projection from numeric u4 nibbles to their most-significant bits.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-18",
+      "knowledge_page": "knowledge/primitives/u4-msb.md",
+      "implementation": "src/arithmetic/u4/msb.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "arithmetic::u4::msb::tests::projects_asymmetric_boundary_values_in_order",
+        "arithmetic::u4::msb::tests::rejects_invalid_nibbles_at_each_position",
+        "arithmetic::u4::msb::tests::respects_direct_threshold_stack_frontier",
+        "primitive_metrics::u4_msb_metrics_are_current"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "digit-arithmetic",
+        "range-check",
+        "threshold-comparison"
+      ],
+      "security": "Every hostile input is range-checked before the threshold comparison; numeric range does not prove byte-unique ScriptNum encoding or a terminal predicate.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | msb[0] ... msb[n-1], with the last bit on top; each input is 0..=15.",
+      "configurations": [
+        {
+          "id": "checked-batch32",
+          "label": "u4_nibbles_to_msb(32)",
+          "parameters": {
+            "nibble_count": 32,
+            "input_items": 32,
+            "output_items": 32,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 32 range checks, direct >=8 threshold comparisons, output staging/restoration, and no hints; excludes input pushes, witness serialization, terminal predicate, unrelated state, and transaction context",
+          "script_bytes": 446,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 34,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 446,
+          "metric_keys": [
+            "u4_msb_batch32",
+            "u4_msb_batch32_witness",
+            "u4_msb_batch32_stack",
+            "u4_msb_batch32_opcodes"
+          ],
+          "static_non_push_opcodes": 350
+        }
+      ],
+      "limitations": [
+        "Widths are limited to 1..=998 because the direct standalone peak is n+2",
+        "Preserved main- or alt-stack state reduces the maximum width",
+        "Numeric outputs are ScriptNum bits, not raw bytes",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
       ]
     }
   ]

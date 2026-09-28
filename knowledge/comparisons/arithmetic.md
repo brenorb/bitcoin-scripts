@@ -59,6 +59,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | Checked modulo-16 u4 multiplication | `u4_mul_mod16()` | 21 | 261-item peak; 5-byte representative witness; 17 static non-push opcodes |
 | 16 checked nibbles to an embedded cap | `u4_nibbles_to_clamp(4,16)` | <!-- metric:u4_clamp_16 -->270<!-- /metric:u4_clamp_16 --> | <!-- metric:u4_clamp_16_stack -->18<!-- /metric:u4_clamp_16_stack -->-item peak; `min(nibble,4)`; cap embedded |
 | 16 checked nibbles to an embedded-equality mask | `u4_nibbles_to_eq_mask(5,16)` | <!-- metric:u4_eq_mask_16 -->190<!-- /metric:u4_eq_mask_16 --> | <!-- metric:u4_eq_mask_16_stack -->18<!-- /metric:u4_eq_mask_16_stack -->-item peak; one output bit per input; symbol embedded |
+| 16 checked nibbles to an embedded-threshold mask | `u4_nibbles_to_lt_mask(5,16)` | <!-- metric:u4_lt_mask_16 -->190<!-- /metric:u4_lt_mask_16 --> | <!-- metric:u4_lt_mask_16_stack -->18<!-- /metric:u4_lt_mask_16_stack -->-item peak; one output bit per input; threshold embedded |
 | 16 checked nibbles to one XOR nibble | `u4_nibbles_to_xor(16)` | 740 | 273-item peak; 256-item full XOR table |
 | Variable u32 XNOR | `u32_xnor(0, 1, 3)` | 222 | 272-item peak; 182 static non-push opcodes; shared 256-item XOR table |
 | Embedded public-mask u32 XNOR | `u32_xnor_constant(0x89abcdef)` | 686 | 13-byte/four-data-item witness; zero hints; 272-item peak; 502 static non-push opcodes |

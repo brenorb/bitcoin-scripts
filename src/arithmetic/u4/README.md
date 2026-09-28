@@ -49,6 +49,11 @@ these operations, but this module contains no hash-specific round logic.
 - `lsb::u4_nibbles_to_lsb(nibble_count)` takes a checked batch size in
   `1..=982` and returns one bit per input nibble; the range check does not
   establish canonical ScriptNum encoding.
+- `threshold::u4_nibbles_to_lt_mask(threshold, nibble_count)` takes a public
+  u4 threshold and a checked batch size in `1..=998`, returning one bit per
+  input nibble; composition must satisfy
+  `nibble_count + 2 + preserved_items <= 1000`; the range check does not
+  establish canonical ScriptNum encoding.
 - `clamp::u4_nibbles_to_clamp(maximum, nibble_count)` takes a public u4 cap
   and a checked batch size in `1..=998`, returning `min(nibble, maximum)` per
   input. Callers preserving live stack items must satisfy
@@ -145,6 +150,7 @@ each input with the same output-restoration boundary.
 | Checked modulo-16 nibble product | <!-- metric:u4_mul_mod16 -->21<!-- /metric:u4_mul_mod16 --> bytes | <!-- metric:u4_mul_mod16_stack -->261<!-- /metric:u4_mul_mod16_stack --> items with 256-item table | <!-- metric:u4_mul_mod16_opcodes -->17<!-- /metric:u4_mul_mod16_opcodes --> |
 | Embedded-cap clamp, 16 nibbles | <!-- metric:u4_clamp_16 -->270<!-- /metric:u4_clamp_16 --> bytes | <!-- metric:u4_clamp_16_stack -->18<!-- /metric:u4_clamp_16_stack --> items | <!-- metric:u4_clamp_16_opcodes -->206<!-- /metric:u4_clamp_16_opcodes --> |
 | Embedded-equality mask, 16 nibbles | <!-- metric:u4_eq_mask_16 -->190<!-- /metric:u4_eq_mask_16 --> bytes | <!-- metric:u4_eq_mask_16_stack -->18<!-- /metric:u4_eq_mask_16_stack --> items | <!-- metric:u4_eq_mask_16_opcodes -->142<!-- /metric:u4_eq_mask_16_opcodes --> |
+| Embedded-threshold mask, 16 nibbles | <!-- metric:u4_lt_mask_16 -->190<!-- /metric:u4_lt_mask_16 --> bytes | <!-- metric:u4_lt_mask_16_stack -->18<!-- /metric:u4_lt_mask_16_stack --> items | <!-- metric:u4_lt_mask_16_opcodes -->142<!-- /metric:u4_lt_mask_16_opcodes --> |
 | Checked XOR reduction, 16 nibbles | <!-- metric:u4_xor_reduce_batch16 -->740<!-- /metric:u4_xor_reduce_batch16 --> bytes | <!-- metric:u4_xor_reduce_batch16_stack -->273<!-- /metric:u4_xor_reduce_batch16_stack --> items | <!-- metric:u4_xor_reduce_batch16_opcodes -->438<!-- /metric:u4_xor_reduce_batch16_opcodes --> |
 | Checked nondecreasing batch, 32 nibbles | <!-- metric:u4_nondecreasing_batch32 -->588<!-- /metric:u4_nondecreasing_batch32 --> bytes | <!-- metric:u4_nondecreasing_batch32_stack -->35<!-- /metric:u4_nondecreasing_batch32_stack --> items | <!-- metric:u4_nondecreasing_batch32_opcodes -->391<!-- /metric:u4_nondecreasing_batch32_opcodes --> |
 | Checked exact-sum batch, 32 nibbles | <!-- metric:u4_exact_sum_batch32 -->489<!-- /metric:u4_exact_sum_batch32 --> bytes | <!-- metric:u4_exact_sum_batch32_stack -->35<!-- /metric:u4_exact_sum_batch32_stack --> items | <!-- metric:u4_exact_sum_batch32_opcodes -->334<!-- /metric:u4_exact_sum_batch32_opcodes --> |
@@ -196,6 +202,8 @@ generated table setup is <!-- metric:u4_odd_inverse_mod16_table -->16<!-- /metri
 
 
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
+
+The embedded-threshold fixture uses <!-- metric:u4_lt_mask_16_witness -->33<!-- /metric:u4_lt_mask_16_witness --> serialized witness bytes for <!-- metric:u4_lt_mask_16_witness_items -->16<!-- /metric:u4_lt_mask_16_witness_items --> data items and returns one Boolean mask item per input.
 
 The embedded-equality fixture uses <!-- metric:u4_eq_mask_16_witness -->33<!-- /metric:u4_eq_mask_16_witness --> serialized witness bytes for <!-- metric:u4_eq_mask_16_witness_items -->16<!-- /metric:u4_eq_mask_16_witness_items --> canonical data items and returns one numeric Boolean mask item per input. Numeric u4 range checks accept non-minimal numeric encodings; compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
 

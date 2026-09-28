@@ -36,6 +36,7 @@ pub mod stack_add;
 pub mod stack_logic;
 pub mod stack_shift;
 pub mod sum;
+pub mod threshold;
 pub mod trailing_zeros;
 pub mod trichotomy;
 pub mod transition_count;

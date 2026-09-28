@@ -1674,6 +1674,36 @@
             "u32_byte_planes_words8_opcodes"
           ],
           "static_non_push_opcodes": 252
+        },
+        {
+          "id": "signed-lessthan",
+          "label": "u32_signed_lessthan()",
+          "parameters": {
+            "representation": "four big-endian byte limbs",
+            "interpretation": "signed two's-complement i32",
+            "random_generator": "ChaCha20Rng",
+            "random_seed": "0x5532434f4d500001",
+            "random_case_count": 256,
+            "boundary_pair_count": 36,
+            "oracle": "(a as i32) < (b as i32)",
+            "hint_items": 0
+          },
+          "includes": "fragment-only: sign-bit extraction and signed comparison over two canonical four-byte words; excludes operand pushes, terminal predicate, and transaction context",
+          "script_bytes": 63,
+          "witness_bytes": 21,
+          "witness_bytes_max": 25,
+          "max_stack_items": 11,
+          "executed_opcodes": null,
+          "static_non_push_opcodes": 49,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 63,
+          "metric_keys": [
+            "u32_signed_lessthan",
+            "u32_signed_lessthan_witness",
+            "u32_signed_lessthan_stack",
+            "u32_signed_lessthan_opcodes"
+          ]
         }
       ],
       "limitations": [
@@ -9312,36 +9342,6 @@
             "u32_compressed_equal_witness",
             "u32_compressed_equal_witness_max",
             "u32_compressed_equal_stack"
-          ]
-        },
-        {
-          "id": "signed-lessthan",
-          "label": "u32_signed_lessthan()",
-          "parameters": {
-            "representation": "four big-endian byte limbs",
-            "interpretation": "signed two's-complement i32",
-            "random_generator": "ChaCha20Rng",
-            "random_seed": "0x5532434f4d500001",
-            "random_case_count": 256,
-            "boundary_pair_count": 36,
-            "oracle": "(a as i32) < (b as i32)",
-            "hint_items": 0
-          },
-          "includes": "fragment-only: sign-bit extraction and signed comparison over two canonical four-byte words; excludes operand pushes, terminal predicate, and transaction context",
-          "script_bytes": 63,
-          "witness_bytes": 21,
-          "witness_bytes_max": 25,
-          "max_stack_items": 11,
-          "executed_opcodes": null,
-          "static_non_push_opcodes": 49,
-          "validation_weight": null,
-          "setup_script_bytes": 0,
-          "per_use_script_bytes": 63,
-          "metric_keys": [
-            "u32_signed_lessthan",
-            "u32_signed_lessthan_witness",
-            "u32_signed_lessthan_stack",
-            "u32_signed_lessthan_opcodes"
           ]
         },
         {

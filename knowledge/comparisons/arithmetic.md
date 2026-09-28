@@ -81,6 +81,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 checked nibbles to complement-reflected representatives | `u4_nibbles_to_mirror(32)` | 440 | 50-item peak; canonical `0..=7` representative |
 | 16 checked nibbles to embedded three-way classes | `u4_nibbles_to_trichotomy(5,16)` | <!-- metric:u4_trichotomy_16 -->398<!-- /metric:u4_trichotomy_16 --> | <!-- metric:u4_trichotomy_16_stack -->18<!-- /metric:u4_trichotomy_16_stack -->-item peak; `0/1/2` for `< /=/>`; threshold embedded |
 | u32 population count | `u32_popcount()` | 455 | 262-item peak; 256-item byte table |
+| u32 XOR with embedded constant | `u32_xor_constant(0x89abcdef)` | <!-- metric:u32_xor_constant -->660<!-- /metric:u32_xor_constant --> | <!-- metric:u32_xor_constant_stack -->272<!-- /metric:u32_xor_constant_stack -->-item strict peak; four data items; shared XOR table setup/cleanup |
 | u32 per-byte population counts | `u32_byte_popcounts()` | 452 | 262-item peak; four numeric outputs; 256-item byte table |
 | u32 leading zero-byte count | `u32_leading_zero_bytes()` | 159 | 7-item peak; table-free; validates all four byte limbs |
 | u32 trailing zero-byte count | `u32_trailing_zero_bytes()` | 147 | 7-item peak; table-free; scans the native top-limb order |

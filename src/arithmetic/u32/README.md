@@ -65,6 +65,8 @@ they do not use BN254 or any other field modulus.
   the same shared table and preserves the word selected by `a`.
 - `popcount::u32_popcount()` consumes one four-byte word, range-checks every
   byte, and returns its set-bit count in `0..=32`.
+- `xor_constant::u32_xor_constant(value)` checks one canonical word and XORs it
+  with an embedded constant, removing the constant word from the witness.
 - `popcount::u32_byte_popcounts()` consumes one four-byte word, range-checks
   every byte, and returns four per-byte counts in the same word order.
 - `u32_to_bit_planes()` consumes one checked word and returns eight 4-bit
@@ -136,6 +138,7 @@ as less-than-or-equal.
 | `u32_nor(0, 1, 3)` (table excluded) | <!-- metric:u32_nor -->346<!-- /metric:u32_nor --> bytes | 0 bytes | <!-- metric:u32_nor_stack -->272<!-- /metric:u32_nor_stack --> items, including table; <!-- metric:u32_nor_opcodes -->250<!-- /metric:u32_nor_opcodes --> static non-push opcodes |
 | `u32_xnor(0, 1, 3)` (table excluded) | <!-- metric:u32_xnor -->222<!-- /metric:u32_xnor --> bytes | 0 bytes | <!-- metric:u32_xnor_stack -->272<!-- /metric:u32_xnor_stack --> items, including table; <!-- metric:u32_xnor_opcodes -->182<!-- /metric:u32_xnor_opcodes --> static non-push opcodes |
 | `u32_notequal()` | <!-- metric:u32_notequal -->19<!-- /metric:u32_notequal --> bytes | 0 bytes | <!-- metric:u32_notequal_stack -->9<!-- /metric:u32_notequal_stack --> items |
+| `u32_xor_constant(0x89abcdef)` | <!-- metric:u32_xor_constant -->660<!-- /metric:u32_xor_constant --> bytes | <!-- metric:u32_xor_constant_witness -->13<!-- /metric:u32_xor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xor_constant_stack -->272<!-- /metric:u32_xor_constant_stack --> items; <!-- metric:u32_xor_constant_opcodes -->488<!-- /metric:u32_xor_constant_opcodes --> static non-push opcodes |
 | `u32_equal()` | <!-- metric:u32_equal -->18<!-- /metric:u32_equal --> bytes | <!-- metric:u32_equal_witness -->17<!-- /metric:u32_equal_witness --> bytes (<!-- metric:u32_equal_witness_max -->25<!-- /metric:u32_equal_witness_max --> max), 8 data items, 0 hints | <!-- metric:u32_equal_stack -->9<!-- /metric:u32_equal_stack --> items |
 | `u32_equalverify()` | <!-- metric:u32_equalverify -->9<!-- /metric:u32_equalverify --> bytes | <!-- metric:u32_equalverify_witness -->17<!-- /metric:u32_equalverify_witness --> bytes (<!-- metric:u32_equalverify_witness_max -->25<!-- /metric:u32_equalverify_witness_max --> max), 8 data items, 0 hints | <!-- metric:u32_equalverify_stack -->9<!-- /metric:u32_equalverify_stack --> items |
 | `u32_compressed_equal()` | <!-- metric:u32_compressed_equal -->37<!-- /metric:u32_compressed_equal --> bytes | <!-- metric:u32_compressed_equal_witness -->11<!-- /metric:u32_compressed_equal_witness --> bytes | <!-- metric:u32_compressed_equal_stack -->5<!-- /metric:u32_compressed_equal_stack --> items |
@@ -265,6 +268,16 @@ The same representative byte baseline has
 <!-- metric:u32_add_drop_witness -->20<!-- /metric:u32_add_drop_witness --> serialized witness bytes and a
 <!-- metric:u32_add_drop_byte_stack -->10<!-- /metric:u32_add_drop_byte_stack --> item strict peak.
 
+`u32_xor_constant()` is a fixed-mask adapter: it embeds the second word in
+the locking script and therefore removes four witness data items, but costs
+660 bytes and still loads and drops the 256-item XOR table for each call. The
+raw generic `u32_xor()` is 202 bytes, or 566 bytes with the same table setup
+and cleanup, but does not perform the adapter's hostile-input checks. Use the
+adapter when witness width or item count matters more than script bytes; the
+generic form remains preferable when the mask is already present or the table
+can be shared across a larger composition. The table is shared across the
+four queries in one invocation, then allocated and removed per call; it is not
+reused from a caller-provided table.
 `u32_add_constant(value)` consumes one hostile four-limb word, checks each
 limb, adds the public compile-time constant modulo `2^32`, and returns four
 limbs. The representative fixture embeds `0x89abcdef` and supplies

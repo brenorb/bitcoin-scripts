@@ -3,9 +3,15 @@
 Each problem has a falsifiable completion criterion. Update comparisons and
 negative results when closing one.
 
-**Next priority (2026-09-10): OP-001, transaction-aware Taproot execution.**
+**Next priority (2026-09-25): OP-001, remaining Taproot transaction context.**
 The interpreter repairs and explicit context-free consensus/policy profiles
-are adopted. Next, close the missing commitment and signature context:
+are adopted. Complete-witness budgeting and annex signature context now have
+an explicit constructor and a [funded comparison](tapscript-budget-validation.md).
+The complete-witness preflight now validates the revealed script and control
+block against the P2TR output, and the parity-mutated fixture agrees with pinned
+Core when that result is combined with leaf execution. This is
+`differentially-validated` for the recorded fixture, not a complete transaction
+validator. Next, validate the remaining transaction context:
 **complete when** valid and mutated Taproot commitments, annexes and Schnorr
 signatures produce supported local verdicts that agree with pinned Core,
 including budgets initialized from the full serialized witness. Unsupported
@@ -27,6 +33,13 @@ All 20 local/Core comparisons agree after adopting `702544c9`, with zero panics
 and two identical reports. These focused repairs are prerequisites to the full
 transaction API; fixing them does not itself implement commitment, annex or
 full-witness budget checks. The context-free profiles retain their guard.
+
+The [budget follow-up](tapscript-budget-validation.md) adds `Exec::new_tapscript`
+and a fallible dry-run helper, deriving the script, annex and initial signature
+budget from the complete selected-input witness. Structurally invalid contexts
+return constructor errors. Commitment verification, full transaction and policy
+validation remain open; accepting the leaf or its budget cannot close OP-001.
+
 ## OP-025 — BLAKE3 derive-key boundary
 
 Add a mode-correct derive-key construction to the tracked-stack BLAKE3 backend.
@@ -61,6 +74,9 @@ semantics and reports script, witness, hints, stack, and execution costs, or a
 machine-checkable lower-bound argument establishes that the current opcode set
 cannot bind the two 32-byte nodes without a general byte-concatenation circuit.
 The current inspected negative result is [NR-057](negative-results/index.md#nr-057-native-taproot-merkle-branch-adapter-is-not-available).
+PR #17 is a measured fixed-prefix u4 boundary, but it does not close this
+problem: ordering, native byte handling, and complete-spend validation remain
+open.
 
 ## OP-022 — Constant-composition Script decoder
 
@@ -105,16 +121,28 @@ and unsupported contexts; unsupported cases return no verdict. Existing
 research helpers retain their defaults and explicit stack-limit distinction.
 Local evidence is `locally-reproduced`, deployment `unclassified` by itself.
 
-Remaining criteria include legacy/P2WSH modes, transaction/commitment and annex
-validation, complete signature context/budget, full relay policy, malformed
+Remaining criteria include legacy/P2WSH modes, transaction/commitment
+validation, broader signature-context coverage, full relay policy, malformed
 input handling in older research helpers, and configuration-by-configuration
 migration and revalidation. Signature operations, CODESEPARATOR, CLTV/CSV and
 policy's upgradeable NOP handling are currently refused conservatively by the
 context-free profiles, including when their opcodes appear in dead branches.
+The [funded CSV comparison](tapscript-csv-validation.md) repairs a five-byte
+operand panic and checks 19 complete spends against Core. The local executor
+compares transaction version and `nSequence`; it does not know the funding
+height or median-time history needed for BIP68 transaction finality.
+**Remaining acceptance criterion:** a transaction-aware wrapper must either
+check the relevant funding height/MTP against the spend block and match pinned
+Core on both sides of each relative-maturity boundary, or return an explicit
+unsupported outcome when that chain context is absent. This remains under
+OP-001; the funded Core harness supplies complete-spend verdicts for the
+recorded CSV fixtures.
+
 The current [44-fixture Core experiment](core-validation.md) reproduces every
-consensus/policy expectation and rejection diagnostic, with 86 applicable
-local/Core verdict comparisons. Its separate control-block mutation still
-demonstrates why local leaf execution cannot establish commitment validity.
+consensus/policy expectation and rejection diagnostic, with all 88 combined
+local commitment/profile verdicts matching Core. Its control-block mutation
+also preserves the separate leaf result, demonstrating that successful leaf
+execution alone cannot establish commitment validity.
 
 ## OP-002 — Bitcoin Core differential harness
 
@@ -293,11 +321,11 @@ incremental squeeze passes strict stack checks and is differentially validated
 against FIPS 202 for boundary message/output lengths.
 
 Progress: `shake256_prefix` now parameterizes the output length. Prefixes of
-1, 32, 135, 136, 137, and 256 bytes match the independent reference. The
+1, 32, 135, 136, 137, and 256 bytes match the independent reference, and the
 32-byte prefix peaks at 813 items and the rate-crossing 137-byte prefix peaks
-at 813 items under the strict local executor. The representative fragments
-remain multi-megabyte, and Bitcoin Core/policy validation plus an incremental
-consumer remain open.
+at 893 items under the strict local executor. A complete 32-byte Taproot spend
+with the 2,000,144-byte terminal fragment is accepted by pinned Bitcoin Core
+v30.3 consensus; relay policy and an incremental consumer remain open.
 
 ## OP-006 — BN254 hinted-operation inventory
 
@@ -518,6 +546,12 @@ fragment bytes and peaks at five items, versus 499 bytes and seven items for a
 local decode-byte-shift-reencode baseline. The full OP-014 criterion remains
 open because the comparison is local and the complete Core differential is
 not yet present.
+
+The [historical PR #3 comparison](negative-results/index.md#historical-pr-3-rotate-and-mask-loses-on-the-tested-compressed-input-shifts)
+reports dominance only for the tested compressed-input configurations. The
+byte-oriented API remains unresolved: identify a caller and compare direct
+four-byte shifting with compression, compressed shifting, and conversion back,
+including validation and table setup/cleanup at the same boundary.
 
 ## OP-026 — Total-domain compressed-u32 shift pair
 

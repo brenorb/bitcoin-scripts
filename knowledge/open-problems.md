@@ -965,3 +965,11 @@ versus 3,557,157 bytes for width 8. It also grows from 16,129 to 25,489
 witness items. This makes the present CSFS target a no-go for radix-32
 integration; OP-027 remains open only for a different curve schedule whose
 window width and point-table costs are compatible.
+
+## OP-028 — BLAKE3 keyed-mode frontier
+
+Price a keyed BLAKE3 construction for the existing 32-byte input profile.
+**Complete when:** a deterministic key-and-message vector matches the
+independent BLAKE3 implementation, records the eight key words and
+`KEYED_HASH` flag handling, reports witness and combined-stack costs, and
+compares the result with the unkeyed profile under the same compilation policy.

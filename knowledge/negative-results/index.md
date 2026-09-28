@@ -1734,3 +1734,13 @@ larger in witness items before adding any shared signed-window decoder.
 Evidence is `locally-reproduced`; execution is `research-unlimited` and the
 result is not a consensus or policy deployment claim. Reproduce it with:
 `cargo test --locked 'signatures::schnorr::csfs::tests::generator_window_width5_probe' --lib -- --ignored`.
+
+## NR-069: BLAKE3 keyed mode is outside the current generator contract
+
+The local BLAKE3 generators accept no key and set no `KEYED_HASH` mode flag.
+A deterministic probe over `00 01 ... 1f` with a 32-byte `0x42` key produces a
+keyed digest different from the current unkeyed digest, while the existing
+32-byte compute profile remains the only priced script. This is a
+`locally-reproduced` interface boundary and not an impossibility proof; the
+missing key-word layout, flags, witness shape, and stack/routing cost remain
+to be priced under OP-028. See [the probe](../../examples/blake3_keyed_boundary.rs).

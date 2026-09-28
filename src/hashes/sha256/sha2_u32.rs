@@ -5,11 +5,14 @@ use crate::arithmetic::u32::stack::{u32_dup, u32_roll};
 use crate::arithmetic::u32::{
     and::u32_and,
     rotate::u32_rrot,
-    stack::{u32_drop, u32_fromaltstack, u32_pick, u32_push, u32_toaltstack},
+    stack::{
+        u32_drop, u32_fromaltstack, u32_pick, u32_push, u32_toaltstack, u8_reverse_toaltstack,
+    },
     xor::{u32_xor, u8_drop_xor_table, u8_push_xor_table},
 };
 use crate::support::script::{script, Script};
 use crate::support::script_ops::push_to_stack;
+use bitcoin::hashes::HashEngine;
 
 const K: [u32; 64] = [
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -57,7 +60,7 @@ fn sha256_with_table_after_input(
     }
 
     script! {
-        if move_input { {push_reverse_bytes_to_alt(num_bytes)} }
+        if move_input { {u8_reverse_toaltstack(num_bytes)} }
 
         // top of stack: [ [n bytes input] ]
         if push_table { {u8_push_xor_table()} }
@@ -91,7 +94,7 @@ pub fn sha256_32bytes() -> Script {
 
 fn sha256_32bytes_with_table(push_table: bool, drop_table: bool, move_input: bool) -> Script {
     script! {
-        if move_input { {push_reverse_bytes_to_alt(32)} }
+        if move_input { {u8_reverse_toaltstack(32)} }
 
         // top of stack: [ [n bytes input] ]
         if push_table { {u8_push_xor_table()} }
@@ -123,7 +126,7 @@ pub fn sha256_80bytes() -> Script {
 
 fn sha256_80bytes_with_table(push_table: bool, drop_table: bool, move_input: bool) -> Script {
     script! {
-        if move_input { {push_reverse_bytes_to_alt(80)} }
+        if move_input { {u8_reverse_toaltstack(80)} }
 
         // top of stack: [ [n bytes input] ]
         if push_table { {u8_push_xor_table()} }
@@ -150,6 +153,75 @@ fn sha256_80bytes_with_table(push_table: bool, drop_table: bool, move_input: boo
             {u32_fromaltstack()}
         }
     }
+}
+
+fn sha256_from_midstate(midstate: [u32; 8], suffix_bytes: usize, total_bytes: usize) -> Script {
+    assert_eq!(total_bytes, 64 + suffix_bytes);
+    let remainder = total_bytes % 64;
+    let padding_bytes = if remainder < 56 {
+        55 - remainder
+    } else {
+        119 - remainder
+    };
+    let mut state = midstate;
+    state.reverse();
+    script! {
+        {u8_reverse_toaltstack(suffix_bytes)}
+        {u8_push_xor_table()}
+        {sha256_k()}
+        for _ in 0..suffix_bytes {
+            OP_FROMALTSTACK
+        }
+        {0x80}
+        {push_to_stack(0, padding_bytes)}
+        {u32_push(0)}
+        {u32_push((total_bytes * 8) as u32)}
+        for i in 1..16 {
+            {u32_roll(i)}
+        }
+        for word in state {
+            {u32_push(word)}
+        }
+        {sha256_transform(8 + 16 + 64 + 1, 8 + 16)}
+        {sha256_final()}
+        for _ in 0..8 {
+            {u32_toaltstack()}
+        }
+        for _ in 0..64 {
+            {u32_drop()}
+        }
+        {u8_drop_xor_table()}
+        for _ in 0..8 {
+            {u32_fromaltstack()}
+        }
+    }
+}
+
+/// Continue SHA-256 from a midstate over a 16-byte suffix.
+///
+/// The suffix occupies the complete input stack as 16 byte-valued items; the
+/// fragment consumes them and leaves the 32-byte digest. The caller must
+/// authenticate the midstate against the fixed 64-byte prefix.
+pub fn sha256_80bytes_from_midstate(midstate: [u32; 8]) -> Script {
+    sha256_from_midstate(midstate, 16, 80)
+}
+
+fn tagged_hash_midstate(tag_hash: [u8; 32]) -> [u32; 8] {
+    let mut block = [0u8; 64];
+    block[..32].copy_from_slice(&tag_hash);
+    block[32..].copy_from_slice(&tag_hash);
+
+    let mut engine = bitcoin::hashes::sha256::HashEngine::default();
+    engine.input(&block);
+    let bytes = engine.midstate().to_byte_array();
+    std::array::from_fn(|index| {
+        u32::from_be_bytes(bytes[index * 4..index * 4 + 4].try_into().unwrap())
+    })
+}
+
+/// Compute `SHA256(tag_hash || tag_hash || message)` for a 32-byte message.
+pub fn sha256_tagged_hash_32bytes(tag_hash: [u8; 32]) -> Script {
+    sha256_from_midstate(tagged_hash_midstate(tag_hash), 32, 96)
 }
 
 /// reorder bytes for u32
@@ -865,16 +937,6 @@ pub fn u32_not() -> Script {
     }
 }
 
-/// Push reversed bytes to the alt stack.
-pub fn push_reverse_bytes_to_alt(num_bytes: usize) -> Script {
-    script! {
-        for i in 1..=num_bytes {
-            {num_bytes-i} OP_ROLL
-            OP_TOALTSTACK
-        }
-    }
-}
-
 /// Push (((x) & (y)) ^ (~(x) & (z))) into stack
 pub fn ch(x: u32, y: u32, z: u32, stack_depth: u32) -> Script {
     script! {
@@ -940,9 +1002,15 @@ pub fn maj(x: u32, y: u32, z: u32, stack_depth: u32) -> Script {
 mod tests {
     use super::*;
     use crate::arithmetic::u32::stack::{u32_equal, u32_equalverify};
-    use crate::support::{execution::execute_script, script::script};
+    use crate::support::{
+        execution::{
+            execute_script, execute_script_with_inputs, execute_script_with_inputs_strict,
+        },
+        script::script,
+    };
+    use bitcoin::hashes::{sha256, Hash};
     use bitcoin::hex::{DisplayHex, FromHex};
-    use sha2::{Digest, Sha256};
+    use sha2::{compress256, Digest, Sha256};
 
     fn push_bytes_hex(hex: &str) -> Script {
         let hex: String = hex
@@ -1011,6 +1079,163 @@ mod tests {
     }
 
     #[test]
+    fn test_sha256_80bytes_from_midstate() {
+        let prefix = [0x42u8; 64];
+        let suffix: Vec<u8> = (0..16).collect();
+        let mut midstate = INITSTATE;
+        compress256(&mut midstate, &[prefix.into()]);
+        let mut message = prefix.to_vec();
+        message.extend_from_slice(&suffix);
+        let expected = Sha256::digest(message).to_lower_hex_string();
+        let script = script! {
+            for byte in suffix.iter().rev() {
+                { *byte }
+            }
+            {sha256_80bytes_from_midstate(midstate)}
+            {push_bytes_hex(&expected)}
+            for _ in 0..32 {
+                OP_TOALTSTACK
+            }
+            for i in 1..32 {
+                {i}
+                OP_ROLL
+            }
+            for _ in 0..32 {
+                OP_FROMALTSTACK
+                OP_EQUALVERIFY
+            }
+            OP_TRUE
+        };
+        assert!(execute_script(script).success);
+    }
+
+    #[test]
+    fn test_sha256_80bytes_from_midstate_rejects_extra_suffix() {
+        let script = script! {
+            {sha256_80bytes_from_midstate([0; 8])}
+            for _ in 0..32 {
+                OP_DROP
+            }
+            OP_DEPTH
+            OP_0
+            OP_EQUAL
+        };
+        let result = execute_script_with_inputs(script, vec![vec![0x42]; 17]);
+        assert!(!result.success);
+    }
+
+    #[test]
+    fn test_sha256_80bytes_from_midstate_rejects_short_suffix() {
+        let script = script! {
+            {sha256_80bytes_from_midstate([0; 8])}
+            for _ in 0..32 {
+                OP_DROP
+            }
+            OP_TRUE
+        };
+        let result = execute_script_with_inputs(script, vec![vec![0x42]; 15]);
+        assert!(!result.success);
+    }
+
+    fn assert_tagged_hash(tag: &[u8], message: &[u8]) {
+        assert_eq!(message.len(), 32);
+        let tag_hash = sha256::Hash::hash(tag).to_byte_array();
+        let mut preimage = tag_hash.to_vec();
+        preimage.extend_from_slice(&tag_hash);
+        preimage.extend_from_slice(message);
+        let expected = Sha256::digest(preimage).to_lower_hex_string();
+        let script = script! {
+            for byte in message.iter().rev() {
+                { *byte }
+            }
+            { sha256_tagged_hash_32bytes(tag_hash) }
+            { push_bytes_hex(&expected) }
+            for _ in 0..32 {
+                OP_TOALTSTACK
+            }
+            for i in 1..32 {
+                { i }
+                OP_ROLL
+            }
+            for _ in 0..32 {
+                OP_FROMALTSTACK
+                OP_EQUALVERIFY
+            }
+            OP_TRUE
+        };
+        assert!(execute_script(script).success);
+    }
+
+    #[test]
+    fn test_sha256_tagged_hash_matches_multiple_vectors() {
+        let mut first = [0u8; 32];
+        for (index, byte) in first.iter_mut().enumerate() {
+            *byte = index as u8;
+        }
+        first[1] = 0x7f;
+        first[2] = 0x80;
+        first[3] = 0xff;
+        assert_tagged_hash(b"BIP0340/challenge", &first);
+
+        let second = [0xa5; 32];
+        assert_tagged_hash(b"bitcoin-scripts/test", &second);
+    }
+
+    #[test]
+    fn test_sha256_tagged_hash_rejects_wrong_message_count() {
+        let tag_hash = sha256::Hash::hash(b"BIP0340/challenge").to_byte_array();
+        let script = script! {
+            { sha256_tagged_hash_32bytes(tag_hash) }
+            for _ in 0..32 {
+                OP_DROP
+            }
+            OP_DEPTH
+            OP_0
+            OP_EQUAL
+        };
+        assert!(!execute_script_with_inputs_strict(script.clone(), vec![Vec::new(); 31]).success);
+        assert!(!execute_script_with_inputs_strict(script, vec![Vec::new(); 33]).success);
+    }
+
+    fn assert_sha256_bytes(data: &[u8]) {
+        let expected = Sha256::digest(data).to_lower_hex_string();
+        let script = script! {
+            for byte in data.iter().rev() {
+                { *byte }
+            }
+            {sha256(data.len())}
+            {push_bytes_hex(&expected)}
+            for _ in 0..32 {
+                OP_TOALTSTACK
+            }
+            for i in 1..32 {
+                {i}
+                OP_ROLL
+            }
+            for _ in 0..32 {
+                OP_FROMALTSTACK
+                OP_EQUALVERIFY
+            }
+            OP_TRUE
+        };
+        assert!(
+            execute_script(script).success,
+            "length {} failed",
+            data.len()
+        );
+    }
+
+    #[test]
+    fn test_sha256_padding_boundary_lengths() {
+        for length in [55usize, 56, 63, 64, 65, 80] {
+            let data = (0..length)
+                .map(|index| index.wrapping_mul(37).wrapping_add(3) as u8)
+                .collect::<Vec<_>>();
+            assert_sha256_bytes(&data);
+        }
+    }
+
+    #[test]
     fn test_padding_add_roll() {
         let hex_in = "6162636462636465636465666465666765666768666768696768696a68696a6b696a6b6c6a6b6c6d6b6c6d6e6c6d6e6f6d6e6f706e6f7071";
 
@@ -1024,7 +1249,7 @@ mod tests {
 
         let script = script! {
             {push_bytes_hex(hex_in)}
-            {push_reverse_bytes_to_alt(hex_in.len()/2)}
+            {u8_reverse_toaltstack(hex_in.len()/2)}
             {u8_push_xor_table()}
             {sha256_k()}
             {padding_add_roll(hex_in.len()/2)}

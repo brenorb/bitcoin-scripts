@@ -44,7 +44,20 @@ pub fn u32_rrot8_checked() -> Script {
     }
 }
 
-/// Right rotation of the i-th u8 element by 7 bits
+/// Splits the byte limb at stack depth `i` (0 = top) into its low seven bits
+/// and its high bit; the byte-level step of `u32_rrot7()`.
+///
+/// Stack effect, with `x = x_i`:
+/// `x_i x_{i-1} .. x_0 -> x_{i-1} .. x_0 (x & 0x7f) (x >> 7)`.
+/// The selected item is moved to the top and replaced by two items, high bit
+/// on top, so the stack grows by one; the other items keep their values and
+/// relative order. It does not rotate a u32 word, nor does it recombine the
+/// byte: `u32_rrot7()` joins each high bit with the next limb's doubled low
+/// bits (`2 * low + high`).
+///
+/// Unchecked: for an item outside `0..=255` it still yields `(x - 128, 1)`
+/// when `x >= 128` and `(x, 0)` otherwise, which is not a bit split, so
+/// callers own byte-range and canonical ScriptNum validation.
 pub fn u8_rrot7(i: u32) -> Script {
     let roll_script = match i {
         0 => script! {},
@@ -274,6 +287,7 @@ mod tests {
     use super::*;
     use crate::arithmetic::test_helpers::{run_with_witness, word_witness};
     use crate::arithmetic::u32::stack::*;
+    use crate::support::execution::run;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     fn rrot(x: u32, n: usize) -> u32 {
@@ -303,6 +317,114 @@ mod tests {
                 run_with_witness(script, word_witness(rrot(x, i)).chain(word_witness(x)));
             }
         }
+    }
+
+    #[test]
+    fn fixed_byte_rotations_match_reference() {
+        for (fragment, expected) in [
+            (u32_rrot8(), 0x4411_2233),
+            (u32_rrot16(), 0x3344_1122),
+            (u32_rrot(24), 0x2233_4411),
+        ] {
+            let result = crate::support::execution::execute_script_with_inputs_strict(
+                script! {
+                    99 OP_TOALTSTACK
+                    { fragment }
+                    { u32_push(expected) }
+                    { u32_equalverify() }
+                    OP_FROMALTSTACK 99 OP_EQUAL
+                },
+                vec![vec![0x11], vec![0x22], vec![0x33], vec![0x44]],
+            );
+            assert!(result.success, "fixed rotation failed: {result}");
+        }
+    }
+
+    #[test]
+    fn fixed_rotation7_matches_reference_boundaries() {
+        for value in [0, 1, 0x80, 0x1122_3344, 0x8000_0000, u32::MAX] {
+            let expected = rrot(value, 7);
+            run(script! {
+                { u32_push(value) }
+                { u32_rrot7() }
+                { u32_push(expected) }
+                { u32_equal() }
+                OP_VERIFY OP_TRUE
+            });
+        }
+    }
+
+    #[test]
+    fn u8_rrot7_splits_only_the_selected_byte() {
+        const OTHERS: [u32; 5] = [0x11, 0x22, 0x33, 0x44, 0x55];
+        for depth in 0..5 {
+            for byte in [0, 1, 0x7f, 0x80, 0xa5, 0xfe, 0xff] {
+                // `limbs[d]` is the item at stack depth `d` (0 = top).
+                let mut limbs = OTHERS;
+                limbs[depth] = byte;
+                let result = crate::support::execution::execute_script_with_inputs_strict(
+                    script! {
+                        99 OP_TOALTSTACK
+                        for d in (0..5).rev() { { limbs[d] } }
+                        { u8_rrot7(depth as u32) }
+                        { byte >> 7 } OP_EQUALVERIFY
+                        { byte & 0x7f } OP_EQUALVERIFY
+                        // The untouched limbs keep their relative order.
+                        for d in (0..5).filter(|&d| d != depth) { { limbs[d] } OP_EQUALVERIFY }
+                        OP_DEPTH OP_0 OP_EQUALVERIFY
+                        OP_FROMALTSTACK 99 OP_EQUAL
+                    },
+                    vec![],
+                );
+                assert!(
+                    result.success,
+                    "u8_rrot7({depth}) did not split byte {byte:#04x}: {result}"
+                );
+            }
+        }
+
+        // Unchecked: an out-of-range item is not split into bits.
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                0x100
+                { u8_rrot7(0) }
+                1 OP_EQUALVERIFY
+                0x80 OP_EQUAL
+            },
+            vec![],
+        );
+        assert!(result.success, "out-of-range behavior changed: {result}");
+    }
+
+    #[test]
+    fn fixed_rotation7_preserves_runtime_stack_state() {
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                99 OP_TOALTSTACK
+                { u32_rrot7() }
+                { u32_push(0x8822_4466) }
+                { u32_equalverify() }
+                OP_FROMALTSTACK 99 OP_EQUAL
+            },
+            vec![vec![0x11], vec![0x22], vec![0x33], vec![0x44]],
+        );
+        assert!(
+            result.success,
+            "rotation or stack preservation failed: {result}"
+        );
+    }
+
+    #[test]
+    fn fixed_rotation7_rejects_a_short_word_with_an_execution_error() {
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! { { u32_rrot7() } },
+            vec![vec![1u8]; 3],
+        );
+        assert!(!result.success);
+        assert!(matches!(
+            result.error,
+            Some(bitcoin_scriptexec::ExecError::InvalidStackOperation)
+        ));
     }
 
     #[test]

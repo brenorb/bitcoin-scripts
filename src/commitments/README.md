@@ -12,6 +12,11 @@ Each construction has its own implementation, tests, and parameter documentation
   32-byte nodes represented as 128 range-checked u4 items. Ordering remains a
   caller precondition; the fragment returns 64 digest nibbles.
 
+The binary hash path is unary, not a conventional binary Merkle branch;
+`HASH256(left || right)` would require concatenation or a separate 64-byte
+compression circuit because `OP_CAT` is disabled. See the [measured negative
+result](../../knowledge/negative-results/merkle-branch-composition.md).
+
 These experimental primitives authenticate values; they are not complete
 protocols. See the [comparison](../../knowledge/comparisons/commitments.md).
 

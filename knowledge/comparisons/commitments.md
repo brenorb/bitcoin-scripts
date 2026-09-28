@@ -46,3 +46,10 @@ The TapBranch row is a fixed-prefix u4 boundary measurement. Tapscript removes
 the legacy 10,000-byte and 201-opcode limits, but the measured script is above
 standard transaction-weight policy and has not been validated as a complete
 spend. Its node ordering is a caller precondition.
+
+Ordinary `HASH256(left || right)` Merkle composition is a separate negative
+result. The current byte-oriented SHA-256 backend measures one 64-byte layer
+at 1,060,200 unoptimized script bytes and 770,481 static non-push opcodes,
+with a 129-byte one-byte fixture witness or 193-byte canonical maximum for 64
+data items and zero hints. This is a backend-specific compile-only profile,
+not a universal lower bound or a complete branch verifier; see [NR-066](../negative-results/merkle-branch-composition.md).

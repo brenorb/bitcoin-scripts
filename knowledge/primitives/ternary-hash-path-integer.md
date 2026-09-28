@@ -51,9 +51,11 @@ preimage) coexist at script entry. The stack peak is measured with strict local
 stack checks. These are fragment-only
 measurements: the verifier and integer reconstruction are included, while
 input pushes, terminal predicates, and transaction framing are excluded.
-The strict local tapscript benchmark's legacy `opcode_count` reports `0`, so
-executed-opcode count remains unavailable rather than being inferred from the
-static script.
+The script has 919 static instructions, 794 of them static non-push opcodes
+(inactive branches included). The pinned interpreter's tapscript
+`opcode_count` counts every instruction position, executed or not, so it also
+reports 919; executed-opcode count remains unavailable rather than being
+inferred from either static count.
 
 The construction is larger than the measured four-way path (438 bytes, 61
 witness bytes, 19 peak items) for ordinary 31-bit integers. Its value is the

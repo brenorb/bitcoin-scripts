@@ -293,6 +293,61 @@ mod tests {
         }
     }
 
+    /// Least-significant-first trits for `value`, without the host-side
+    /// width assertion, so tests can commit to out-of-range values.
+    fn unchecked_integer_trits(value: u64, bit_width: usize) -> Vec<u8> {
+        let mut remaining = value;
+        let trits = (0..integer_trit_count(bit_width))
+            .map(|_| {
+                let trit = (remaining % 3) as u8;
+                remaining /= 3;
+                trit
+            })
+            .collect();
+        assert_eq!(remaining, 0, "value needs more trits than bit_width allows");
+        trits
+    }
+
+    #[test]
+    fn rejects_first_out_of_range_value_at_widths_1_and_31_before_overflow() {
+        let preimage = [0x42; 32];
+        for width in [1, 31] {
+            let maximum = (1u64 << width) - 1;
+
+            // Valid control: the largest in-range value reconstructs exactly.
+            let trits = unchecked_integer_trits(maximum, width);
+            let commitment = ternary_hash_path_commitment(&preimage, &trits);
+            let result = execute_script_with_inputs_strict(
+                script! {
+                    { verify_ternary_hash_path_to_integer(width, commitment) }
+                    { maximum as u32 }
+                    OP_EQUAL
+                },
+                ternary_hash_path_witness(&preimage, &trits),
+            );
+            assert!(result.success, "control width={width}: {result}");
+
+            // 2^width has a valid opening, but the width check's OP_VERIFY
+            // must reject it before the final 3*acc + trit step; at width 31
+            // a post-reconstruction check would instead hit ScriptNum overflow.
+            let trits = unchecked_integer_trits(maximum + 1, width);
+            let commitment = ternary_hash_path_commitment(&preimage, &trits);
+            let result = execute_script_with_inputs_strict(
+                script! {
+                    { verify_ternary_hash_path_to_integer(width, commitment) }
+                    OP_DROP OP_TRUE
+                },
+                ternary_hash_path_witness(&preimage, &trits),
+            );
+            assert!(!result.success, "2^{width} was accepted: {result}");
+            assert_eq!(
+                result.error,
+                Some(bitcoin_scriptexec::ExecError::Verify),
+                "2^{width} was not rejected by the width check: {result}"
+            );
+        }
+    }
+
     #[test]
     fn preserves_surrounding_main_and_alt_stack_state() {
         let width = 6;

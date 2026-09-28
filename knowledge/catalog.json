@@ -3251,6 +3251,7 @@
         "commitments::ternary_hash_path::tests::verifies_all_ternary_codewords",
         "commitments::ternary_hash_path::tests::verifies_integer_boundaries_and_values",
         "commitments::ternary_hash_path::tests::enforces_integer_width_at_every_supported_width",
+        "commitments::ternary_hash_path::tests::rejects_first_out_of_range_value_at_widths_1_and_31_before_overflow",
         "commitments::ternary_hash_path::tests::preserves_surrounding_main_and_alt_stack_state",
         "commitments::ternary_hash_path::tests::rejects_scriptnum_overflow_during_reconstruction",
         "commitments::ternary_hash_path::tests::rejects_wrong_openings_and_noncanonical_trits",

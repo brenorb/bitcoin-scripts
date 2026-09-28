@@ -27,10 +27,12 @@ executor with the 1,000-item stack limit enabled; deployment is
 | --- | ---: | ---: | ---: | ---: |
 | `verify_ternary_hash_path_to_integer(31, commitment)` | <!-- metric:ternary_hash_path_integer_31 -->947<!-- /metric:ternary_hash_path_integer_31 --> bytes | <!-- metric:ternary_hash_path_integer_witness_31 -->63<!-- /metric:ternary_hash_path_integer_witness_31 --> bytes (32-byte nonce, 20 trits, 21 data items) | 0 (none) | <!-- metric:ternary_hash_path_integer_stack_31 -->24<!-- /metric:ternary_hash_path_integer_stack_31 --> |
 
-The benchmark example executes the same representative witness. Its
-`opcode_count` reports `0` because that interpreter counter covers legacy
-execution and is unavailable for tapscript; no executed-opcode total is
-claimed for this fragment.
+The benchmark example executes the same representative witness and reports
+919 static instructions, 794 of them static non-push opcodes (inactive branches
+included). At interpreter pin `a09e87af444034698697f0a2267e755cf72f9aed`, the
+tapscript `opcode_count` statistic also reports 919 because it counts every
+instruction position, executed or not; it is not an executed-opcode total, and
+none is claimed for this fragment.
 
 ## Security
 
@@ -75,10 +77,12 @@ Before the final `3*acc + trit` step, the integer adapter checks
 `acc <= floor((2^width-1)/3)` and, when equal, `trit <= (2^width-1) mod 3`, so
 out-of-range values are rejected before any value wider than the declared
 integer is produced. Tests cover every codeword, integer boundaries, the
-`2^width-1` acceptance and `2^width` rejection at every width `1..=31`,
-surrounding-stack preservation, ScriptNum overflow, wrong openings, padded
-trits and out-of-range generic trits. The construction is dominated by the
-four-way path for ordinary 31-bit integers (NR-072).
+`2^width-1` acceptance and `2^width` rejection at every width `1..=31` (widths
+1 and 31 additionally require the width check's `OP_VERIFY`, not a later
+ScriptNum overflow, to reject), surrounding-stack preservation, ScriptNum
+overflow, wrong openings, padded trits and out-of-range generic trits. The
+construction is dominated by the four-way path for ordinary 31-bit integers
+(NR-072).
 
 ## Knowledge-base integration
 

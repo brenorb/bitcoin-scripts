@@ -37,10 +37,12 @@ Bitcoin witness serialization framing. There are zero auxiliary hint items.
 The 31-bit representative is 947 policy-produced script bytes, 63 serialized
 witness bytes, 21 witness items, and a 24-item combined local peak. It is
 larger than the four-way path for this integer objective but preserves a native
-three-valued selector. The strict tapscript executor reports
-`executed_opcodes=0` because its legacy opcode counter is unavailable in
-tapscript; the experiment therefore leaves that metric unclaimed. No raw
-private seed is part of the public fixture.
+three-valued selector. The benchmark reports 919 static instructions and 794
+static non-push opcodes. At interpreter pin `a09e87af`, the tapscript
+`opcode_count` statistic counts every instruction position (also 919), not
+executed opcodes, so the benchmark prints `executed_opcodes=unavailable` and
+the experiment leaves that metric unclaimed. No raw private seed is part of the
+public fixture.
 
 ## Falsification attempts
 

@@ -11,12 +11,29 @@ they do not use BN254 or any other field modulus.
   the word below it, and so on.
 - `u32_add[_drop](a, b)` accepts two distinct word offsets and wraps modulo
   `2^32`. The non-`drop` form preserves the word selected by `a`.
+- `u32_xnor_constant(value)` checks one hostile word and XNORs it with the
+  public compile-time `value`; the shared 256-entry table is local to the
+  fragment and the mask contributes no witness items.
+- `u32_or_constant(value)` checks one hostile word and ORs it with the public
+  compile-time `value`; the shared 256-entry table is local to the fragment
+  and the mask contributes no witness items.
+- `u32_and_constant(value)` checks one hostile word and ANDs it with the
+  public compile-time `value`; the shared 256-entry table is local to the
+  fragment and the mask contributes no witness items.
+- `u32_sub_constant(value)` checks one hostile word and subtracts the public
+  compile-time `value` modulo `2^32`; the constant contributes no witness
+  items.
+- `u32_add_constant(value)` checks one hostile word and adds the public
+  compile-time `value` modulo `2^32`; the constant contributes no witness
+  items.
 - `u32_sub[_drop](a, b)` computes `a - b` modulo `2^32` for either ordering of
   two distinct offsets. The non-`drop` form preserves the minuend.
 - `u32_conditional_negate()` normalizes a top condition and negates the next
   word modulo `2^32` when it is nonzero.
 - `u32_{less,greater}than[orequal]()` compares the top two words as unsigned
   integers and consumes both.
+- `u32_signed_lessthan()` compares the top two canonical byte words as signed
+  two's-complement i32 values and consumes both.
 - `u32_iszero()` consumes the top word and returns whether all four limbs are
   numerically zero.
 - `zero_byte_mask::u32_to_zero_byte_mask()` consumes the top word and returns
@@ -60,6 +77,9 @@ they do not use BN254 or any other field modulus.
   and returns one numeric Boolean.
 - Stack helpers use whole-word offsets. Rotation helpers additionally take a
   rotation count. There are no implicit parameter defaults.
+- `u8_reverse_toaltstack(num_bytes)` moves raw stack items to the alt stack and
+  restores their top-first order. It does not validate byte range or ScriptNum
+  encoding.
 - `u32_rrot8_checked()` validates four canonical byte limbs before the
   byte-aligned eight-bit rotation.
 - `u32_uncompress_canonical()` consumes one minimally encoded signed ScriptNum
@@ -73,6 +93,13 @@ they do not use BN254 or any other field modulus.
   direct byte-aligned logical left shift.
 - `u32_rrot16_checked()` validates four canonical byte limbs before applying
   the existing one-opcode sixteen-bit rotation.
+- `u32_rrot8()`, `u32_rrot16()`, and `u32_rrot(24)` are unchecked fixed-byte
+  permutations; callers own byte-range and canonical ScriptNum validation.
+- `u32_rrot7()` is the unchecked fixed seven-bit right rotation used by
+  SHA-256; callers own byte-range and canonical ScriptNum validation. Its
+  byte step `u8_rrot7(i)` does not rotate a word: it moves the byte at stack
+  depth `i` to the top and replaces it with `(x & 0x7f) (x >> 7)`, high bit on
+  top, growing the stack by one item.
 - `byte_planes::u32_words_to_byte_planes(word_count, check_inputs)` transposes
   contiguous MSB-first words into byte-major planes. Checked batches are
   limited to 249 words by the combined stack bound.
@@ -80,7 +107,7 @@ they do not use BN254 or any other field modulus.
 ## Script metrics
 
 These are serialized locking-script fragment sizes. The maximum stack column
-is measured by executing the fragment with its two input words; OR also
+is measured by executing each fragment with its documented inputs; OR also
 includes the required 256-item shared logic table. Strict greater-than has the
 same metrics as strict less-than, and greater-than-or-equal has the same metrics
 as less-than-or-equal.
@@ -88,10 +115,16 @@ as less-than-or-equal.
 | Fragment | Locking script | Witness bytes (see boundary below) | Combined stack peak |
 | --- | ---: | ---: | ---: |
 | `u32_add_drop(0, 1)` | <!-- metric:u32_add_drop -->78<!-- /metric:u32_add_drop --> bytes | 0 bytes | <!-- metric:u32_add_drop_stack -->10<!-- /metric:u32_add_drop_stack --> items |
+| `u32_xnor_constant(0x89abcdef)` | <!-- metric:u32_xnor_constant -->686<!-- /metric:u32_xnor_constant --> bytes | <!-- metric:u32_xnor_constant_witness -->13<!-- /metric:u32_xnor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xnor_constant_stack -->272<!-- /metric:u32_xnor_constant_stack --> items; <!-- metric:u32_xnor_constant_opcodes -->502<!-- /metric:u32_xnor_constant_opcodes --> static non-push opcodes |
+| `u32_or_constant(0x89abcdef)` | <!-- metric:u32_or_constant -->776<!-- /metric:u32_or_constant --> bytes | <!-- metric:u32_or_constant_witness -->13<!-- /metric:u32_or_constant_witness --> bytes, 4 data items | <!-- metric:u32_or_constant_stack -->272<!-- /metric:u32_or_constant_stack --> items; <!-- metric:u32_or_constant_opcodes -->548<!-- /metric:u32_or_constant_opcodes --> static non-push opcodes |
+| `u32_and_constant(0x89abcdef)` | <!-- metric:u32_and_constant -->620<!-- /metric:u32_and_constant --> bytes | <!-- metric:u32_and_constant_witness -->13<!-- /metric:u32_and_constant_witness --> bytes, 4 data items | <!-- metric:u32_and_constant_stack -->272<!-- /metric:u32_and_constant_stack --> items; <!-- metric:u32_and_constant_opcodes -->448<!-- /metric:u32_and_constant_opcodes --> static non-push opcodes |
+| `u32_sub_constant(value)` | <!-- metric:u32_sub_constant -->149<!-- /metric:u32_sub_constant --> bytes | <!-- metric:u32_sub_constant_witness -->9<!-- /metric:u32_sub_constant_witness --> bytes (<!-- metric:u32_sub_constant_witness_max -->13<!-- /metric:u32_sub_constant_witness_max --> max) | <!-- metric:u32_sub_constant_stack -->9<!-- /metric:u32_sub_constant_stack --> items |
+| `u32_add_constant(value)` | <!-- metric:u32_add_constant -->146<!-- /metric:u32_add_constant --> bytes | <!-- metric:u32_add_constant_witness -->9<!-- /metric:u32_add_constant_witness --> bytes (<!-- metric:u32_add_constant_witness_max -->13<!-- /metric:u32_add_constant_witness_max --> max) | <!-- metric:u32_add_constant_stack -->10<!-- /metric:u32_add_constant_stack --> items |
 | `u32_compressed_add()` | <!-- metric:u32_compressed_add -->1016<!-- /metric:u32_compressed_add --> bytes | <!-- metric:u32_compressed_add_witness -->11<!-- /metric:u32_compressed_add_witness --> bytes (<!-- metric:u32_compressed_add_witness_max -->13<!-- /metric:u32_compressed_add_witness_max --> max) | <!-- metric:u32_compressed_add_stack -->11<!-- /metric:u32_compressed_add_stack --> items |
 | `u32_sub_drop(0, 1)` | <!-- metric:u32_sub_drop -->77<!-- /metric:u32_sub_drop --> bytes | 0 bytes | <!-- metric:u32_sub_drop_stack -->9<!-- /metric:u32_sub_drop_stack --> items |
 | `u32_conditional_negate()` | <!-- metric:u32_conditional_negate -->83<!-- /metric:u32_conditional_negate --> bytes | 0 bytes | <!-- metric:u32_conditional_negate_stack -->9<!-- /metric:u32_conditional_negate_stack --> items |
 | `u32_lessthan()` | <!-- metric:u32_lessthan -->38<!-- /metric:u32_lessthan --> bytes | 0 bytes | <!-- metric:u32_lessthan_stack -->9<!-- /metric:u32_lessthan_stack --> items |
+| `u32_signed_lessthan()` | <!-- metric:u32_signed_lessthan -->63<!-- /metric:u32_signed_lessthan --> bytes | <!-- metric:u32_signed_lessthan_witness -->21<!-- /metric:u32_signed_lessthan_witness --> bytes (25 max) | <!-- metric:u32_signed_lessthan_stack -->11<!-- /metric:u32_signed_lessthan_stack --> items; <!-- metric:u32_signed_lessthan_opcodes -->49<!-- /metric:u32_signed_lessthan_opcodes --> static non-push opcodes |
 | `u32_compressed_lessthan()` | <!-- metric:u32_compressed_lessthan -->124<!-- /metric:u32_compressed_lessthan --> bytes | <!-- metric:u32_compressed_lessthan_witness -->11<!-- /metric:u32_compressed_lessthan_witness --> bytes | <!-- metric:u32_compressed_lessthan_stack -->6<!-- /metric:u32_compressed_lessthan_stack --> items |
 | `u32_compressed_lessthan_constant(0x89abcdef)` | <!-- metric:u32_compressed_lessthan_constant -->127<!-- /metric:u32_compressed_lessthan_constant --> bytes | <!-- metric:u32_compressed_lessthan_constant_witness -->6<!-- /metric:u32_compressed_lessthan_constant_witness --> bytes (<!-- metric:u32_compressed_lessthan_constant_witness_max -->7<!-- /metric:u32_compressed_lessthan_constant_witness_max --> max), 1 data item | <!-- metric:u32_compressed_lessthan_constant_stack -->6<!-- /metric:u32_compressed_lessthan_constant_stack --> items; <!-- metric:u32_compressed_lessthan_constant_opcodes -->71<!-- /metric:u32_compressed_lessthan_constant_opcodes --> static non-push opcodes |
 | `u32_lessthanorequal()` | <!-- metric:u32_lessthanorequal -->61<!-- /metric:u32_lessthanorequal --> bytes | 0 bytes | <!-- metric:u32_lessthanorequal_stack -->13<!-- /metric:u32_lessthanorequal_stack --> items |
@@ -103,6 +136,8 @@ as less-than-or-equal.
 | `u32_nor(0, 1, 3)` (table excluded) | <!-- metric:u32_nor -->346<!-- /metric:u32_nor --> bytes | 0 bytes | <!-- metric:u32_nor_stack -->272<!-- /metric:u32_nor_stack --> items, including table; <!-- metric:u32_nor_opcodes -->250<!-- /metric:u32_nor_opcodes --> static non-push opcodes |
 | `u32_xnor(0, 1, 3)` (table excluded) | <!-- metric:u32_xnor -->222<!-- /metric:u32_xnor --> bytes | 0 bytes | <!-- metric:u32_xnor_stack -->272<!-- /metric:u32_xnor_stack --> items, including table; <!-- metric:u32_xnor_opcodes -->182<!-- /metric:u32_xnor_opcodes --> static non-push opcodes |
 | `u32_notequal()` | <!-- metric:u32_notequal -->19<!-- /metric:u32_notequal --> bytes | 0 bytes | <!-- metric:u32_notequal_stack -->9<!-- /metric:u32_notequal_stack --> items |
+| `u32_equal()` | <!-- metric:u32_equal -->18<!-- /metric:u32_equal --> bytes | <!-- metric:u32_equal_witness -->17<!-- /metric:u32_equal_witness --> bytes (<!-- metric:u32_equal_witness_max -->25<!-- /metric:u32_equal_witness_max --> max), 8 data items, 0 hints | <!-- metric:u32_equal_stack -->9<!-- /metric:u32_equal_stack --> items |
+| `u32_equalverify()` | <!-- metric:u32_equalverify -->9<!-- /metric:u32_equalverify --> bytes | <!-- metric:u32_equalverify_witness -->17<!-- /metric:u32_equalverify_witness --> bytes (<!-- metric:u32_equalverify_witness_max -->25<!-- /metric:u32_equalverify_witness_max --> max), 8 data items, 0 hints | <!-- metric:u32_equalverify_stack -->9<!-- /metric:u32_equalverify_stack --> items |
 | `u32_compressed_equal()` | <!-- metric:u32_compressed_equal -->37<!-- /metric:u32_compressed_equal --> bytes | <!-- metric:u32_compressed_equal_witness -->11<!-- /metric:u32_compressed_equal_witness --> bytes | <!-- metric:u32_compressed_equal_stack -->5<!-- /metric:u32_compressed_equal_stack --> items |
 | `u32_conditional_select()` | <!-- metric:u32_conditional_select -->9<!-- /metric:u32_conditional_select --> bytes | <!-- metric:u32_conditional_select_witness_min -->10<!-- /metric:u32_conditional_select_witness_min -->–<!-- metric:u32_conditional_select_witness_max -->30<!-- /metric:u32_conditional_select_witness_max --> bytes | <!-- metric:u32_conditional_select_stack -->9<!-- /metric:u32_conditional_select_stack --> items |
 | `u32_iszero()` | <!-- metric:u32_iszero -->4<!-- /metric:u32_iszero --> bytes | <!-- metric:u32_iszero_witness -->5<!-- /metric:u32_iszero_witness --> bytes | <!-- metric:u32_iszero_stack -->4<!-- /metric:u32_iszero_stack --> items |
@@ -124,6 +159,7 @@ as less-than-or-equal.
 | `byte_reorder(3)` | <!-- metric:u32_byte_reorder_3 -->3<!-- /metric:u32_byte_reorder_3 --> bytes | <!-- metric:u32_byte_reorder_witness_3 -->9<!-- /metric:u32_byte_reorder_witness_3 --> bytes, 4 data items | <!-- metric:u32_byte_reorder_stack_3 -->4<!-- /metric:u32_byte_reorder_stack_3 --> items |
 | `u8_push_xor_table()` | <!-- metric:u8_logic_table_push -->236<!-- /metric:u8_logic_table_push --> bytes | 0 bytes | 256 table items |
 | `u8_drop_xor_table()` | <!-- metric:u8_logic_table_drop -->128<!-- /metric:u8_logic_table_drop --> bytes | 0 bytes | consumes 256 table items |
+| `u8_reverse_toaltstack(4)` | <!-- metric:u8_reverse_toaltstack_4 -->8<!-- /metric:u8_reverse_toaltstack_4 --> bytes | <!-- metric:u8_reverse_toaltstack_4_witness -->9<!-- /metric:u8_reverse_toaltstack_4_witness --> bytes, 4 data items | <!-- metric:u8_reverse_toaltstack_4_stack -->5<!-- /metric:u8_reverse_toaltstack_4_stack --> items |
 | `u32_uncompress_canonical()` | <!-- metric:u32_uncompress_canonical -->431<!-- /metric:u32_uncompress_canonical --> bytes | <!-- metric:u32_uncompress_canonical_witness -->7<!-- /metric:u32_uncompress_canonical_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_stack -->7<!-- /metric:u32_uncompress_canonical_stack --> items |
 | `u32_uncompress_canonical_nonnegative()` | <!-- metric:u32_uncompress_canonical_nonnegative -->405<!-- /metric:u32_uncompress_canonical_nonnegative --> bytes | <!-- metric:u32_uncompress_canonical_nonnegative_witness -->6<!-- /metric:u32_uncompress_canonical_nonnegative_witness --> bytes, 1 data item | <!-- metric:u32_uncompress_canonical_nonnegative_stack -->7<!-- /metric:u32_uncompress_canonical_nonnegative_stack --> items; <!-- metric:u32_uncompress_canonical_nonnegative_opcodes -->328<!-- /metric:u32_uncompress_canonical_nonnegative_opcodes --> executed fragment opcodes |
 | `u32_compress_canonical()` | <!-- metric:u32_compress_canonical -->130<!-- /metric:u32_compress_canonical --> bytes | <!-- metric:u32_compress_canonical_witness -->9<!-- /metric:u32_compress_canonical_witness --> bytes (<!-- metric:u32_compress_canonical_witness_max -->13<!-- /metric:u32_compress_canonical_witness_max --> max), 4 data items | <!-- metric:u32_compress_canonical_stack -->7<!-- /metric:u32_compress_canonical_stack --> items; <!-- metric:u32_compress_canonical_opcodes -->102<!-- /metric:u32_compress_canonical_opcodes --> static non-push opcodes |
@@ -134,13 +170,17 @@ as less-than-or-equal.
 | `u32_rrot7_checked()` | <!-- metric:u32_rrot7_checked -->130<!-- /metric:u32_rrot7_checked --> bytes | <!-- metric:u32_rrot7_checked_witness -->9<!-- /metric:u32_rrot7_checked_witness --> bytes (<!-- metric:u32_rrot7_checked_witness_max -->13<!-- /metric:u32_rrot7_checked_witness_max --> max), 4 data items | <!-- metric:u32_rrot7_checked_stack -->8<!-- /metric:u32_rrot7_checked_stack --> items; <!-- metric:u32_rrot7_checked_opcodes -->87<!-- /metric:u32_rrot7_checked_opcodes --> static non-push opcodes |
 | `u32_rrot8_checked()` | <!-- metric:u32_rrot8_checked -->57<!-- /metric:u32_rrot8_checked --> bytes | <!-- metric:u32_rrot8_checked_witness -->9<!-- /metric:u32_rrot8_checked_witness --> bytes (<!-- metric:u32_rrot8_checked_witness_max -->13<!-- /metric:u32_rrot8_checked_witness_max --> max), 4 data items | <!-- metric:u32_rrot8_checked_stack -->7<!-- /metric:u32_rrot8_checked_stack --> items; <!-- metric:u32_rrot8_checked_opcodes -->36<!-- /metric:u32_rrot8_checked_opcodes --> static non-push opcodes |
 | `u32_rrot16_checked()` | <!-- metric:u32_rrot16_checked -->55<!-- /metric:u32_rrot16_checked --> bytes | <!-- metric:u32_rrot16_checked_witness -->9<!-- /metric:u32_rrot16_checked_witness --> bytes (<!-- metric:u32_rrot16_checked_witness_max -->13<!-- /metric:u32_rrot16_checked_witness_max --> max), 4 data items | <!-- metric:u32_rrot16_checked_stack -->7<!-- /metric:u32_rrot16_checked_stack --> items; <!-- metric:u32_rrot16_checked_opcodes -->35<!-- /metric:u32_rrot16_checked_opcodes --> static non-push opcodes |
+| `u32_rrot7()` | <!-- metric:u32_rrot7 -->76<!-- /metric:u32_rrot7 --> bytes | <!-- metric:u32_rrot7_witness -->9<!-- /metric:u32_rrot7_witness --> bytes (<!-- metric:u32_rrot7_witness_max -->13<!-- /metric:u32_rrot7_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_rrot7_stack -->8<!-- /metric:u32_rrot7_stack --> items |
+| `u32_rrot8()` | <!-- metric:u32_rrot8 -->3<!-- /metric:u32_rrot8 --> bytes | <!-- metric:u32_rrot8_witness -->9<!-- /metric:u32_rrot8_witness --> bytes (<!-- metric:u32_rrot8_witness_max -->13<!-- /metric:u32_rrot8_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_rrot8_stack -->5<!-- /metric:u32_rrot8_stack --> items |
+| `u32_rrot16()` | <!-- metric:u32_rrot16 -->1<!-- /metric:u32_rrot16 --> bytes | <!-- metric:u32_rrot16_witness -->9<!-- /metric:u32_rrot16_witness --> bytes (<!-- metric:u32_rrot16_witness_max -->13<!-- /metric:u32_rrot16_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_rrot16_stack -->4<!-- /metric:u32_rrot16_stack --> items |
+| `u32_rrot(24)` | <!-- metric:u32_rrot24 -->2<!-- /metric:u32_rrot24 --> bytes | <!-- metric:u32_rrot24_witness -->9<!-- /metric:u32_rrot24_witness --> bytes (<!-- metric:u32_rrot24_witness_max -->13<!-- /metric:u32_rrot24_witness_max --> max), 4 data items, 0 hints | <!-- metric:u32_rrot24_stack -->5<!-- /metric:u32_rrot24_stack --> items |
 | `u32_popcount()` | <!-- metric:u32_popcount -->455<!-- /metric:u32_popcount --> bytes | <!-- metric:u32_popcount_witness -->13<!-- /metric:u32_popcount_witness --> bytes | <!-- metric:u32_popcount_stack -->262<!-- /metric:u32_popcount_stack --> items; <!-- metric:u32_popcount_opcodes -->171<!-- /metric:u32_popcount_opcodes --> static non-push opcodes |
 | `u32_byte_popcounts()` | <!-- metric:u32_byte_popcounts -->452<!-- /metric:u32_byte_popcounts --> bytes | <!-- metric:u32_byte_popcounts_witness -->13<!-- /metric:u32_byte_popcounts_witness --> bytes | <!-- metric:u32_byte_popcounts_stack -->262<!-- /metric:u32_byte_popcounts_stack --> items; <!-- metric:u32_byte_popcounts_opcodes -->168<!-- /metric:u32_byte_popcounts_opcodes --> static non-push opcodes |
 | `u32_byte_parity()` | <!-- metric:u32_byte_parity -->452<!-- /metric:u32_byte_parity --> bytes | <!-- metric:u32_byte_parity_witness -->13<!-- /metric:u32_byte_parity_witness --> bytes, 4 data items | <!-- metric:u32_byte_parity_stack -->262<!-- /metric:u32_byte_parity_stack --> items; <!-- metric:u32_byte_parity_opcodes -->168<!-- /metric:u32_byte_parity_opcodes --> static non-push opcodes |
 | `u32_to_le_bits()` | <!-- metric:u32_le_bits -->514<!-- /metric:u32_le_bits --> bytes | <!-- metric:u32_le_bits_witness -->9<!-- /metric:u32_le_bits_witness --> bytes | <!-- metric:u32_le_bits_stack -->35<!-- /metric:u32_le_bits_stack --> items |
 | `u32_to_bit_planes()` | <!-- metric:u32_bit_planes -->877<!-- /metric:u32_bit_planes --> bytes | <!-- metric:u32_bit_planes_witness -->9<!-- /metric:u32_bit_planes_witness --> bytes (<!-- metric:u32_bit_planes_witness_max -->13<!-- /metric:u32_bit_planes_witness_max --> max) | <!-- metric:u32_bit_planes_stack -->45<!-- /metric:u32_bit_planes_stack --> items; <!-- metric:u32_bit_planes_opcodes -->628<!-- /metric:u32_bit_planes_opcodes --> static non-push opcodes |
 | `u32_to_le_bits_canonical()` | <!-- metric:u32_le_bits_canonical -->562<!-- /metric:u32_le_bits_canonical --> bytes | <!-- metric:u32_le_bits_canonical_witness -->9<!-- /metric:u32_le_bits_canonical_witness --> bytes (<!-- metric:u32_le_bits_canonical_witness_max -->13<!-- /metric:u32_le_bits_canonical_witness_max --> max) | <!-- metric:u32_le_bits_canonical_stack -->35<!-- /metric:u32_le_bits_canonical_stack --> items; <!-- metric:u32_le_bits_canonical_opcodes -->366<!-- /metric:u32_le_bits_canonical_opcodes --> static non-push opcodes |
-| `u32_iszero()` | <!-- metric:u32_zero -->53<!-- /metric:u32_zero --> bytes | <!-- metric:u32_zero_witness -->13<!-- /metric:u32_zero_witness --> bytes | <!-- metric:u32_zero_stack -->6<!-- /metric:u32_zero_stack --> items; <!-- metric:u32_zero_opcodes -->37<!-- /metric:u32_zero_opcodes --> static non-push opcodes |
+| `zero::u32_iszero()` | <!-- metric:u32_zero -->53<!-- /metric:u32_zero --> bytes | <!-- metric:u32_zero_witness -->13<!-- /metric:u32_zero_witness --> bytes | <!-- metric:u32_zero_stack -->6<!-- /metric:u32_zero_stack --> items; <!-- metric:u32_zero_opcodes -->37<!-- /metric:u32_zero_opcodes --> static non-push opcodes |
 | `u32_pick(2)` | <!-- metric:u32_pick_2 -->8<!-- /metric:u32_pick_2 --> bytes | <!-- metric:u32_pick_2_witness -->24<!-- /metric:u32_pick_2_witness --> bytes, 12 data items | <!-- metric:u32_pick_2_stack -->16<!-- /metric:u32_pick_2_stack --> items |
 
 The checked byte-plane adapter has a separate combined-stack metric boundary:
@@ -157,6 +197,52 @@ large batches have quadratic cumulative stack-shifting work even though the
 generated script contains only `4*n` `OP_ROLL` operations. The 97-byte witness
 uses minimal one-byte encodings; accepted four-byte numeric aliases can reach
 161 bytes.
+
+`u32_xnor_constant(value)` is a checked fixed-mask adapter. It validates all
+four original limbs before any arithmetic normalizes them, uses the shared XOR
+table for the embedded public mask, removes the table, then complements each
+output byte. The representative metric fixture uses mask `0x89abcdef`, four
+witness data items, and zero hint items. Those items coexist at script entry;
+the fixture serializes to 13 witness bytes and peaks at 272 combined
+main-plus-alt-stack items. The policy-compiled fragment is 686 bytes with 502
+static non-push opcodes. A separate complete-leaf regression consumes all four
+outputs and ends in `OP_TRUE` while checking raw aliases under the local
+consensus-oriented tapscript profile.
+
+`u32_or_constant(value)` is a checked fixed-mask adapter. It validates one
+four-limb word, loads the shared 256-item Boolean table, ORs each byte with
+the embedded public mask, and destructively removes the table before return.
+The representative fixture uses mask `0x89abcdef`, four data items, and zero
+hints. Its 776-byte fragment peaks at 272 combined main-plus-alt-stack items
+and has 548 static non-push opcodes. This is a witness-width construction:
+the mask is public, while a caller that already has a second runtime word or
+can share the table should prefer the generic `u32_or` composition.
+
+`u32_and_constant(value)` is a checked fixed-mask adapter. It validates one
+four-limb word, loads the shared 256-item Boolean table, ANDs each byte with
+the embedded public mask, and destructively removes the table before return.
+The representative fixture uses mask `0x89abcdef`, four data items, and zero
+hints. Its 620-byte fragment peaks at 272 combined main-plus-alt-stack items
+and has 448 static non-push opcodes. This is a witness-width construction:
+the mask is public, while a caller that already has a second runtime word or
+can share the table should prefer the generic `u32_and` composition.
+
+`u32_sub_constant(value)` consumes one hostile four-limb word, checks each
+limb, subtracts the public compile-time constant modulo `2^32`, and returns
+four limbs. The representative fixture embeds `0x89abcdef` and supplies
+`0x12345678` as four data items. It requires no hints and preserves unrelated
+main- and alt-stack state. The fragment is
+<!-- metric:u32_sub_constant_static_opcodes -->83<!-- /metric:u32_sub_constant_static_opcodes --> static
+non-push opcodes, with 149 locking-script bytes, 9 serialized
+witness bytes (13 at the maximum canonical byte fixture), and a strict
+combined peak of
+<!-- metric:u32_sub_constant_stack -->9<!-- /metric:u32_sub_constant_stack --> items. The closest
+generic two-word baseline uses
+<!-- metric:u32_sub_drop_constant_witness -->21<!-- /metric:u32_sub_drop_constant_witness -->
+witness bytes across eight data items and peaks at
+<!-- metric:u32_sub_drop_constant_stack -->9<!-- /metric:u32_sub_drop_constant_stack --> items.
+This trades locking-script bytes for four fewer witness items; the constant is
+public and must not be treated as a secret.
 
 `u32_compressed_add()` is a checked wire adapter: it accepts two canonical
 compressed u32 ScriptNums, expands them through the existing byte carry chain,
@@ -179,6 +265,24 @@ The same representative byte baseline has
 <!-- metric:u32_add_drop_witness -->20<!-- /metric:u32_add_drop_witness --> serialized witness bytes and a
 <!-- metric:u32_add_drop_byte_stack -->10<!-- /metric:u32_add_drop_byte_stack --> item strict peak.
 
+`u32_add_constant(value)` consumes one hostile four-limb word, checks each
+limb, adds the public compile-time constant modulo `2^32`, and returns four
+limbs. The representative fixture embeds `0x89abcdef` and supplies
+`0x12345678` as four data items. It requires no hints and preserves unrelated
+main- and alt-stack state. The policy-compiled fragment is
+146 bytes with 9
+serialized witness bytes (13
+at the maximum canonical byte fixture), a strict combined peak of
+10 items, and
+<!-- metric:u32_add_constant_static_opcodes -->83<!-- /metric:u32_add_constant_static_opcodes --> static
+non-push opcodes. The closest generic two-word baseline is the existing
+`u32_add_drop(0, 1)`: its same-value witness is
+<!-- metric:u32_add_drop_constant_witness -->21<!-- /metric:u32_add_drop_constant_witness --> bytes
+across eight data items and peaks at
+<!-- metric:u32_add_drop_constant_stack -->10<!-- /metric:u32_add_drop_constant_stack --> items.
+This trades locking-script bytes for four fewer witness items and a narrower
+serialized witness; the constant is public and must not be treated as a secret.
+
 The conditional-negation fragment contains <!-- metric:u32_conditional_negate_opcodes -->52<!-- /metric:u32_conditional_negate_opcodes --> static non-push opcodes under the repository's compilation policy. The local tapscript executor does not expose a useful dynamic opcode counter for this fragment.
 
 Rows with zero witness bytes exclude operand serialization: callers may construct
@@ -187,6 +291,9 @@ operation-specific hint is needed. The conditional selector uses one condition
 item plus two four-byte words, for nine witness items when all inputs come from
 the witness. Its maximum canonical witness uses a four-byte ScriptNum condition and eight two-byte ScriptNum limbs. The logic table can be shared by any number of XOR, AND, and OR
 operations in one script.
+
+The adapter row reports a representative four-item witness of 9 serialized
+bytes; four canonical byte-valued ScriptNums can require up to 13 bytes.
 
 `u32_nand()` is a fused universal-gate adapter: it performs the existing
 byte-table AND schedule and complements each result before restoring the word.
@@ -245,7 +352,10 @@ The conditional selector normalizes any numeric truthy/falsy condition before
 
 `u32_popcount` performs the byte range checks itself because unchecked values
 would address outside the popcount table. Its output is a numeric ScriptNum,
-not a four-byte word or a terminal predicate.
+not a four-byte word or a terminal predicate. A separately scoped complete
+`0x12345678` leaf with `13 OP_EQUAL` is accepted by Bitcoin Core v30.3
+consensus and default policy; this does not promote the fragment or cover all
+inputs or batched composition.
 `u32_rrot8_checked()` adds the raw ScriptNum boundary for hostile byte limbs
 and then reuses the three-opcode byte rotation; it does not add a cryptographic
 security claim or a terminal predicate.
@@ -303,15 +413,23 @@ No hints are required. A witness-supplied word occupies four stack items, most
 significant byte first in the module's normal representation. Binary operation
 inputs and any shared logic table must already be at the documented depths.
 
+`u32_signed_lessthan()` uses the same four canonical byte limbs and interprets
+them as signed two's-complement i32 values. Its deterministic correctness sweep
+uses `ChaCha20Rng` seed `0x5532434f4d500001` for 256 generated operand pairs,
+in addition to 36 boundary pairs; the oracle is `(a as i32) < (b as i32)`.
+The representative opposite-sign witness serializes to 21 bytes, while all
+eight canonical byte limbs have a 25-byte maximum. No hints are required.
+
 `u32_compressed_equal()` accepts two canonical compressed u32 ScriptNums and
 returns one Boolean. It checks the exact ScriptNum encoding, including the
 `0x80000000` sentinel, then compares the canonical wire values directly; it
 does not expand the words. The representative compressed witness is two data
 items and 11 serialized bytes, versus eight items and 17 bytes for the
-four-byte `u32_equal()` witness. The maximum sentinel witness is 13 bytes.
+four-byte `u32_equal()` witness. The maximum two-word canonical byte witness
+is 25 bytes.
 The 37-byte fragment is a deliberate trade: it reduces witness item count and
 width while costing 19 more locking bytes than `u32_equal()`. The measured
-snapshot records a <!-- metric:u32_compressed_equal_witness_max -->13<!-- /metric:u32_compressed_equal_witness_max -->-byte maximum witness and a <!-- metric:u32_equal_witness -->17<!-- /metric:u32_equal_witness -->-byte, <!-- metric:u32_equal_stack -->9<!-- /metric:u32_equal_stack -->-item byte baseline.
+snapshot records a <!-- metric:u32_compressed_equal_witness_max -->13<!-- /metric:u32_compressed_equal_witness_max -->-byte maximum witness and a 17-byte, 9-item byte baseline.
 
 `u32_compressed_lessthan()` accepts two canonical compressed u32 ScriptNums
 with the same `... a b -> ... (a < b)` contract as `u32_lessthan()`. It

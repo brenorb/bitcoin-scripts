@@ -1,14 +1,18 @@
 pub mod add;
+pub mod add_constant;
 pub mod and;
+pub mod and_constant;
 pub mod bits;
 pub mod byte_eq_mask;
 pub mod byte_less_mask;
 pub mod byte_parity;
+pub mod byte_planes;
 pub mod cmp;
 pub mod msb_mask;
 pub mod nand;
 pub mod nor;
 pub mod or;
+pub mod or_constant;
 pub mod popcount;
 pub mod rotate;
 pub mod shift;
@@ -16,7 +20,9 @@ pub mod shift_left;
 
 pub mod stack;
 pub mod sub;
+pub mod sub_constant;
 pub mod xnor;
+pub mod xnor_constant;
 pub mod xor;
 pub mod zero;
 pub mod zero_byte_mask;

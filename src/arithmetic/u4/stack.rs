@@ -276,6 +276,7 @@ mod tests {
     use super::{u4_hex_to_nibbles, u4_repeat_number};
     use crate::arithmetic::u4::stack::u4_number_to_nibble;
     use crate::support::execution::execute_script_with_inputs_strict;
+    use bitcoin_scriptexec::ExecError;
 
     #[test]
     fn test_repeat() {
@@ -662,15 +663,20 @@ mod tests {
     }
 
     #[test]
-    fn packs_all_checked_nibble_pairs() {
-        for byte in 0..=u8::MAX {
-            let result = crate::support::execution::execute_script(script! {
-                { (byte >> 4) as u32 }
-                { (byte & 0x0f) as u32 }
-                { u4_pair_to_u8(true) }
-                { byte as u32 } OP_EQUAL
-            });
-            assert!(result.success, "failed to pack byte {byte:#x}: {result}");
+    fn packs_all_nibble_pairs() {
+        for check_inputs in [true, false] {
+            for byte in 0..=u8::MAX {
+                let result = crate::support::execution::execute_script(script! {
+                    { (byte >> 4) as u32 }
+                    { (byte & 0x0f) as u32 }
+                    { u4_pair_to_u8(check_inputs) }
+                    { byte as u32 } OP_EQUAL
+                });
+                assert!(
+                    result.success,
+                    "failed to pack byte {byte:#x}, checked {check_inputs}: {result}"
+                );
+            }
         }
     }
 
@@ -681,9 +687,10 @@ mod tests {
                 { high }
                 { low }
                 { u4_pair_to_u8(true) }
+                OP_DROP
                 OP_TRUE
             });
-            assert!(!result.success, "accepted malformed pair {high}, {low}");
+            assert_eq!(result.error, Some(ExecError::Verify));
         }
 
         let result = crate::support::execution::execute_script(script! {

@@ -8,6 +8,7 @@
 | Four-way mixed hash path | 16 authenticated base-4 digits / 31 bits | 438 | 61 | 19 | Tapscript `MINIMALIF` required; non-standard mixed-hash code |
 | Four-way path, retained digits | 16 raw digits retained on altstack | 360 | 61 | 20 | Retained bytes are caller-bound; tapscript `MINIMALIF` required |
 | Ternary mixed hash path | 20 authenticated base-3 trits / 31 bits | 947 | 63 | 24 | Native ternary state encoding; dominated by the four-way path |
+| TapBranch u4 hash | BIP341 tagged hash over two ordered nodes | <!-- metric:tapbranch_hash_u4 -->1106723<!-- /metric:tapbranch_hash_u4 --> | <!-- metric:tapbranch_hash_u4_witness -->161<!-- /metric:tapbranch_hash_u4_witness --> | <!-- metric:tapbranch_hash_u4_stack -->969<!-- /metric:tapbranch_hash_u4_stack --> | Unclassified; above standard transaction-weight policy |
 | Two-round mixed hash chain | 4-bit path → 3-bit path | 80 | 45 | 8 | Independently bind the start and checkpoint order |
 | Lamport 2-bit | Select one of four preimages | 96 | 11 | small | Strictly one-time |
 
@@ -49,3 +50,15 @@ cannot bind two hostile 32-byte nodes into the tagged `TapBranch` SHA256
 preimage without an enabled concatenation/splitting operation. See
 [NR-057](../negative-results/index.md#nr-057-native-taproot-merkle-branch-adapter-is-not-available)
 and [OP-021](../open-problems.md#op-021--taproot-merkle-path-verifier).
+
+The TapBranch row is a fixed-prefix u4 boundary measurement. Tapscript removes
+the legacy 10,000-byte and 201-opcode limits, but the measured script is above
+standard transaction-weight policy and has not been validated as a complete
+spend. Its node ordering is a caller precondition.
+
+Ordinary `HASH256(left || right)` Merkle composition is a separate negative
+result. The current byte-oriented SHA-256 backend measures one 64-byte layer
+at 1,060,200 unoptimized script bytes and 770,481 static non-push opcodes,
+with a 129-byte one-byte fixture witness or 193-byte canonical maximum for 64
+data items and zero hints. This is a backend-specific compile-only profile,
+not a universal lower bound or a complete branch verifier; see [NR-066](../negative-results/merkle-branch-composition.md).

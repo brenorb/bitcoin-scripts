@@ -3,6 +3,14 @@
 These records prevent repeated dead ends. They are scoped observations, not
 universal impossibility proofs.
 
+## NR-071: u4 MSB lookup table is dominated by a direct threshold at n=32
+
+The former 16-entry lookup implementation measured 440 locking-script bytes
+and a 50-item peak, while the direct range-checked `nibble >= 8` implementation
+measures 446 bytes and a 34-item peak at the same 32-nibble boundary. This is
+scoped to `n=32` and does not claim dominance for other batch sizes. Evidence
+is `locally-reproduced`; deployment is `unclassified`.
+
 ## NR-049: Signature opcodes still diverge after resource repairs
 
 The [funded signature experiment](../tapscript-signature-validation.md) records
@@ -1538,8 +1546,10 @@ concatenation of two hostile 32-byte nodes. Current Script can hash one stack
 item but has no enabled native byte concatenation/splitting boundary, so a
 compact adapter cannot bind separately supplied nodes to a 64-byte witness
 blob. The repository's mixed-hash path commits to nested SHA256/RIPEMD160
-outputs and is not TapBranch. A full u4 SHA256 circuit remains possible but is
-not a compact native primitive; this inspected result is tracked under OP-021.
+outputs and is not TapBranch. PR #17 provides a fixed-prefix u4 circuit for
+already ordered nibble-encoded nodes; its generated script is unoptimized and
+not a compact native primitive, and the fragment remains unclassified until a
+complete-spend validation. This inspected result is tracked under OP-021.
 ## NR-058: Constant-composition byte recovery is not yet a composable Script primitive
 
 The fixed-composition Winternitz verifier locally authenticates 49 digit slots,
@@ -1684,6 +1694,21 @@ Mask the type bit and low 16 bits in a wide integer before narrowing. Do not
 mask before checking the negative, overlong or operand-disable cases. A local
 leaf verdict still does not establish BIP68 maturity or complete transaction
 validity.
+
+## NR-066: Standard Merkle branch composition without `OP_CAT`
+
+The conventional Bitcoin Merkle step is `HASH256(left || right)`, while the
+current Script opcode set has no enabled native concatenation. The existing
+mixed-hash path is unary and is not a Merkle proof. A compile-only probe of the
+byte-oriented `sha2_u32::sha256(64)` backend measures 1,060,200 unoptimized
+script bytes and 770,481 static non-push opcodes before double hashing or
+routing; 64 one-byte items serialize to a 129-byte fixture witness, while
+64 canonical two-byte payloads serialize to 193 bytes. This is a
+`locally-reproduced`, backend-specific profile, not a universal lower bound,
+complete verifier, consensus result, or policy result. Ordinary Merkle
+composition is distinct from Taproot `TapBranch`; see [NR-057](#nr-057-native-taproot-merkle-branch-adapter-is-not-available),
+[OP-021](../open-problems.md#op-021--taproot-merkle-path-verifier), and the
+[full record](merkle-branch-composition.md).
 
 ## NR-072: Ternary mixed-hash paths lose to four-way integer paths
 

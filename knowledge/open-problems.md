@@ -3,11 +3,15 @@
 Each problem has a falsifiable completion criterion. Update comparisons and
 negative results when closing one.
 
-**Next priority (2026-09-20): OP-001, Taproot commitment validation.**
+**Next priority (2026-09-25): OP-001, remaining Taproot transaction context.**
 The interpreter repairs and explicit context-free consensus/policy profiles
 are adopted. Complete-witness budgeting and annex signature context now have
 an explicit constructor and a [funded comparison](tapscript-budget-validation.md).
-Next, validate the commitment and remaining transaction context:
+The complete-witness preflight now validates the revealed script and control
+block against the P2TR output, and the parity-mutated fixture agrees with pinned
+Core when that result is combined with leaf execution. This is
+`differentially-validated` for the recorded fixture, not a complete transaction
+validator. Next, validate the remaining transaction context:
 **complete when** valid and mutated Taproot commitments, annexes and Schnorr
 signatures produce supported local verdicts that agree with pinned Core,
 including budgets initialized from the full serialized witness. Unsupported
@@ -70,6 +74,9 @@ semantics and reports script, witness, hints, stack, and execution costs, or a
 machine-checkable lower-bound argument establishes that the current opcode set
 cannot bind the two 32-byte nodes without a general byte-concatenation circuit.
 The current inspected negative result is [NR-057](negative-results/index.md#nr-057-native-taproot-merkle-branch-adapter-is-not-available).
+PR #17 is a measured fixed-prefix u4 boundary, but it does not close this
+problem: ordering, native byte handling, and complete-spend validation remain
+open.
 
 ## OP-022 — Constant-composition Script decoder
 
@@ -132,9 +139,10 @@ OP-001; the funded Core harness supplies complete-spend verdicts for the
 recorded CSV fixtures.
 
 The current [44-fixture Core experiment](core-validation.md) reproduces every
-consensus/policy expectation and rejection diagnostic, with 86 applicable
-local/Core verdict comparisons. Its separate control-block mutation still
-demonstrates why local leaf execution cannot establish commitment validity.
+consensus/policy expectation and rejection diagnostic, with all 88 combined
+local commitment/profile verdicts matching Core. Its control-block mutation
+also preserves the separate leaf result, demonstrating that successful leaf
+execution alone cannot establish commitment validity.
 
 ## OP-002 — Bitcoin Core differential harness
 
@@ -313,11 +321,11 @@ incremental squeeze passes strict stack checks and is differentially validated
 against FIPS 202 for boundary message/output lengths.
 
 Progress: `shake256_prefix` now parameterizes the output length. Prefixes of
-1, 32, 135, 136, 137, and 256 bytes match the independent reference. The
+1, 32, 135, 136, 137, and 256 bytes match the independent reference, and the
 32-byte prefix peaks at 813 items and the rate-crossing 137-byte prefix peaks
-at 813 items under the strict local executor. The representative fragments
-remain multi-megabyte, and Bitcoin Core/policy validation plus an incremental
-consumer remain open.
+at 893 items under the strict local executor. A complete 32-byte Taproot spend
+with the 2,000,144-byte terminal fragment is accepted by pinned Bitcoin Core
+v30.3 consensus; relay policy and an incremental consumer remain open.
 
 ## OP-006 — BN254 hinted-operation inventory
 

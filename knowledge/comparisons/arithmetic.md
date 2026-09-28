@@ -16,6 +16,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | Small-field add | M31 u31 add | 18 | Canonical field input |
 | Small-field variable multiply | M31 u31 multiply | 1,370 | Witness quotient relation |
 | Canonical checked byte boundary | `verify_canonical_byte()` | 12 | 4-item peak; 4-byte witness; rejects noncanonical ScriptNums |
+| Signed u32 ordering | `u32_signed_lessthan()` | <!-- metric:u32_signed_lessthan -->63<!-- /metric:u32_signed_lessthan --> | <!-- metric:u32_signed_lessthan_witness -->21<!-- /metric:u32_signed_lessthan_witness -->-byte representative / 25-byte maximum witness; <!-- metric:u32_signed_lessthan_stack -->11<!-- /metric:u32_signed_lessthan_stack -->-item peak; <!-- metric:u32_signed_lessthan_opcodes -->49<!-- /metric:u32_signed_lessthan_opcodes --> static non-push opcodes |
 | Checked u32 logical right shift by eight | `u32_rshift8_checked()` | <!-- metric:u32_rshift8_checked -->62<!-- /metric:u32_rshift8_checked --> | <!-- metric:u32_rshift8_checked_stack -->7<!-- /metric:u32_rshift8_checked_stack -->-item peak; 9-byte representative witness; no shared table or hints; generic `u32_shr(8, 2)` is 561 bytes and 272 items with table setup/cleanup |
 | Checked u32 logical left shift by eight | `u32_lshift8_checked()` | <!-- metric:u32_lshift8_checked -->56<!-- /metric:u32_lshift8_checked --> | <!-- metric:u32_lshift8_checked_stack -->7<!-- /metric:u32_lshift8_checked_stack -->-item peak; 9-byte witness; no hints or shared table; generic table-backed boundary is 561 bytes and 272 items |
 | Checked u32 seven-bit rotation | `u32_rrot7_checked()` | 130 | 8-item peak; 9-byte representative/13-byte maximum witness; rejects raw aliases |
@@ -25,8 +26,11 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 canonical checked nibbles to 128 big-endian bits on altstack | u4 canonical altstack table adapter | 1,178 | 189-item peak; 65-byte witness; rejects raw aliases |
 | 8 checked u32 words to byte planes | u32 stack permutation | 411 | 35-item combined peak; 97-byte minimal witness |
 | Canonical compressed-u32 decode | u32 raw-encoding boundary | 431 | 7-item peak; 7-byte maximum witness; rejects aliases |
+| Public constant u32 subtraction | `u32_sub_constant(value)` | 149 | 9-byte/4-item witness; 9-item peak; no hints |
+| Public constant u32 addition | `u32_add_constant(value)` | 146 | 9-byte/4-item witness; 10-item peak; no hints |
 | Canonical nonnegative compressed-u32 decode | u32 narrow raw-encoding boundary | 405 | 7-item peak; 6-byte maximum witness; rejects negative values and aliases |
 | Canonical u32 byte-word compression | `u32_compress_canonical()` | 130 | 7-item peak; 9-byte representative/13-byte maximum witness; rejects raw limb aliases |
+| Public constant u32 AND | `u32_and_constant(value)` | 620 | 13-byte/4-item witness; 272-item peak; 256-item table |
 | Checked u31 width-9 decomposition | u31 range boundary | 85 | 10-item peak; 4-byte representative witness; numeric `0..=511` check |
 | Canonical checked u31 width-9 decomposition | u31 range plus raw ScriptNum boundary | <!-- metric:u31_bits_canonical_width9 -->90<!-- /metric:u31_bits_canonical_width9 --> | <!-- metric:u31_bits_canonical_width9_stack -->10<!-- /metric:u31_bits_canonical_width9_stack -->-item peak; 4-byte witness; rejects aliases; 0 hints |
 | Checked u4 nibble pair to byte | `u4_pair_to_u8(true)` | 20 | 5-item peak; 2 data items; 5-byte witness |
@@ -40,6 +44,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 checked signed radix-32 digits to sign/magnitude bits | signed-window staggered table | 1,866 | 348-item peak; wins bytes only after 8–16 digit crossover |
 | Compressed total-domain u32 addition | two-item compressed wire | 1,016 | 11-byte representative witness; byte baseline is 78 bytes and 20-byte witness |
 | Fixed-width u4 ordering | `lexicographic_le(128)` | 7,500 | 256 data items; 4,354 non-push opcodes |
+| 32 checked nibbles to cyclic lag-7 equality bits | `u4_nibbles_to_cyclic_equality(32, 7)` | 569 | 65-item peak; 32 output bits; no lookup table or hints |
 | Fixed-width u4 ordering with embedded right vector | `lexicographic_le_constant(128)` | <!-- metric:u4_lexicographic_le_constant_128 -->7628<!-- /metric:u4_lexicographic_le_constant_128 --> | <!-- metric:u4_lexicographic_le_constant_128_witness_items -->128<!-- /metric:u4_lexicographic_le_constant_128_witness_items --> witness data items; <!-- metric:u4_lexicographic_le_constant_128_stack -->259<!-- /metric:u4_lexicographic_le_constant_128_stack -->-item peak; embedded vector |
 | 32 checked nibbles to leading-zero counts | `u4_nibbles_to_leading_zeros(32)` | 440 | 50-item peak; one output count per input |
 | 32 checked nibbles to intra-nibble bit-transition counts | `u4_nibbles_to_bit_transitions(32)` | 440 | 50-item peak; one count per input |
@@ -49,13 +54,22 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 checked nibbles to nonzero-power-of-two bits | `u4_nibbles_to_power_of_two(32)` | 440 | 50-item peak; one predicate bit per input |
 | 32 checked nibbles to modulo-three residues | `u4_nibbles_to_mod3(32)` | 440 | 50-item peak; one residue per input |
 | 32 checked nibbles to parity bits | `u4_nibbles_to_parity(32)` | 440 | 50-item peak; one output bit per input |
+| 32 checked nibbles transition count | `u4_nibbles_transition_count(32)` | 588 | 35-item peak; 391 static non-push opcodes; one compact count; no table |
+| 32 checked nibbles to adjacent-equality bits | `u4_adjacent_equal_mask(32)` | 558 | 64-item peak; 31 output bits; 361 static non-push opcodes; no lookup table or hints |
+| Checked odd u4 inverse | `u4_odd_inverse_mod16` | 9 | 20-item peak; 16-item table; one data item; zero hints |
+| Checked modulo-16 u4 multiplication | `u4_mul_mod16()` | 21 | 261-item peak; 5-byte representative witness; 17 static non-push opcodes |
+| 16 checked nibbles to an embedded cap | `u4_nibbles_to_clamp(4,16)` | <!-- metric:u4_clamp_16 -->270<!-- /metric:u4_clamp_16 --> | <!-- metric:u4_clamp_16_stack -->18<!-- /metric:u4_clamp_16_stack -->-item peak; `min(nibble,4)`; cap embedded |
+| 16 checked nibbles to an embedded-equality mask | `u4_nibbles_to_eq_mask(5,16)` | <!-- metric:u4_eq_mask_16 -->190<!-- /metric:u4_eq_mask_16 --> | <!-- metric:u4_eq_mask_16_stack -->18<!-- /metric:u4_eq_mask_16_stack -->-item peak; one output bit per input; symbol embedded |
+| 16 checked nibbles to an embedded-threshold mask | `u4_nibbles_to_lt_mask(5,16)` | <!-- metric:u4_lt_mask_16 -->190<!-- /metric:u4_lt_mask_16 --> | <!-- metric:u4_lt_mask_16_stack -->18<!-- /metric:u4_lt_mask_16_stack -->-item peak; one output bit per input; threshold embedded |
+| 32 checked nibbles to MSB bits | `u4_nibbles_to_msb(32)` | <!-- metric:u4_msb_batch32 -->446<!-- /metric:u4_msb_batch32 --> | <!-- metric:u4_msb_batch32_stack -->34<!-- /metric:u4_msb_batch32_stack -->-item peak; direct threshold; no hints |
 | 16 checked nibbles to one XOR nibble | `u4_nibbles_to_xor(16)` | 740 | 273-item peak; 256-item full XOR table |
 | Variable u32 XNOR | `u32_xnor(0, 1, 3)` | 222 | 272-item peak; 182 static non-push opcodes; shared 256-item XOR table |
+| Embedded public-mask u32 XNOR | `u32_xnor_constant(0x89abcdef)` | 686 | 13-byte/four-data-item witness; zero hints; 272-item peak; 502 static non-push opcodes |
 | Checked public-constant u4 multiplication | `u4_mul_constant_mod16`, `constant=10` | 6 | 20-item peak; 16-item table; one data item; zero hints |
 | Checked u4 square modulo 16 | `u4_square_mod16()` | 6 | 20-item peak; 16-item table; one data item; zero hints |
 | 32 checked nibbles nondecreasing predicate | `u4_nibbles_nondecreasing(32)` | 478 | 35-item peak; one output bit; no table |
 | 32 checked nibbles to an exact sum | `u4_nibbles_sum_exact(32)` | 497 | 34-item peak; no table; full sum rather than modulo 16 |
-| 32 checked nibbles to 16 bytes | `u4_nibbles_to_bytes(32)` | 448 | 50-item peak; checked pair packing; no hints |
+| 32 checked nibbles to 16 bytes | `u4_nibbles_to_bytes(32)` | <!-- metric:u4_pack_batch32 -->442<!-- /metric:u4_pack_batch32 --> | <!-- metric:u4_pack_batch32_stack -->52<!-- /metric:u4_pack_batch32_stack -->-item peak; checked pair packing; 65-byte witness; no hints |
 | 32 checked nibbles to forward modulo-16 deltas | `u4_nibbles_to_adjacent_delta(32)` | 760 | 64-item peak; 31 output nibbles; no hints |
 | 32 checked nibbles cyclically rotated left | `u4_nibbles_rotate_left(32)` | 432 | 64-item peak; no hints; stack permutation |
 | 32-wide checked u4 vector interleave | `u4_nibbles_interleave(32)` | 954 | 128-item peak; 129-byte witness; no hints |
@@ -63,6 +77,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 checked nibbles to one-hot masks | `u4_nibbles_to_one_hot(32)` | 461 | 50-item peak; 16-bit numeric selector per input |
 | 32 checked nibbles to centered signed digits | `u4_nibbles_to_centered(32)` | 447 | 50-item peak; outputs `-8..=7` |
 | 32 checked nibbles to complement-reflected representatives | `u4_nibbles_to_mirror(32)` | 440 | 50-item peak; canonical `0..=7` representative |
+| 16 checked nibbles to embedded three-way classes | `u4_nibbles_to_trichotomy(5,16)` | <!-- metric:u4_trichotomy_16 -->398<!-- /metric:u4_trichotomy_16 --> | <!-- metric:u4_trichotomy_16_stack -->18<!-- /metric:u4_trichotomy_16_stack -->-item peak; `0/1/2` for `< /=/>`; threshold embedded |
 | u32 population count | `u32_popcount()` | 455 | 262-item peak; 256-item byte table |
 | u32 per-byte population counts | `u32_byte_popcounts()` | 452 | 262-item peak; four numeric outputs; 256-item byte table |
 | u32 leading zero-byte count | `u32_leading_zero_bytes()` | 159 | 7-item peak; table-free; validates all four byte limbs |
@@ -95,7 +110,8 @@ the current byte-oriented and decode/re-encode configurations below.
 | Consuming u32 XOR | `u32_xor_drop(0, 1, 3)` | 202 | Destructive two-word routing; 268-item peak with shared table |
 | Consuming u32 AND | `u32_and_drop(0, 1, 3)` | 169 | Destructive two-word routing; 268-item peak with shared table |
 | Consuming u32 OR | `u32_or_drop(0, 1, 3)` | 326 | Destructive two-word routing; 268-item peak with shared table |
-| Checked u32 zero predicate | `u32_iszero()` | 53 | 6-item peak; no lookup table |
+| Public constant u32 OR | `u32_or_constant(value)` | 776 | Four data items (13-byte fixture); 272-item peak including the 256-item table |
+| Checked u32 zero predicate | `zero::u32_iszero()` | 53 | 6-item peak; no lookup table; range-checks all four limbs |
 | Stack-preserving u32 copy | `u32_pick(2)` | 8 | 16-item peak; 24-byte witness; copies a word at depth two |
 | Wide add | U254 add | 176 | Nine limbs |
 | Wide add with bounded limbs | U254 carry-free add | 142 | Nine limbs; each corresponding sum must stay below radix |
@@ -142,11 +158,31 @@ the byte carry chain and costs 1,016 locking bytes versus 78 for the ordinary
 adder. It is retained for witness-constrained composition, not as a general
 locking-byte winner.
 
+The embedded-constant u32 subtraction row makes the same tradeoff for a public
+subtrahend: the checked four-limb adapter uses 149 locking bytes, a
+representative 9-byte/4-item witness, and a 9-item strict peak, versus 77
+bytes, 21 witness bytes/8 items, and a 9-item peak when the subtrahend is
+supplied as a second generic word. It is useful for witness-constrained
+callers only when the subtrahend is public and fixed at script-generation time.
+
+The embedded-constant u32 addition row makes the same tradeoff for a public
+addend: the checked four-limb adapter uses 146 locking bytes, a representative
+9-byte/4-item witness, and a 10-item strict peak, versus 78 bytes,
+21 witness bytes/8 items, and the same peak when the constant is supplied as a
+second generic word. It is useful for witness-constrained callers only when
+the addend is public and fixed at script-generation time.
+
 The leading-zero-byte count is a fixed-width prefix classifier rather than a
 zero predicate: `u32_iszero()` is only 4 bytes because it discards position,
 while this construction spends 159 bytes to preserve the first nonzero index
 and validate limbs that are dropped after the decision. It also avoids the
 256-item table resident in the population-count construction.
+
+The embedded-constant u32 AND row specializes the table-backed Boolean path
+for a public mask. It uses 620 locking bytes, a 13-byte/4-item witness, and a
+272-item strict peak. It removes the second runtime word but still pays for a
+fresh 256-item table, so a caller with a reusable table or a runtime mask
+should keep the generic two-word operation.
 
 The 9,893-byte Ed25519 row is the current locking-script-size winner for this
 field. It keeps host values in the ordinary field domain but uses a unique

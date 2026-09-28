@@ -10,6 +10,7 @@ pub mod msb_mask;
 pub mod nand;
 pub mod nor;
 pub mod or;
+pub mod or_constant;
 pub mod popcount;
 pub mod rotate;
 pub mod shift;

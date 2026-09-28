@@ -9490,3 +9490,44 @@ fn u4_cyclic_equality_metrics_are_current() {
         },
     ]);
 }
+
+fn u32_or_constant_metrics() -> Vec<Metric> {
+    let fragment = u32::or_constant::u32_or_constant(0x89ab_cdef);
+    let witness = vec![scriptnum(255); 4];
+    let stack = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            OP_2DROP
+            OP_2DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_or_constant",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_or_constant_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_or_constant_stack",
+            value: stack,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_or_constant_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]
+}
+
+#[test]
+fn u32_or_constant_metrics_are_current() {
+    check_readme_metrics(u32_or_constant_metrics());
+}

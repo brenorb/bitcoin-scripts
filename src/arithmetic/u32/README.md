@@ -14,6 +14,9 @@ they do not use BN254 or any other field modulus.
 - `u32_xnor_constant(value)` checks one hostile word and XNORs it with the
   public compile-time `value`; the shared 256-entry table is local to the
   fragment and the mask contributes no witness items.
+- `u32_or_constant(value)` checks one hostile word and ORs it with the public
+  compile-time `value`; the shared 256-entry table is local to the fragment
+  and the mask contributes no witness items.
 - `u32_sub[_drop](a, b)` computes `a - b` modulo `2^32` for either ordering of
   two distinct offsets. The non-`drop` form preserves the minuend.
 - `u32_conditional_negate()` normalizes a top condition and negates the next
@@ -95,6 +98,7 @@ as less-than-or-equal.
 | --- | ---: | ---: | ---: |
 | `u32_add_drop(0, 1)` | <!-- metric:u32_add_drop -->78<!-- /metric:u32_add_drop --> bytes | 0 bytes | <!-- metric:u32_add_drop_stack -->10<!-- /metric:u32_add_drop_stack --> items |
 | `u32_xnor_constant(0x89abcdef)` | <!-- metric:u32_xnor_constant -->686<!-- /metric:u32_xnor_constant --> bytes | <!-- metric:u32_xnor_constant_witness -->13<!-- /metric:u32_xnor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xnor_constant_stack -->272<!-- /metric:u32_xnor_constant_stack --> items; <!-- metric:u32_xnor_constant_opcodes -->502<!-- /metric:u32_xnor_constant_opcodes --> static non-push opcodes |
+| `u32_or_constant(0x89abcdef)` | <!-- metric:u32_or_constant -->776<!-- /metric:u32_or_constant --> bytes | <!-- metric:u32_or_constant_witness -->13<!-- /metric:u32_or_constant_witness --> bytes, 4 data items | <!-- metric:u32_or_constant_stack -->272<!-- /metric:u32_or_constant_stack --> items; <!-- metric:u32_or_constant_opcodes -->548<!-- /metric:u32_or_constant_opcodes --> static non-push opcodes |
 | `u32_compressed_add()` | <!-- metric:u32_compressed_add -->1016<!-- /metric:u32_compressed_add --> bytes | <!-- metric:u32_compressed_add_witness -->11<!-- /metric:u32_compressed_add_witness --> bytes (<!-- metric:u32_compressed_add_witness_max -->13<!-- /metric:u32_compressed_add_witness_max --> max) | <!-- metric:u32_compressed_add_stack -->11<!-- /metric:u32_compressed_add_stack --> items |
 | `u32_sub_drop(0, 1)` | <!-- metric:u32_sub_drop -->77<!-- /metric:u32_sub_drop --> bytes | 0 bytes | <!-- metric:u32_sub_drop_stack -->9<!-- /metric:u32_sub_drop_stack --> items |
 | `u32_conditional_negate()` | <!-- metric:u32_conditional_negate -->83<!-- /metric:u32_conditional_negate --> bytes | 0 bytes | <!-- metric:u32_conditional_negate_stack -->9<!-- /metric:u32_conditional_negate_stack --> items |
@@ -176,6 +180,15 @@ main-plus-alt-stack items. The policy-compiled fragment is 686 bytes with 502
 static non-push opcodes. A separate complete-leaf regression consumes all four
 outputs and ends in `OP_TRUE` while checking raw aliases under the local
 consensus-oriented tapscript profile.
+
+`u32_or_constant(value)` is a checked fixed-mask adapter. It validates one
+four-limb word, loads the shared 256-item Boolean table, ORs each byte with
+the embedded public mask, and destructively removes the table before return.
+The representative fixture uses mask `0x89abcdef`, four data items, and zero
+hints. Its 776-byte fragment peaks at 272 combined main-plus-alt-stack items
+and has 548 static non-push opcodes. This is a witness-width construction:
+the mask is public, while a caller that already has a second runtime word or
+can share the table should prefer the generic `u32_or` composition.
 
 `u32_compressed_add()` is a checked wire adapter: it accepts two canonical
 compressed u32 ScriptNums, expands them through the existing byte carry chain,

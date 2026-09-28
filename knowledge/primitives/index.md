@@ -45,6 +45,7 @@ the source. Read a page together with its comparison page and evidence record.
 - [Checked u4 modulo-16 sum](u4-sum-mod16.md)
 - [Checked u4 packed zero-bitmask projection](u4-zero-bitmask.md)
 - [u32 word arithmetic](u32.md)
+- [Embedded-constant u32 OR](u32-or-constant.md)
 - [Checked u32 zero-byte mask](u32-zero-byte-mask.md)
 - [Fused u32 XNOR adapter](u32-xnor.md)
 - [Embedded-constant u32 XNOR](u32-xnor-constant.md)

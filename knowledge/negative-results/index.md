@@ -1709,3 +1709,28 @@ complete verifier, consensus result, or policy result. Ordinary Merkle
 composition is distinct from Taproot `TapBranch`; see [NR-057](#nr-057-native-taproot-merkle-branch-adapter-is-not-available),
 [OP-021](../open-problems.md#op-021--taproot-merkle-path-verifier), and the
 [full record](merkle-branch-composition.md).
+
+## NR-067: Signed-window tables are not a universal scalar-schedule win
+
+Composing the signed-radix-32 decoder with an exact U256 Horner consumer and
+terminal equality check produces a real scalar-reconstruction boundary, but the
+156-item table remains dominated through eight digits: it measures
+1,545/5,271/10,238 bytes versus 1,336/5,137/10,204 for conditional branches at
+1/4/8 digits. It wins by 166 bytes at 16 digits and 598 bytes at 32, while
+adding 136 peak combined stack items; both 32-digit schedules remain below
+1,000 items. This is `locally-reproduced` and `unclassified`, and does not
+establish a drop-in elliptic-curve multiplication or complete-transaction
+construction.
+
+## NR-068: Width-5 fixed-base CSFS is dominated by width 8
+
+The existing fixed-base secp256k1 generator MSM was parameterized for a
+five-bit signed window as a curve-level integration probe. It executes
+successfully under the relaxed tapscript helper, but 52 width-5 windows cost
+4,880,087 script bytes, 63,917 witness bytes, and 25,489 witness items; the
+like-for-like 32-window width-8 schedule costs 3,557,157 bytes, 40,471 bytes,
+and 16,129 items. Width 5 is therefore 37.1% larger in script and 58.0%
+larger in witness items before adding any shared signed-window decoder.
+Evidence is `locally-reproduced`; execution is `research-unlimited` and the
+result is not a consensus or policy deployment claim. Reproduce it with:
+`cargo test --locked 'signatures::schnorr::csfs::tests::generator_window_width5_probe' --lib -- --ignored`.

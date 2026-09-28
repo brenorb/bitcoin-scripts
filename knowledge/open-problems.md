@@ -922,17 +922,6 @@ matches the standard BLAKE3 digest in a focused execution, and reports a
 policy-produced leaf smaller than the 3,828,057-byte projection with the same 792 entry items
 and exactly 88 hints.
 
-## OP-019: Integrate signed-window decoding into a complete scalar schedule
-
-The new signed radix-32 decoder is only a representation bridge. Its local
-32-digit row saves 564 script bytes over conditional extraction but spends 348
-combined stack items, and no complete scalar multiplication currently consumes
-its sign/magnitude output. **Accept when:** a deterministic complete scalar
-window schedule uses the decoder with an explicit output contract, measures
-all surrounding state and terminal checks under the strict 1,000-item limit,
-and either beats the branch schedule for the same scalar objective or records
-the composed layout as dominated.
-
 ## OP-020 — Bound-start hash paths and Binohash composition
 
 The optional-SHA256 binary path has a deterministic first-bit substitution
@@ -950,3 +939,29 @@ digest. **Complete when:** a generation-time output length supports at least a
 64-byte XOF vector, matches the independent BLAKE3 implementation, records the
 additional output-block compression/routing/cleanup and witness shape, and
 passes the combined 1,000-item stack check for the documented composition.
+
+## OP-027 — Integrate signed-window decoding into a complete scalar schedule
+
+The signed radix-32 decoder is only a representation bridge. A deterministic
+composition now consumes its sign/magnitude output in a high-to-low U256 Horner
+reconstruction, checks the exact scalar, and leaves a clean terminal result.
+It is `locally-reproduced` under the strict combined stack limit: the table
+loses through eight digits, then saves 166 bytes at 16 digits and 598 bytes at
+32, while using 136 more peak items at both boundaries. **Accept when:** the
+decoder is integrated into an actual elliptic-curve scalar multiplication
+schedule with its existing point state, or a measured curve-level comparison
+shows the composed layout is dominated. The current result does not close this
+problem because the repository's curve schedules use width-8/9 windows and no
+Bitcoin Core differential validation has been performed. This entry supersedes
+the signed-window problem previously recorded under a second `OP-019` heading,
+which collided with the PRINCEv2 M-hat frontier; that entry's scalar-level
+criterion (a complete schedule measured under the strict limit that either
+beats the branch schedule or records the layout as dominated) is answered by
+the reconstruction above, so the remaining work is curve-level.
+
+The current CSFS curve-level probe is a negative result: parameterizing its
+fixed-base generator MSM for width 5 uses 52 windows and is 4,880,087 bytes,
+versus 3,557,157 bytes for width 8. It also grows from 16,129 to 25,489
+witness items. This makes the present CSFS target a no-go for radix-32
+integration; OP-027 remains open only for a different curve schedule whose
+window width and point-table costs are compatible.

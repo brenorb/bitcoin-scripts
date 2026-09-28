@@ -50,10 +50,105 @@ mod tests {
                 execute_raw_script_with_inputs_strict, execute_script,
                 execute_script_buf_with_options,
             },
-            script::{script, ScriptCompilation},
+            script::{script, Script, ScriptCompilation, MAX_OPTIMIZER_INPUT_BYTES},
         },
     };
     use bitcoin_scriptexec::{ExecError, Options};
+
+    fn compile_boundary(body: Script) -> Vec<u8> {
+        script! {
+            { body }
+            for _ in 0..=MAX_OPTIMIZER_INPUT_BYTES { OP_NOP }
+        }
+        .compile_with_policy()
+        .to_bytes()
+    }
+
+    /// Runs `alt_items` alt-stack items and `main_items` lower main-stack items
+    /// around a batch of zero nibbles under the strict 1,000-item limit, then
+    /// checks the count and every preserved value.
+    fn run_preserved_frontier(
+        main_items: u32,
+        alt_items: u32,
+        nibble_count: u32,
+    ) -> crate::support::execution::ExecuteInfo {
+        let body = script! {
+            for index in 0..alt_items {
+                { 70 + index as i64 } OP_TOALTSTACK
+            }
+            { u4_nibbles_count(0, nibble_count) }
+            { nibble_count as i64 } OP_EQUALVERIFY
+            for index in (0..main_items).rev() {
+                { 90 + index as i64 } OP_EQUALVERIFY
+            }
+            for index in (0..alt_items).rev() {
+                OP_FROMALTSTACK { 70 + index as i64 } OP_EQUALVERIFY
+            }
+            OP_TRUE
+        };
+        execute_raw_script_with_inputs_strict(
+            compile_boundary(body),
+            (0..main_items)
+                .map(|index| vec![90 + index as u8])
+                .chain(std::iter::repeat_n(Vec::new(), nibble_count as usize))
+                .collect(),
+        )
+    }
+
+    #[test]
+    fn exact_stack_frontier_admits_max_preserved_and_rejects_one_more() {
+        for nibble_count in [1, 16, 500, U4_COUNT_MAX_BATCH] {
+            let max_preserved = (U4_COUNT_MAX_BATCH - nibble_count) as usize;
+            for alt_items in [0usize, 1] {
+                let script = compile_boundary(script! {
+                    for _ in 0..alt_items { 77 OP_TOALTSTACK }
+                    { u4_nibbles_count(4, nibble_count) }
+                    for _ in 0..alt_items { OP_FROMALTSTACK }
+                });
+                for (preserved, fits) in [(max_preserved, true), (max_preserved + 1, false)] {
+                    let Some(main_items) = preserved.checked_sub(alt_items) else {
+                        continue;
+                    };
+                    let witness = std::iter::repeat_n(vec![99u8], main_items)
+                        .chain(std::iter::repeat_n(vec![4u8], nibble_count as usize))
+                        .collect();
+                    let result = execute_raw_script_with_inputs_strict(script.clone(), witness);
+                    let case = format!(
+                        "batch {nibble_count}, main {main_items}, alt {alt_items}, preserved {preserved}"
+                    );
+                    if fits {
+                        assert!(result.error.is_none(), "{case} failed: {result}");
+                        assert_eq!(result.stats.max_nb_stack_items, 1_000, "{case}");
+                        assert_eq!(result.final_stack.len(), preserved + 1, "{case}");
+                    } else {
+                        assert_eq!(result.error, Some(ExecError::StackSize), "{case}");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn preserved_state_stack_frontier_is_exact() {
+        for (main_items, alt_items) in [(1, 0), (0, 1), (1, 1), (3, 2)] {
+            let preserved = main_items + alt_items;
+            let maximum = U4_COUNT_MAX_BATCH - preserved;
+            let accepted = run_preserved_frontier(main_items, alt_items, maximum);
+            assert!(
+                accepted.success,
+                "preserved frontier main={main_items} alt={alt_items} n={maximum} failed: {accepted}"
+            );
+            assert_eq!(accepted.stats.max_nb_stack_items, 1_000);
+
+            let rejected = run_preserved_frontier(main_items, alt_items, maximum + 1);
+            assert_eq!(
+                rejected.error,
+                Some(ExecError::StackSize),
+                "preserved frontier main={main_items} alt={alt_items} n={} was not rejected: {rejected}",
+                maximum + 1
+            );
+        }
+    }
 
     #[test]
     fn counts_boundary_and_repeated_symbols() {

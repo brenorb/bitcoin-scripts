@@ -12,7 +12,10 @@ target is validated at script-generation time and must be in `0..=15`. The
 operation accepts nonminimal numeric encodings when the execution profile
 permits them, preserves unrelated lower main-stack and alt-stack state, and
 consumes only the input batch. A standalone batch is limited to 997 items;
-composition must satisfy `n + 3 + preserved_items <= 1000`.
+composition must satisfy `n + 3 + preserved_items <= 1000`. Strict local frontier
+tests measure a 1,000-item peak at the maximum for batches 1, 16, 500, and
+997 and with preserved main/alt items, and reject one more live item with
+`StackSize`.
 
 The representative configuration counts target `0` across 16 canonical
 one-byte witness nibbles. It includes all range checks, numeric equality tests,

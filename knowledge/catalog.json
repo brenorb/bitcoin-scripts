@@ -951,6 +951,8 @@
         "arithmetic::u4::count::tests::rejects_invalid_nibbles_and_generation_bounds",
         "arithmetic::u4::count::tests::preserves_surrounding_main_and_alt_stack_items",
         "arithmetic::u4::count::tests::counts_nonminimal_numeric_encodings_and_preserves_boundary_state",
+        "arithmetic::u4::count::tests::exact_stack_frontier_admits_max_preserved_and_rejects_one_more",
+        "arithmetic::u4::count::tests::preserved_state_stack_frontier_is_exact",
         "primitive_metrics::u4_symbol_count_metrics_are_current"
       ],
       "references": [

@@ -8,9 +8,17 @@ equality and `OP_BOOLOR`; it does not rely on disabled bitwise opcodes.
 ## Boundary and comparison
 
 Every hostile input nibble is range-checked before the 16 membership scans.
-Numeric equality is used for membership, so nonminimal numeric encodings are
-accepted when the execution profile permits them; the representative witness
-metric below uses canonical one-byte encodings only.
+Membership uses `OP_NUMEQUAL`, so a raw witness alias yields the presence bit
+of its numeric value. The regression runs complete leaves under the local
+`TapscriptProfile::Consensus` profile (global numeric minimality disabled,
+stack limit enforced) that check all 16 outputs in value order and end with a
+single `OP_TRUE`. Its witness mixes `[0x01, 0x00]`, negative zero `[0x80]`,
+`[0x02, 0x00]`, canonical 5 and `[0x0f, 0x00, 0x00, 0x00]`; the expected
+vector (0, 1, 2, 5 and 15 present) is not a palindrome. A canonical control
+succeeds under both local profiles, and the local `Policy` profile rejects the
+alias witness with `MinimalData`. Test-only mutants that restore bytewise
+`OP_EQUAL` or reverse the output order fail that leaf with `NumEqualVerify`.
+The representative witness metric below uses canonical one-byte encodings only.
 The input nibbles are consumed, and unrelated lower main-stack and alt-stack
 state is preserved. The output is a Boolean vector rather than a packed mask,
 which keeps the operation compatible with tapscript's enabled opcode set.

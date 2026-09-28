@@ -942,13 +942,16 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-17",
+      "as_of": "2026-09-28",
       "knowledge_page": "knowledge/primitives/u4-presence.md",
       "implementation": "src/arithmetic/u4/presence.rs",
       "documentation": "src/arithmetic/u4/README.md",
       "tests": [
         "arithmetic::u4::presence::tests::projects_presence_bits",
         "arithmetic::u4::presence::tests::rejects_invalid_nibbles_and_batch_sizes",
+        "arithmetic::u4::presence::tests::compares_nonminimal_numeric_encodings_by_value",
+        "arithmetic::u4::presence::tests::numeric_aliases_follow_ordered_presence_bits",
+        "arithmetic::u4::presence::tests::byte_equality_and_reversed_output_mutants_fail",
         "arithmetic::u4::presence::tests::preserves_surrounding_main_and_alt_stack_items",
         "primitive_metrics::u4_presence_bits_metrics_are_current"
       ],
@@ -961,7 +964,7 @@
         "membership-projection",
         "range-check"
       ],
-      "security": "Every hostile nibble is range-checked before the equality scans; outputs are numeric Boolean ScriptNums and no terminal predicate or byte-unique encoding claim is supplied.",
+      "security": "Every hostile nibble is range-checked before the equality scans. Membership uses OP_NUMEQUAL, so raw-witness numeric aliases (for example [0x01,0x00], negative zero [0x80], [0x02,0x00]) yield the numeric presence result under the local Consensus profile; the local Policy profile rejects them with MinimalData. Outputs are numeric Boolean ScriptNums; no terminal predicate or byte-unique encoding claim is supplied.",
       "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | present[0] ... present[15], where present[n] is one iff nibble n occurred; the last output is on top.",
       "configurations": [
         {

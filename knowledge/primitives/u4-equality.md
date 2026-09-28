@@ -15,15 +15,23 @@ lower main-stack and alt-stack state and returns one mask item per input in the
 original order.
 
 The numeric range check does not enforce byte-unique ScriptNum encoding, and the
-comparison uses numeric equality. A permissive execution profile therefore
-accepts non-minimal encodings such as `[1, 0]` for one and `[0x80]` for zero. A
-caller that needs canonical witness bytes must compose the existing
-`verify_canonical_nibble()` boundary before this mask.
+comparison uses numeric equality. Under the local `TapscriptProfile::Consensus`
+profile (`require_minimal: false`, stack limit enforced), raw witness aliases
+such as `[1, 0]` or `[1, 0, 0, 0]` for one and `[0x80]` or `[0, 0]` for zero
+therefore produce the same mask bit as their canonical encodings. Tests check
+this at every position and on the non-palindromic mask `[1, 0, 1, 0, 1, 0]`, so
+both a byte-equality comparator and a reversed output schedule are rejected by
+test-only mutants of the historical implementation. The local `Policy` profile
+rejects the same aliases with `MinimalData`. A caller that needs canonical
+witness bytes must compose the existing `verify_canonical_nibble()` boundary
+before this mask.
 
 The representative configuration uses target `5` over 16 canonical one-byte
 witness nibbles. It includes range checks, numeric equality tests, and output
 restoration; it excludes input pushes, the terminal predicate, unrelated live
-state, and transaction context. No hints are required.
+state, and transaction context. No hints are required. The 33-byte witness is
+the measured canonical fixture, not a maximum: permitted numeric aliases can be
+longer, so the catalog records no maximum witness size.
 
 The mask exposes positions, unlike the fixed-symbol occurrence counter, which
 only returns one aggregate count. It also avoids the 16-item lookup table used

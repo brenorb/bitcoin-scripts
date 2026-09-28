@@ -882,6 +882,8 @@
         "arithmetic::u4::equality::tests::handles_target_endpoints",
         "arithmetic::u4::equality::tests::preserves_surrounding_main_and_alt_stack_items",
         "arithmetic::u4::equality::tests::compares_nonminimal_numeric_encodings_and_preserves_boundary_state",
+        "arithmetic::u4::equality::tests::numeric_aliases_follow_an_asymmetric_mask_in_input_order",
+        "arithmetic::u4::equality::tests::historical_byte_equality_and_reversed_schedule_mutants_fail",
         "primitive_metrics::u4_eq_mask_metrics_are_current"
       ],
       "references": [
@@ -908,9 +910,9 @@
             "hint_items": 0
           },
           "includes": "fragment-only: 16 numeric range checks, 16 embedded equality tests, output restoration, and input consumption; excludes input pushes, witness serialization, terminal predicate, unrelated live state, and transaction context",
-          "script_bytes": 218,
+          "script_bytes": 190,
           "witness_bytes": 33,
-          "witness_bytes_max": 33,
+          "witness_bytes_max": null,
           "max_stack_items": 18,
           "executed_opcodes": null,
           "validation_weight": null,

@@ -36,14 +36,17 @@ mod tests {
     use crate::{
         arithmetic::u4::stack::u4_hex_to_nibbles,
         support::{
-            execution::{
-                execute_raw_script_with_inputs_strict, execute_script,
-                execute_script_buf_with_options,
-            },
+            execution::{execute_raw_script_with_inputs_strict, execute_script, ExecuteInfo},
             script::{script, Script, ScriptCompilation, MAX_OPTIMIZER_INPUT_BYTES},
+            tapscript::{execute_tapscript, TapscriptOutcome, TapscriptProfile},
         },
     };
-    use bitcoin_scriptexec::{ExecError, Options};
+    use bitcoin::{
+        opcodes::all::{OP_EQUAL, OP_NUMEQUAL},
+        script::Instruction,
+        ScriptBuf,
+    };
+    use bitcoin_scriptexec::ExecError;
 
     fn compile_boundary(body: Script) -> Vec<u8> {
         script! {
@@ -53,6 +56,113 @@ mod tests {
         .compile_with_policy()
         .to_bytes()
     }
+
+    fn scriptnum(value: i64) -> Vec<u8> {
+        let mut bytes = [0u8; 8];
+        let length = bitcoin::script::write_scriptint(&mut bytes, value);
+        bytes[..length].to_vec()
+    }
+
+    /// Raw-witness alias contract: the local `TapscriptProfile::Consensus`
+    /// profile disables global numeric minimality (`require_minimal: false`)
+    /// and enforces the combined 1,000-item stack limit. This is a local
+    /// fragment execution, not Bitcoin Core or complete-spend validation.
+    fn run_profile(
+        witness: Vec<Vec<u8>>,
+        script: ScriptBuf,
+        profile: TapscriptProfile,
+    ) -> ExecuteInfo {
+        match execute_tapscript(script, witness, profile).outcome {
+            TapscriptOutcome::Executed(result) => result,
+            outcome => panic!("expected local {profile:?}-profile execution: {outcome:?}"),
+        }
+    }
+
+    fn run_consensus(witness: Vec<Vec<u8>>, script: ScriptBuf) -> ExecuteInfo {
+        run_profile(witness, script, TapscriptProfile::Consensus)
+    }
+
+    fn assert_clean_truthy(result: &ExecuteInfo) {
+        assert!(result.stack_limit_enforced, "stack limit was not enforced");
+        assert!(
+            result.error.is_none(),
+            "unexpected execution error: {result}"
+        );
+        assert!(result.success, "complete script failed: {result}");
+        assert_eq!(
+            result.final_stack.len(),
+            1,
+            "script did not leave a clean stack: {result}"
+        );
+        assert_eq!(
+            result.final_stack.get(0),
+            vec![1],
+            "script result is not OP_TRUE: {result}"
+        );
+    }
+
+    /// Complete leaf that checks every mask item in input order: `expected[0]`
+    /// is the bottom output and `expected[n - 1]` the top output.
+    fn output_checked_leaf(fragment: Script, expected: &[i64]) -> ScriptBuf {
+        script! {
+            { fragment }
+            for value in expected.iter().rev() {
+                { *value } OP_NUMEQUALVERIFY
+            }
+            OP_TRUE
+        }
+        .compile_with_policy()
+    }
+
+    /// The schedule reviewed at `16fdc6d`: roll the bottom input first, then
+    /// restore the staged results, which reverses the mask. The comparator is
+    /// kept numeric so this mutant isolates the output-order defect.
+    fn historical_reversed_schedule(value: u8, nibble_count: u32) -> Script {
+        script! {
+            for index in (0..nibble_count).rev() {
+                { index } OP_ROLL
+                OP_DUP OP_0 OP_GREATERTHANOREQUAL OP_VERIFY
+                OP_DUP OP_16 OP_LESSTHAN OP_VERIFY
+                { value } OP_NUMEQUAL OP_TOALTSTACK
+            }
+            for _ in 0..nibble_count {
+                OP_FROMALTSTACK
+            }
+        }
+    }
+
+    /// The byte comparator reviewed at `16fdc6d`: rebuild the policy-produced
+    /// leaf and replace only the fragment's `OP_NUMEQUAL` with `OP_EQUAL`.
+    fn historical_byte_equality(leaf: &ScriptBuf, nibble_count: u32) -> ScriptBuf {
+        let mut builder = ScriptBuf::new();
+        let mut changed = 0;
+        for instruction in leaf.instructions() {
+            match instruction.expect("valid compiled test script") {
+                Instruction::Op(OP_NUMEQUAL) => {
+                    builder.push_opcode(OP_EQUAL);
+                    changed += 1;
+                }
+                instruction => builder.push_instruction(instruction),
+            }
+        }
+        assert_eq!(changed, nibble_count as usize);
+        builder
+    }
+
+    // Target 1 over mixed canonical and non-minimal numeric encodings. The
+    // mask [1, 0, 1, 0, 1, 0] is not a palindrome, so a reversed output
+    // schedule is detected; byte equality would yield [0, 0, 1, 0, 0, 0].
+    fn asymmetric_alias_witness() -> Vec<Vec<u8>> {
+        vec![
+            vec![1, 0],
+            vec![0x80],
+            scriptnum(1),
+            vec![2, 0],
+            vec![1, 0, 0, 0],
+            scriptnum(15),
+        ]
+    }
+    const ASYMMETRIC_ALIAS_MASK: [i64; 6] = [1, 0, 1, 0, 1, 0];
 
     #[test]
     fn projects_one_hot_equality_mask_in_order() {
@@ -144,28 +254,17 @@ mod tests {
 
     #[test]
     fn compares_nonminimal_numeric_encodings_and_preserves_boundary_state() {
-        let options = Options {
-            require_minimal: false,
-            enforce_stack_limit: true,
-            ..Default::default()
-        };
         let only_one_script = script! {
             { u4_nibbles_to_eq_mask(1, 3) }
             for _ in 0..3 { 1 OP_EQUALVERIFY }
             OP_TRUE
         }
-        .compile_with_policy()
-        .to_bytes();
+        .compile_with_policy();
         for alias_index in 0..3 {
             let mut witness = vec![vec![1u8]; 3];
             witness[alias_index] = vec![1, 0];
-            let result = execute_script_buf_with_options(
-                bitcoin::ScriptBuf::from_bytes(only_one_script.clone()),
-                witness,
-                options.clone(),
-            )
-            .expect("nonminimal one alias execution");
-            assert!(result.success, "nonminimal one alias failed: {result}");
+            let result = run_consensus(witness, only_one_script.clone());
+            assert_clean_truthy(&result);
         }
 
         for alias in [vec![0x80], vec![0, 0]] {
@@ -178,20 +277,11 @@ mod tests {
                     }
                     OP_TRUE
                 }
-                .compile_with_policy()
-                .to_bytes();
+                .compile_with_policy();
                 let mut witness = vec![vec![1u8]; 3];
                 witness[alias_index] = alias.clone();
-                let result = execute_script_buf_with_options(
-                    bitcoin::ScriptBuf::from_bytes(zero_and_one_script.clone()),
-                    witness,
-                    options.clone(),
-                )
-                .expect("zero alias execution");
-                assert!(
-                    result.success,
-                    "zero alias failed at {alias_index}: {result}"
-                );
+                let result = run_consensus(witness, zero_and_one_script);
+                assert_clean_truthy(&result);
             }
         }
 
@@ -222,5 +312,63 @@ mod tests {
             "997-item alt state failed: {alt_result}"
         );
         assert_eq!(alt_result.final_stack.get(997), vec![77]);
+    }
+
+    #[test]
+    fn numeric_aliases_follow_an_asymmetric_mask_in_input_order() {
+        let leaf = output_checked_leaf(u4_nibbles_to_eq_mask(1, 6), &ASYMMETRIC_ALIAS_MASK);
+        assert_clean_truthy(&run_consensus(asymmetric_alias_witness(), leaf.clone()));
+
+        // Canonical control with the same leaf and the same numeric values.
+        let canonical = [1, 0, 1, 2, 1, 15].map(scriptnum).to_vec();
+        assert_clean_truthy(&run_consensus(canonical, leaf.clone()));
+
+        // The alias result is a Consensus-profile contract. The local Policy
+        // profile enforces numeric minimality and rejects the first alias.
+        let policy = run_profile(asymmetric_alias_witness(), leaf, TapscriptProfile::Policy);
+        assert_eq!(
+            policy.error,
+            Some(ExecError::MinimalData),
+            "Policy profile did not reject the non-minimal nibble: {policy}"
+        );
+        assert!(!policy.success);
+    }
+
+    #[test]
+    fn historical_byte_equality_and_reversed_schedule_mutants_fail() {
+        let fixed = output_checked_leaf(u4_nibbles_to_eq_mask(1, 6), &ASYMMETRIC_ALIAS_MASK);
+        assert_clean_truthy(&run_consensus(asymmetric_alias_witness(), fixed.clone()));
+
+        let mutants = [
+            (
+                "OP_EQUAL comparator",
+                historical_byte_equality(&fixed, 6),
+                ExecError::Verify,
+            ),
+            (
+                "reversed output schedule",
+                output_checked_leaf(historical_reversed_schedule(1, 6), &ASYMMETRIC_ALIAS_MASK),
+                ExecError::NumEqualVerify,
+            ),
+        ];
+        for (name, mutant, expected_error) in mutants {
+            // Build and execute outside the panic-catching assertion so that a
+            // setup failure cannot be counted as a detected mutant.
+            let result = run_consensus(asymmetric_alias_witness(), mutant);
+            assert!(result.stack_limit_enforced);
+            assert_eq!(
+                result.error,
+                Some(expected_error),
+                "{name} mutant must fail at the output contract: {result}"
+            );
+            assert!(!result.success, "{name} mutant unexpectedly succeeded");
+            let contract = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                assert_clean_truthy(&result)
+            }));
+            assert!(
+                contract.is_err(),
+                "{name} mutant passed the asymmetric numeric-alias contract"
+            );
+        }
     }
 }

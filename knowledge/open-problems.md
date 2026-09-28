@@ -3,14 +3,14 @@
 Each problem has a falsifiable completion criterion. Update comparisons and
 negative results when closing one.
 
-**Next priority (2026-09-25): OP-001, remaining Taproot transaction context.**
+**Next priority (2026-09-28): OP-001, remaining Taproot transaction context.**
 The interpreter repairs and explicit context-free consensus/policy profiles
 are adopted. Complete-witness budgeting and annex signature context now have
 an explicit constructor and a [funded comparison](tapscript-budget-validation.md).
 The complete-witness preflight now validates the revealed script and control
-block against the P2TR output, and the parity-mutated fixture agrees with pinned
-Core when that result is combined with leaf execution. This is
-`differentially-validated` for the recorded fixture, not a complete transaction
+block against the P2TR output. Seven funded depth-one fixtures compare valid,
+mutated, and malformed control paths with pinned Core. The recorded comparisons
+are `differentially-validated`; the preflight is not a complete transaction
 validator. Next, validate the remaining transaction context:
 **complete when** valid and mutated Taproot commitments, annexes and Schnorr
 signatures produce supported local verdicts that agree with pinned Core,
@@ -138,11 +138,12 @@ unsupported outcome when that chain context is absent. This remains under
 OP-001; the funded Core harness supplies complete-spend verdicts for the
 recorded CSV fixtures.
 
-The current [44-fixture Core experiment](core-validation.md) reproduces every
-consensus/policy expectation and rejection diagnostic, with all 88 combined
-local commitment/profile verdicts matching Core. Its control-block mutation
-also preserves the separate leaf result, demonstrating that successful leaf
-execution alone cannot establish commitment validity.
+The current [53-fixture Core experiment](core-validation.md) reproduces every
+consensus/policy expectation and rejection diagnostic, with all 106 combined
+local commitment/profile verdicts matching Core. Its depth-one mutations
+preserve the separate leaf result, demonstrating that successful leaf execution
+alone cannot establish commitment validity. The earlier 44- and 46-fixture
+reports remain historical snapshots.
 
 ## OP-002 — Bitcoin Core differential harness
 

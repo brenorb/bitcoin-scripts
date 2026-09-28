@@ -7,6 +7,7 @@
 | Mixed hash path, retained bits | 31 authenticated bits retained on altstack | 302 | 78 | 33 | Retained bits are normalized; starting preimage must still be bound |
 | Four-way mixed hash path | 16 authenticated base-4 digits / 31 bits | 438 | 61 | 19 | Tapscript `MINIMALIF` required; non-standard mixed-hash code |
 | Four-way path, retained digits | 16 raw digits retained on altstack | 360 | 61 | 20 | Retained bytes are caller-bound; tapscript `MINIMALIF` required |
+| Ternary mixed hash path | 20 authenticated base-3 trits / 31 bits | 947 | 63 | 24 | Native ternary state encoding; dominated by the four-way path |
 | TapBranch u4 hash | BIP341 tagged hash over two ordered nodes | <!-- metric:tapbranch_hash_u4 -->1106723<!-- /metric:tapbranch_hash_u4 --> | <!-- metric:tapbranch_hash_u4_witness -->161<!-- /metric:tapbranch_hash_u4_witness --> | <!-- metric:tapbranch_hash_u4_stack -->969<!-- /metric:tapbranch_hash_u4_stack --> | Unclassified; above standard transaction-weight policy |
 | Two-round mixed hash chain | 4-bit path → 3-bit path | 80 | 45 | 8 | Independently bind the start and checkpoint order |
 | Lamport 2-bit | Select one of four preimages | 96 | 11 | small | Strictly one-time |
@@ -27,6 +28,14 @@ Historical binary/four-way integer metrics are `locally-reproduced`,
 `research-unlimited` tapscript runs with the stack check disabled. Retained-bit
 and retained-digit rows use strict local stack checks and remain `unclassified`.
 All exclude input pushes and terminal checks.
+
+The ternary path is not a byte-efficiency improvement for this integer target:
+it uses 21 data items (zero hints) versus 17 for the four-way path and is 509
+bytes larger (NR-072). It is retained as a different representation point for
+protocols whose state is naturally three-valued (OP-030). It performs explicit
+trit canonicality and integer-width checks instead of relying on tapscript
+`MINIMALIF`; its row uses strict local stack checks, is `locally-reproduced`,
+and remains `unclassified`.
 
 The preimage-length boundary is 42 bytes with one empty witness item at offset
 0 and 46 bytes with one 520-byte item at offset 520. The latter is a consensus

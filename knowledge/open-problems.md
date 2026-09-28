@@ -932,6 +932,18 @@ pinned Bitcoin Core revision in each claimed script context. Report pinning,
 signature and binding costs, complete witness items (including zero or explicit
 hint counts), combined stack peak, static legacy opcodes and policy results.
 State the remaining cryptographic assumptions separately from execution tests.
+
+## OP-030 — Ternary commitment composition frontier
+
+Determine whether the ternary mixed-hash path becomes useful when a protocol
+consumes native three-valued state rather than reconstructing an ordinary
+integer (NR-072). **Complete when:** at least one ternary protocol composition
+is implemented with its terminal predicates and surrounding state, compared on
+a like-for-like boundary against binary and four-way alternatives with explicit
+hint-item counts and combined stack peaks, and the three-codeword mixed-hash
+binding assumption receives an independent analysis or a pinned Core
+differential fixture.
+
 ## OP-024 — BLAKE3 XOF output frontier
 
 Price a reusable BLAKE3 root-output continuation beyond the first 32-byte

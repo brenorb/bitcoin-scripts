@@ -17,9 +17,11 @@ use bitcoin_lab::{
         four_way_hash_path_integer_commitment, four_way_hash_path_integer_witness,
         hash_path_commitment as compute_hash_path_commitment, hash_path_integer_commitment,
         hash_path_integer_witness, preimage_length_commitment, tapbranch_hash_u4,
-        tapbranch_hash_u4_witness, verify_four_way_hash_path_to_altstack,
+        tapbranch_hash_u4_witness, ternary_hash_path_integer_commitment,
+        ternary_hash_path_integer_witness, verify_four_way_hash_path_to_altstack,
         verify_four_way_hash_path_to_integer, verify_hash_path_chain, verify_hash_path_to_altstack,
         verify_hash_path_to_integer, verify_preimage_length, verify_preimage_length_with_offset,
+        verify_ternary_hash_path_to_integer,
     },
     curves::bn254::groups::{g1::G1Affine, g2::G2Affine},
     fields::{
@@ -4616,6 +4618,7 @@ fn metrics() -> Vec<Metric> {
     ]
     .into_iter()
     .chain(commitment_metrics())
+    .chain(ternary_hash_path_metrics())
     .chain(u32_compressed_rshift_metrics())
     .chain(u32_compressed_lshift_metrics())
     .chain(prince_metrics())
@@ -4781,6 +4784,38 @@ fn winternitz_metrics_are_current() {
             .chain(winternitz20_mixed_sum_metrics())
             .collect(),
     );
+}
+
+fn ternary_hash_path_metrics() -> Vec<Metric> {
+    let preimage = vec![0x42; 32];
+    let value = 0x1234_5678;
+    let commitment = ternary_hash_path_integer_commitment(&preimage, value, 31);
+    let witness = ternary_hash_path_integer_witness(&preimage, value, 31);
+    vec![
+        Metric {
+            readme: "src/commitments/ternary_hash_path/README.md",
+            key: "ternary_hash_path_integer_31",
+            value: script_len(verify_ternary_hash_path_to_integer(31, commitment)),
+        },
+        Metric {
+            readme: "src/commitments/ternary_hash_path/README.md",
+            key: "ternary_hash_path_integer_witness_31",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/commitments/ternary_hash_path/README.md",
+            key: "ternary_hash_path_integer_stack_31",
+            value: max_stack_items_strict(
+                verify_ternary_hash_path_to_integer(31, commitment),
+                witness,
+            ),
+        },
+    ]
+}
+
+#[test]
+fn ternary_hash_path_metrics_are_current() {
+    check_readme_metrics(ternary_hash_path_metrics());
 }
 
 #[test]

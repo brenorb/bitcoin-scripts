@@ -1744,3 +1744,16 @@ keyed digest different from the current unkeyed digest, while the existing
 `locally-reproduced` interface boundary and not an impossibility proof; the
 missing key-word layout, flags, witness shape, and stack/routing cost remain
 to be priced under OP-028. See [the probe](../../examples/blake3_keyed_boundary.rs).
+
+## NR-072: Ternary mixed-hash paths lose to four-way integer paths
+
+The ternary path was implemented as a native three-valued alternative using
+`0 -> SS`, `1 -> SR`, and `2 -> RS`, with explicit canonical trit checks and
+an integer-width check before the final `3*acc + trit` step. At 31 bits and a
+32-byte preimage it measures 947 script bytes, 63 serialized witness bytes,
+21 data items with zero hints, and a 24-item combined peak, versus 438/61/17/19
+for the four-way path. It is therefore dominated for the measured ordinary
+integer objective and is not retained as a byte-efficiency improvement. The
+result does not rule out a ternary path when protocol state is naturally
+three-valued or when a different consumer amortizes its dispatcher; see
+[OP-030](../open-problems.md#op-030--ternary-commitment-composition-frontier).

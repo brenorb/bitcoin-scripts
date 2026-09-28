@@ -61,6 +61,10 @@ these operations, but this module contains no hash-specific round logic.
 - `lsb::u4_nibbles_to_lsb(nibble_count)` takes a checked batch size in
   `1..=982` and returns one bit per input nibble; the range check does not
   establish canonical ScriptNum encoding.
+- `lsb::u4_nibbles_to_lsb_canonical(nibble_count)` is a separate API that
+  additionally rejects non-minimal ScriptNum encodings. It takes a canonical
+  batch size in `1..=981`; the extra raw-encoding check consumes one additional
+  stack item per input.
 - `threshold::u4_nibbles_to_lt_mask(threshold, nibble_count)` takes a public
   u4 threshold and a checked batch size in `1..=998`, returning one bit per
   input nibble; composition must satisfy
@@ -187,6 +191,7 @@ each input with the same output-restoration boundary.
 | Checked modulo-three batch, 32 nibbles | <!-- metric:u4_mod3_batch32 -->440<!-- /metric:u4_mod3_batch32 --> bytes | <!-- metric:u4_mod3_batch32_stack -->50<!-- /metric:u4_mod3_batch32_stack --> items | <!-- metric:u4_mod3_batch32_opcodes -->328<!-- /metric:u4_mod3_batch32_opcodes --> |
 | Embedded trichotomy, 16 nibbles | <!-- metric:u4_trichotomy_16 -->398<!-- /metric:u4_trichotomy_16 --> bytes | <!-- metric:u4_trichotomy_16_stack -->18<!-- /metric:u4_trichotomy_16_stack --> items | <!-- metric:u4_trichotomy_16_opcodes -->286<!-- /metric:u4_trichotomy_16_opcodes --> |
 | Checked LSB batch, 32 nibbles | <!-- metric:u4_lsb_batch32 -->440<!-- /metric:u4_lsb_batch32 --> bytes | <!-- metric:u4_lsb_batch32_stack -->50<!-- /metric:u4_lsb_batch32_stack --> items | <!-- metric:u4_lsb_batch32_opcodes -->328<!-- /metric:u4_lsb_batch32_opcodes --> |
+| Canonical checked LSB batch, 32 nibbles | <!-- metric:u4_lsb_canonical_batch32 -->504<!-- /metric:u4_lsb_canonical_batch32 --> bytes | <!-- metric:u4_lsb_canonical_batch32_stack -->51<!-- /metric:u4_lsb_canonical_batch32_stack --> items | <!-- metric:u4_lsb_canonical_batch32_opcodes -->360<!-- /metric:u4_lsb_canonical_batch32_opcodes --> |
 | Checked zero-mask batch, 32 nibbles | <!-- metric:u4_zero_mask_batch32 -->414<!-- /metric:u4_zero_mask_batch32 --> bytes | <!-- metric:u4_zero_mask_batch32_stack -->35<!-- /metric:u4_zero_mask_batch32_stack --> items | <!-- metric:u4_zero_mask_batch32_opcodes -->318<!-- /metric:u4_zero_mask_batch32_opcodes --> |
 | Checked popcount batch, 32 nibbles | <!-- metric:u4_popcount_batch32 -->440<!-- /metric:u4_popcount_batch32 --> bytes | <!-- metric:u4_popcount_batch32_stack -->50<!-- /metric:u4_popcount_batch32_stack --> items | <!-- metric:u4_popcount_batch32_opcodes -->328<!-- /metric:u4_popcount_batch32_opcodes --> |
 | Checked total popcount, 32 nibbles | <!-- metric:u4_popcount_total_batch32 -->471<!-- /metric:u4_popcount_total_batch32 --> bytes | <!-- metric:u4_popcount_total_batch32_stack -->50<!-- /metric:u4_popcount_total_batch32_stack --> items | <!-- metric:u4_popcount_total_batch32_opcodes -->359<!-- /metric:u4_popcount_total_batch32_opcodes --> |
@@ -275,6 +280,8 @@ leaf is 264 bytes, has script SHA256
 `58fcbbe71361ce2f2c80fc73f80724ad10870e97696ffcfce14cd24fa7e3f708`, and uses
 16 data items, zero hints, and 18 total witness items. Its complete Taproot
 witness is 333 bytes; its strict local tapscript stack peak is 34 items.
+
+<!-- metric:u4_lsb_canonical_batch32_witness -->65<!-- /metric:u4_lsb_canonical_batch32_witness --> serialized witness bytes for the representative canonical LSB batch.
 
 <!-- metric:u4_zero_mask_batch32_witness -->65<!-- /metric:u4_zero_mask_batch32_witness --> serialized witness bytes for the representative zero-mask batch.
 
@@ -479,6 +486,15 @@ witness and adds one raw ScriptNum boundary check per nibble.
 The canonical altstack row adds one raw ScriptNum boundary check per nibble and
 stops before restoring the 128 output bits to the main stack. It measures 1,178
 bytes, 893 static non-push opcodes, and a 189-item peak.
+
+`u4_nibbles_to_lsb_canonical(nibble_count)` uses the same 16-item table and
+output contract as the range-checked `u4_nibbles_to_lsb` batch, but proves
+minimal ScriptNum encoding for every hostile nibble. Its standalone range is
+`1..=981`, because canonical validation raises the combined peak by one item
+per input. In a composition, keep `n + 19 + unrelated_live_items <= 1000`,
+counting both the main and alt stacks. The range-checked `u4_nibbles_to_lsb`
+keeps the looser standalone bound `1..=982`, but its numeric range check does
+not establish canonical ScriptNum encoding.
 
 The odd-unit inverse query consumes its input as the `OP_PICK` index and leaves
 the selected inverse above the resident table. The query requires an odd numeric

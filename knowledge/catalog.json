@@ -10440,7 +10440,7 @@
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-09-18",
+      "as_of": "2026-09-28",
       "knowledge_page": "knowledge/primitives/u4-lsb.md",
       "implementation": "src/arithmetic/u4/lsb.rs",
       "documentation": "src/arithmetic/u4/README.md",
@@ -10451,6 +10451,11 @@
         "arithmetic::u4::lsb::tests::rejects_out_of_range_nibbles_at_each_position",
         "arithmetic::u4::lsb::tests::respects_stack_frontier_and_preserves_state",
         "primitive_metrics::u4_lsb_metrics_are_current",
+        "arithmetic::u4::lsb::tests::canonical_batch_boundary_is_one_item_smaller",
+        "arithmetic::u4::lsb::tests::canonical_projection_matches_reference_values",
+        "arithmetic::u4::lsb::tests::canonical_projection_rejects_malformed_nibbles",
+        "arithmetic::u4::lsb::tests::canonical_projection_preserves_surrounding_stacks",
+        "primitive_metrics::u4_lsb_canonical_metrics_are_current",
         "examples/core_validation_fixtures.rs"
       ],
       "references": [
@@ -10463,8 +10468,8 @@
         "digit-arithmetic",
         "lookup-table"
       ],
-      "security": "Every hostile input is range-checked before OP_PICK; the check proves numeric nibble range but not byte-unique ScriptNum encoding or a terminal predicate.",
-      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | lsb[0] ... lsb[n-1], with the last item on top. The standalone batch keeps a 16-item lookup table resident.",
+      "security": "Every hostile input is range-checked before OP_PICK; the check proves numeric nibble range but not byte-unique ScriptNum encoding or a terminal predicate. The separate u4_nibbles_to_lsb_canonical API additionally rejects non-minimal ScriptNum encodings (redundant sign bytes and negative zero) before OP_PICK; it still does not supply a terminal predicate.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | lsb[0] ... lsb[n-1], with the last item on top. The standalone batch keeps a 16-item lookup table resident. The range-checked u4_nibbles_to_lsb accepts 1..=982 inputs; u4_nibbles_to_lsb_canonical keeps the same stack contract but accepts 1..=981 because its canonicality check adds one combined-stack item, so compositions must keep n + 19 + unrelated_live_items <= 1000.",
       "configurations": [
         {
           "id": "checked-batch32",
@@ -10490,6 +10495,33 @@
             "u4_lsb_batch32_witness",
             "u4_lsb_batch32_stack"
           ]
+        },
+        {
+          "id": "canonical-checked-batch32",
+          "label": "u4_nibbles_to_lsb_canonical(32)",
+          "parameters": {
+            "nibble_count": 32,
+            "table_items": 16,
+            "input_check": "canonical ScriptNum and numeric range",
+            "data_items": 32,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: generated 16-item LSB table, 32 canonical-nibble queries, table cleanup, and output restoration; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 504,
+          "witness_bytes": 65,
+          "witness_bytes_max": 65,
+          "max_stack_items": 51,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": null,
+          "per_use_script_bytes": null,
+          "metric_keys": [
+            "u4_lsb_canonical_batch32",
+            "u4_lsb_canonical_batch32_witness",
+            "u4_lsb_canonical_batch32_stack",
+            "u4_lsb_canonical_batch32_opcodes"
+          ],
+          "static_non_push_opcodes": 360
         },
         {
           "id": "u4-lsb-0123456789abcdef",
@@ -10535,6 +10567,7 @@
         "Numeric LSB outputs are ScriptNum bits, not raw byte elements",
         "Lookup table and outputs consume combined stack capacity",
         "Static non-push opcode count is not an executed-opcode measurement",
+        "Only u4_nibbles_to_lsb_canonical enforces canonical ScriptNum encoding; the range-checked u4_nibbles_to_lsb and the Core complete-leaf fixture built on it do not",
         "Only the separately scoped 0x0123456789abcdef complete-leaf Core configuration is differentially validated and policy-validated; the 32-nibble fragment retains its local evidence and deployment scope"
       ],
       "open_problems": [

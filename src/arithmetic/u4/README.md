@@ -10,17 +10,33 @@ these operations, but this module contains no hash-specific round logic.
   preloaded addition tables are used. There is no universal default.
 - Logic may use full or triangular half tables; shifts and rotations take
   `1..=3` bit counts unless their function documents otherwise.
-- `parity::u4_nibbles_to_parity(nibble_count)` takes a checked batch size in
-  `1..=982`.
+- `parity::u4_nibbles_to_parity(nibble_count)` takes a range-checked batch
+  size in `1..=982`. It checks only the numeric range `0..=15` and does not
+  enforce minimal ScriptNum encoding: under consensus numeric semantics a
+  non-minimal alias is accepted. Only MINIMALDATA (relay policy, also applied
+  by the default local research helpers) rejects it, at the interpreter.
 - `parity::u4_nibbles_to_parity_canonical(nibble_count)` takes a canonical
-  batch size in `1..=981`; raw-encoding validation adds one stack item per
-  input during the peak.
+  batch size in `1..=981`. It additionally rejects non-minimal aliases and
+  negative zero; raw-encoding validation adds one stack item per input during
+  the peak.
+- `cyclic_equality::u4_nibbles_to_cyclic_equality(nibble_count, offset)` takes
+  a checked batch size in `1..=499` and returns a wrapped equality bit per
+  input nibble.
+- `transition_count::u4_nibbles_transition_count(nibble_count)` takes a
+  checked batch size in `1..=997` and returns the number of unequal neighbors.
+- `msb::u4_nibbles_to_msb(nibble_count)` takes a checked batch size in
+  `1..=998` and returns one bit per input nibble.
 - `xor_reduce::u4_nibbles_to_xor(nibble_count)` takes a checked batch size in
   `1..=742` and reduces the batch to one nibble with the full XOR table.
 - `popcount::u4_nibbles_to_popcount(nibble_count)` takes a checked batch size
   in `1..=982` and returns one Hamming weight in `0..=4` per input nibble.
+- `popcount::u4_popcount(nibble_count)` takes the same checked batch (up to 982
+  items without unrelated live state) and returns one total Hamming weight in
+  `0..=4*nibble_count`.
 - `pack::u4_nibbles_to_bytes(nibble_count)` takes an even checked batch size in
   `2..=664` and returns one byte per high/low nibble pair.
+- `adjacent_eq::u4_adjacent_equal_mask(nibble_count)` takes a checked batch
+  size in `2..=499` and returns one equality bit per adjacent pair.
 - `adjacent_delta::u4_nibbles_to_adjacent_delta(nibble_count)` takes a checked
   batch size in `2..=499` and returns one forward modulo-16 delta per edge.
 - `vector_rotate::u4_nibbles_rotate_left(nibble_count)` takes a checked batch
@@ -40,7 +56,21 @@ these operations, but this module contains no hash-specific round logic.
 - `power_of_two::u4_nibbles_to_power_of_two(nibble_count)` maps checked nibbles
   to a bit indicating whether each is a nonzero power of two.
 - `lsb::u4_nibbles_to_lsb(nibble_count)` takes a checked batch size in
-  `1..=982` and returns one bit per input nibble.
+  `1..=982` and returns one bit per input nibble; the range check does not
+  establish canonical ScriptNum encoding.
+- `threshold::u4_nibbles_to_lt_mask(threshold, nibble_count)` takes a public
+  u4 threshold and a checked batch size in `1..=998`, returning one bit per
+  input nibble; composition must satisfy
+  `nibble_count + 2 + preserved_items <= 1000`; the range check does not
+  establish canonical ScriptNum encoding.
+- `clamp::u4_nibbles_to_clamp(maximum, nibble_count)` takes a public u4 cap
+  and a checked batch size in `1..=998`, returning `min(nibble, maximum)` per
+  input. Callers preserving live stack items must satisfy
+  `nibble_count + 2 + preserved_items <= 1000`.
+- `equality::u4_nibbles_to_eq_mask(value, nibble_count)` takes a public u4
+  symbol and a checked batch size in `1..=998`, returning one bit per input
+  nibble. Callers preserving live stack items must satisfy
+  `nibble_count + 2 + preserved_items <= 1000`.
 - `sum::u4_nibbles_to_sum_mod16(nibble_count)` takes a checked batch size in
   `1..=965` and returns the batch sum modulo 16.
 - `zero_bitmask::u4_nibbles_to_zero_bitmasks(nibble_count)` takes a checked
@@ -55,6 +85,10 @@ these operations, but this module contains no hash-specific round logic.
   nibbles to their four-bit leading-zero count in `0..=4`.
 - `mod3::u4_nibbles_to_mod3(nibble_count)` maps checked nibbles to residues in
   `0..=2` using a 16-item lookup table.
+- `trichotomy::u4_nibbles_to_trichotomy(threshold, nibble_count)` takes a
+  public u4 threshold and a checked batch size in `1..=998`, returning `0`,
+  `1`, or `2` for less-than, equal, or greater-than. Callers preserving live
+  stack items must satisfy `nibble_count + 2 + preserved_items <= 1000`.
 - `bit_planes::u4_nibbles_to_bit_planes(nibble_count, check_inputs)` reuses
   checked nibble decomposition and transposes batches up to 234 nibbles.
 - `bit_planes::u4_nibbles_to_bit_planes_canonical(nibble_count)` additionally
@@ -69,6 +103,8 @@ these operations, but this module contains no hash-specific round logic.
   reusable 16-item table generated for a public compile-time constant.
 - `square::u4_square_mod16()` checks one u4 input and queries a reusable
   16-item table for its square modulo 16.
+- `odd_inverse::u4_odd_inverse_mod16()` checks one odd u4 input and queries a
+  reusable 16-item inverse table.
 - `centered::u4_nibbles_to_centered(nibble_count)` maps checked nibbles to
   centered signed digits in `-8..=7`.
 - `bit_transitions::u4_nibbles_to_bit_transitions(nibble_count)` maps checked
@@ -116,8 +152,16 @@ each input with the same output-restoration boundary.
 | `verify_canonical_nibble()` | <!-- metric:u4_canonical_nibble -->10<!-- /metric:u4_canonical_nibble --> bytes | <!-- metric:u4_canonical_nibble_stack -->4<!-- /metric:u4_canonical_nibble_stack --> items | not recorded |
 | `lexicographic_le(128)` | <!-- metric:u4_lexicographic_le_128 -->7500<!-- /metric:u4_lexicographic_le_128 --> bytes | <!-- metric:u4_lexicographic_le_128_stack -->259<!-- /metric:u4_lexicographic_le_128_stack --> items | <!-- metric:u4_lexicographic_le_128_opcodes -->4354<!-- /metric:u4_lexicographic_le_128_opcodes --> |
 | `lexicographic_le_constant(128)` | <!-- metric:u4_lexicographic_le_constant_128 -->7628<!-- /metric:u4_lexicographic_le_constant_128 --> bytes | <!-- metric:u4_lexicographic_le_constant_128_stack -->259<!-- /metric:u4_lexicographic_le_constant_128_stack --> items | <!-- metric:u4_lexicographic_le_constant_128_opcodes -->4354<!-- /metric:u4_lexicographic_le_constant_128_opcodes --> |
-| Checked parity batch, 32 nibbles | <!-- metric:u4_parity_batch32 -->440<!-- /metric:u4_parity_batch32 --> bytes | <!-- metric:u4_parity_batch32_stack -->50<!-- /metric:u4_parity_batch32_stack --> items | <!-- metric:u4_parity_batch32_opcodes -->328<!-- /metric:u4_parity_batch32_opcodes --> |
+| Range-checked parity batch, 32 nibbles | <!-- metric:u4_parity_batch32 -->440<!-- /metric:u4_parity_batch32 --> bytes | <!-- metric:u4_parity_batch32_stack -->50<!-- /metric:u4_parity_batch32_stack --> items | <!-- metric:u4_parity_batch32_opcodes -->328<!-- /metric:u4_parity_batch32_opcodes --> |
 | Canonical checked parity batch, 32 nibbles | <!-- metric:u4_parity_canonical_batch32 -->504<!-- /metric:u4_parity_canonical_batch32 --> bytes | <!-- metric:u4_parity_canonical_batch32_stack -->51<!-- /metric:u4_parity_canonical_batch32_stack --> items | <!-- metric:u4_parity_canonical_batch32_opcodes -->360<!-- /metric:u4_parity_canonical_batch32_opcodes --> |
+| Checked cyclic equality batch, 32 nibbles, offset 7 | <!-- metric:u4_cyclic_equality_batch32 -->569<!-- /metric:u4_cyclic_equality_batch32 --> bytes | <!-- metric:u4_cyclic_equality_batch32_stack -->65<!-- /metric:u4_cyclic_equality_batch32_stack --> items | <!-- metric:u4_cyclic_equality_batch32_opcodes -->368<!-- /metric:u4_cyclic_equality_batch32_opcodes --> |
+| Checked transition-count batch, 32 nibbles | <!-- metric:u4_transition_count_batch32 -->588<!-- /metric:u4_transition_count_batch32 --> bytes | <!-- metric:u4_transition_count_batch32_stack -->35<!-- /metric:u4_transition_count_batch32_stack --> items | <!-- metric:u4_transition_count_batch32_opcodes -->391<!-- /metric:u4_transition_count_batch32_opcodes --> |
+| Checked adjacent-equality batch, 32 nibbles | <!-- metric:u4_adjacent_equal_batch32 -->558<!-- /metric:u4_adjacent_equal_batch32 --> bytes | <!-- metric:u4_adjacent_equal_batch32_stack -->64<!-- /metric:u4_adjacent_equal_batch32_stack --> items | <!-- metric:u4_adjacent_equal_batch32_opcodes -->361<!-- /metric:u4_adjacent_equal_batch32_opcodes --> |
+| Checked modulo-16 nibble product | <!-- metric:u4_mul_mod16 -->21<!-- /metric:u4_mul_mod16 --> bytes | <!-- metric:u4_mul_mod16_stack -->261<!-- /metric:u4_mul_mod16_stack --> items with 256-item table | <!-- metric:u4_mul_mod16_opcodes -->17<!-- /metric:u4_mul_mod16_opcodes --> |
+| Embedded-cap clamp, 16 nibbles | <!-- metric:u4_clamp_16 -->270<!-- /metric:u4_clamp_16 --> bytes | <!-- metric:u4_clamp_16_stack -->18<!-- /metric:u4_clamp_16_stack --> items | <!-- metric:u4_clamp_16_opcodes -->206<!-- /metric:u4_clamp_16_opcodes --> |
+| Embedded-equality mask, 16 nibbles | <!-- metric:u4_eq_mask_16 -->190<!-- /metric:u4_eq_mask_16 --> bytes | <!-- metric:u4_eq_mask_16_stack -->18<!-- /metric:u4_eq_mask_16_stack --> items | <!-- metric:u4_eq_mask_16_opcodes -->142<!-- /metric:u4_eq_mask_16_opcodes --> |
+| Embedded-threshold mask, 16 nibbles | <!-- metric:u4_lt_mask_16 -->190<!-- /metric:u4_lt_mask_16 --> bytes | <!-- metric:u4_lt_mask_16_stack -->18<!-- /metric:u4_lt_mask_16_stack --> items | <!-- metric:u4_lt_mask_16_opcodes -->142<!-- /metric:u4_lt_mask_16_opcodes --> |
+| Checked MSB batch, 32 nibbles | <!-- metric:u4_msb_batch32 -->446<!-- /metric:u4_msb_batch32 --> bytes | <!-- metric:u4_msb_batch32_stack -->34<!-- /metric:u4_msb_batch32_stack --> items | <!-- metric:u4_msb_batch32_opcodes -->350<!-- /metric:u4_msb_batch32_opcodes --> |
 | Checked XOR reduction, 16 nibbles | <!-- metric:u4_xor_reduce_batch16 -->740<!-- /metric:u4_xor_reduce_batch16 --> bytes | <!-- metric:u4_xor_reduce_batch16_stack -->273<!-- /metric:u4_xor_reduce_batch16_stack --> items | <!-- metric:u4_xor_reduce_batch16_opcodes -->438<!-- /metric:u4_xor_reduce_batch16_opcodes --> |
 | Checked nondecreasing batch, 32 nibbles | <!-- metric:u4_nondecreasing_batch32 -->588<!-- /metric:u4_nondecreasing_batch32 --> bytes | <!-- metric:u4_nondecreasing_batch32_stack -->35<!-- /metric:u4_nondecreasing_batch32_stack --> items | <!-- metric:u4_nondecreasing_batch32_opcodes -->391<!-- /metric:u4_nondecreasing_batch32_opcodes --> |
 | Checked exact-sum batch, 32 nibbles | <!-- metric:u4_exact_sum_batch32 -->489<!-- /metric:u4_exact_sum_batch32 --> bytes | <!-- metric:u4_exact_sum_batch32_stack -->35<!-- /metric:u4_exact_sum_batch32_stack --> items | <!-- metric:u4_exact_sum_batch32_opcodes -->334<!-- /metric:u4_exact_sum_batch32_opcodes --> |
@@ -136,9 +180,11 @@ each input with the same output-restoration boundary.
 | Checked inverse-Gray batch, 32 nibbles | <!-- metric:u4_gray_inverse_batch32 -->440<!-- /metric:u4_gray_inverse_batch32 --> bytes | <!-- metric:u4_gray_inverse_batch32_stack -->50<!-- /metric:u4_gray_inverse_batch32_stack --> items | <!-- metric:u4_gray_inverse_batch32_opcodes -->328<!-- /metric:u4_gray_inverse_batch32_opcodes --> |
 | Checked power-of-two batch, 32 nibbles | <!-- metric:u4_power_of_two_batch32 -->440<!-- /metric:u4_power_of_two_batch32 --> bytes | <!-- metric:u4_power_of_two_batch32_stack -->50<!-- /metric:u4_power_of_two_batch32_stack --> items | <!-- metric:u4_power_of_two_batch32_opcodes -->328<!-- /metric:u4_power_of_two_batch32_opcodes --> |
 | Checked modulo-three batch, 32 nibbles | <!-- metric:u4_mod3_batch32 -->440<!-- /metric:u4_mod3_batch32 --> bytes | <!-- metric:u4_mod3_batch32_stack -->50<!-- /metric:u4_mod3_batch32_stack --> items | <!-- metric:u4_mod3_batch32_opcodes -->328<!-- /metric:u4_mod3_batch32_opcodes --> |
+| Embedded trichotomy, 16 nibbles | <!-- metric:u4_trichotomy_16 -->398<!-- /metric:u4_trichotomy_16 --> bytes | <!-- metric:u4_trichotomy_16_stack -->18<!-- /metric:u4_trichotomy_16_stack --> items | <!-- metric:u4_trichotomy_16_opcodes -->286<!-- /metric:u4_trichotomy_16_opcodes --> |
 | Checked LSB batch, 32 nibbles | <!-- metric:u4_lsb_batch32 -->440<!-- /metric:u4_lsb_batch32 --> bytes | <!-- metric:u4_lsb_batch32_stack -->50<!-- /metric:u4_lsb_batch32_stack --> items | <!-- metric:u4_lsb_batch32_opcodes -->328<!-- /metric:u4_lsb_batch32_opcodes --> |
 | Checked zero-mask batch, 32 nibbles | <!-- metric:u4_zero_mask_batch32 -->414<!-- /metric:u4_zero_mask_batch32 --> bytes | <!-- metric:u4_zero_mask_batch32_stack -->35<!-- /metric:u4_zero_mask_batch32_stack --> items | <!-- metric:u4_zero_mask_batch32_opcodes -->318<!-- /metric:u4_zero_mask_batch32_opcodes --> |
 | Checked popcount batch, 32 nibbles | <!-- metric:u4_popcount_batch32 -->440<!-- /metric:u4_popcount_batch32 --> bytes | <!-- metric:u4_popcount_batch32_stack -->50<!-- /metric:u4_popcount_batch32_stack --> items | <!-- metric:u4_popcount_batch32_opcodes -->328<!-- /metric:u4_popcount_batch32_opcodes --> |
+| Checked total popcount, 32 nibbles | <!-- metric:u4_popcount_total_batch32 -->471<!-- /metric:u4_popcount_total_batch32 --> bytes | <!-- metric:u4_popcount_total_batch32_stack -->50<!-- /metric:u4_popcount_total_batch32_stack --> items | <!-- metric:u4_popcount_total_batch32_opcodes -->359<!-- /metric:u4_popcount_total_batch32_opcodes --> |
 | Checked 32-nibble zero bitmask batch | <!-- metric:u4_zero_bitmask_batch32 -->482<!-- /metric:u4_zero_bitmask_batch32 --> bytes | <!-- metric:u4_zero_bitmask_batch32_stack -->36<!-- /metric:u4_zero_bitmask_batch32_stack --> items | <!-- metric:u4_zero_bitmask_batch32_opcodes -->382<!-- /metric:u4_zero_bitmask_batch32_opcodes --> |
 | Checked 16-nibble bit-plane transpose | <!-- metric:u4_bit_planes_batch16 -->776<!-- /metric:u4_bit_planes_batch16 --> bytes | <!-- metric:u4_bit_planes_batch16_stack -->125<!-- /metric:u4_bit_planes_batch16_stack --> items | <!-- metric:u4_bit_planes_batch16_opcodes -->573<!-- /metric:u4_bit_planes_batch16_opcodes --> |
 | Canonical checked 16-nibble bit-plane transpose | <!-- metric:u4_bit_planes_canonical_batch16 -->966<!-- /metric:u4_bit_planes_canonical_batch16 --> bytes | <!-- metric:u4_bit_planes_canonical_batch16_stack -->125<!-- /metric:u4_bit_planes_canonical_batch16_stack --> items | <!-- metric:u4_bit_planes_canonical_batch16_opcodes -->715<!-- /metric:u4_bit_planes_canonical_batch16_opcodes --> |
@@ -146,6 +192,7 @@ each input with the same output-restoration boundary.
 | Checked modulo-16 sum, 32 nibbles | <!-- metric:u4_sum_mod16_batch32 -->592<!-- /metric:u4_sum_mod16_batch32 --> bytes | <!-- metric:u4_sum_mod16_batch32_stack -->66<!-- /metric:u4_sum_mod16_batch32_stack --> items | <!-- metric:u4_sum_mod16_batch32_opcodes -->400<!-- /metric:u4_sum_mod16_batch32_opcodes --> |
 | Checked constant multiplication query, `c=10` | <!-- metric:u4_mul_constant_mod16 -->6<!-- /metric:u4_mul_constant_mod16 --> bytes | <!-- metric:u4_mul_constant_mod16_stack -->20<!-- /metric:u4_mul_constant_mod16_stack --> items | <!-- metric:u4_mul_constant_mod16_opcodes -->4<!-- /metric:u4_mul_constant_mod16_opcodes --> |
 | Checked u4 square query modulo 16 | <!-- metric:u4_square_mod16 -->6<!-- /metric:u4_square_mod16 --> bytes | <!-- metric:u4_square_mod16_stack -->20<!-- /metric:u4_square_mod16_stack --> items | <!-- metric:u4_square_mod16_opcodes -->4<!-- /metric:u4_square_mod16_opcodes --> |
+| Checked odd-unit inverse modulo 16 | <!-- metric:u4_odd_inverse_mod16 -->9<!-- /metric:u4_odd_inverse_mod16 --> bytes | <!-- metric:u4_odd_inverse_mod16_stack -->20<!-- /metric:u4_odd_inverse_mod16_stack --> items | <!-- metric:u4_odd_inverse_mod16_opcodes -->7<!-- /metric:u4_odd_inverse_mod16_opcodes --> |
 | Canonical checked 32-nibble bit reversal | <!-- metric:u4_bit_reverse_canonical_batch32 -->504<!-- /metric:u4_bit_reverse_canonical_batch32 --> bytes | <!-- metric:u4_bit_reverse_canonical_batch32_stack -->51<!-- /metric:u4_bit_reverse_canonical_batch32_stack --> items | <!-- metric:u4_bit_reverse_canonical_batch32_opcodes -->360<!-- /metric:u4_bit_reverse_canonical_batch32_opcodes --> |
 
 The constant multiplication row measures only the checked reusable query;
@@ -156,13 +203,31 @@ The square row measures only the checked reusable query; its generated
 16-item table setup is <!-- metric:u4_square_mod16_table -->16<!-- /metric:u4_square_mod16_table --> bytes and can be shared across square queries. The representative witness is
 <!-- metric:u4_square_mod16_witness -->3<!-- /metric:u4_square_mod16_witness --> serialized bytes for one input item and has zero incremental hint items.
 
+The odd-unit inverse row measures only the checked reusable query. The
+generated table setup is <!-- metric:u4_odd_inverse_mod16_table -->16<!-- /metric:u4_odd_inverse_mod16_table --> bytes. Its representative witness contains one data item, zero hint items, and
+<!-- metric:u4_odd_inverse_mod16_witness -->3<!-- /metric:u4_odd_inverse_mod16_witness --> serialized bytes.
+
 <!-- metric:u4_popcount_batch32_witness -->65<!-- /metric:u4_popcount_batch32_witness --> serialized witness bytes for the representative checked popcount batch.
 
+<!-- metric:u4_popcount_total_batch32_witness -->65<!-- /metric:u4_popcount_total_batch32_witness --> serialized witness bytes for the representative checked total-popcount batch.
 
-<!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
+
+<!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative range-checked parity batch.
 
 <!-- metric:u4_parity_canonical_batch32_witness -->65<!-- /metric:u4_parity_canonical_batch32_witness --> serialized witness bytes for the representative canonical parity batch.
+<!-- metric:u4_msb_batch32_witness -->65<!-- /metric:u4_msb_batch32_witness --> serialized witness bytes for the representative MSB batch.
 
+The embedded-threshold fixture uses <!-- metric:u4_lt_mask_16_witness -->33<!-- /metric:u4_lt_mask_16_witness --> serialized witness bytes for <!-- metric:u4_lt_mask_16_witness_items -->16<!-- /metric:u4_lt_mask_16_witness_items --> data items and returns one Boolean mask item per input.
+
+The embedded-equality fixture uses <!-- metric:u4_eq_mask_16_witness -->33<!-- /metric:u4_eq_mask_16_witness --> serialized witness bytes for <!-- metric:u4_eq_mask_16_witness_items -->16<!-- /metric:u4_eq_mask_16_witness_items --> canonical data items and returns one numeric Boolean mask item per input. Numeric u4 range checks accept non-minimal numeric encodings; compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
+
+The embedded-cap fixture uses <!-- metric:u4_clamp_16_witness -->33<!-- /metric:u4_clamp_16_witness --> serialized witness bytes for <!-- metric:u4_clamp_16_witness_items -->16<!-- /metric:u4_clamp_16_witness_items --> canonical data items and <!-- metric:u4_clamp_16_hints -->0<!-- /metric:u4_clamp_16_hints --> hint items; its combined main-plus-alt-stack peak in the table above is `nibble_count + 2` items. It returns one capped nibble per input. Numeric range checks accept non-minimal encodings; values below or equal to the cap retain their original bytes, while values above it are replaced by the embedded canonical cap. Compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
+
+<!-- metric:u4_adjacent_equal_batch32_witness -->65<!-- /metric:u4_adjacent_equal_batch32_witness --> serialized witness bytes for the representative adjacent-equality batch.
+
+<!-- metric:u4_transition_count_batch32_witness -->65<!-- /metric:u4_transition_count_batch32_witness --> serialized witness bytes for the representative transition-count batch.
+
+<!-- metric:u4_cyclic_equality_batch32_witness -->65<!-- /metric:u4_cyclic_equality_batch32_witness --> serialized witness bytes for the representative cyclic-equality batch.
 <!-- metric:u4_nondecreasing_batch32_witness -->65<!-- /metric:u4_nondecreasing_batch32_witness --> serialized witness bytes for the representative nondecreasing batch.
 
 <!-- metric:u4_exact_sum_batch32_witness -->65<!-- /metric:u4_exact_sum_batch32_witness --> serialized witness bytes for the representative exact-sum batch.
@@ -191,7 +256,16 @@ The square row measures only the checked reusable query; its generated
 
 <!-- metric:u4_mod3_batch32_witness -->65<!-- /metric:u4_mod3_batch32_witness --> serialized witness bytes for the representative modulo-three batch.
 
+The embedded-trichotomy fixture uses <!-- metric:u4_trichotomy_16_witness -->33<!-- /metric:u4_trichotomy_16_witness --> serialized witness bytes for <!-- metric:u4_trichotomy_16_witness_items -->16<!-- /metric:u4_trichotomy_16_witness_items --> canonical data items and returns one numeric three-way class per input. Numeric range checks accept non-minimal encodings; compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
+
 <!-- metric:u4_lsb_batch32_witness -->65<!-- /metric:u4_lsb_batch32_witness --> serialized witness bytes for the representative LSB batch.
+A separately scoped Core v30.3 run accepts a complete 16-nibble
+`0x0123456789abcdef` LSB leaf with default relay policy; this does not promote
+the 32-nibble fragment or validate larger compositions. The policy-compiled
+leaf is 264 bytes, has script SHA256
+`58fcbbe71361ce2f2c80fc73f80724ad10870e97696ffcfce14cd24fa7e3f708`, and uses
+16 data items, zero hints, and 18 total witness items. Its complete Taproot
+witness is 333 bytes; its strict local tapscript stack peak is 34 items.
 
 <!-- metric:u4_zero_mask_batch32_witness -->65<!-- /metric:u4_zero_mask_batch32_witness --> serialized witness bytes for the representative zero-mask batch.
 
@@ -206,6 +280,7 @@ representative left witness is <!-- metric:u4_lexicographic_le_constant_128_witn
 <!-- metric:u4_bit_reverse_canonical_batch32_witness -->65<!-- /metric:u4_bit_reverse_canonical_batch32_witness --> serialized witness bytes for the representative canonical bit-reversal batch.
 
 <!-- metric:u4_bit_planes_canonical_batch16_witness -->33<!-- /metric:u4_bit_planes_canonical_batch16_witness --> serialized witness bytes for the representative canonical bit-plane batch.
+<!-- metric:u4_bit_planes_batch16_witness -->33<!-- /metric:u4_bit_planes_batch16_witness --> serialized witness bytes for the representative checked bit-plane batch.
 
 <!-- metric:u4_bits_canonical_batch32_witness -->65<!-- /metric:u4_bits_canonical_batch32_witness --> serialized witness bytes for the representative canonical big-endian batch.
 <!-- metric:u4_bits_be_alt_canonical_batch32_witness -->65<!-- /metric:u4_bits_be_alt_canonical_batch32_witness --> serialized witness bytes for the representative canonical altstack batch.
@@ -244,10 +319,26 @@ requires that invariant from the caller.
 to high/low nibble state. Checked mode enforces `0..=255`; its four-threshold
 schedule preserves unrelated altstack state. Unchecked mode requires the byte
 invariant from the caller.
-The parity table has 16 items. A checked 32-nibble batch is measured at 440
-bytes and 50 combined stack items, with no hints and 65 witness bytes across
-32 data items. It returns one numeric bit per nibble and is smaller than
-expanding each nibble to four bits when only parity is needed.
+The parity table has 16 items. A range-checked 32-nibble batch is measured at
+440 bytes and 50 combined stack items, with no hints and 65 witness bytes
+across 32 data items. It returns one numeric bit per nibble and is smaller than
+expanding each nibble to four bits when only parity is needed. The canonical
+variant uses the same table and output contract, costs 504 bytes and 51
+combined stack items at 32 nibbles, and is the one to use when byte-unique
+witness encoding is required.
+The cyclic equality fragment range-checks the source vector, compares each
+item numerically with the item at a caller-selected wrapped offset, and
+returns one ScriptNum bit per input. It is useful for periodicity checks and
+keeps the vector width unchanged, unlike a non-wrapped adjacent-pair mask.
+The transition counter directly folds numeric inequality bits into one
+ScriptNum count. It avoids returning `n-1` intermediate bits when a caller
+needs only the number of runs minus one, and remains correct for permissive
+non-minimal encodings of the same numeric nibble.
+The strict local frontier regression measured 997 data items at a 1,000-item
+combined peak. With one preserved main-stack item and one alt-stack item
+created by the caller, 995 data nibbles also reach 1,000; 996 nibbles fail at
+1,001 with `StackSize`. These frontier cases use zero witness hints and are
+local tapscript measurements, not Bitcoin Core validation.
 The zero-mask projection uses the existing canonical-nibble verifier followed
 by `OP_NUMEQUAL`, so it needs no resident table. A checked 32-nibble batch is
 414 bytes, has 318 static non-push opcodes, and peaks at 35 combined items.
@@ -348,9 +439,17 @@ selectors that must be a single set bit.
 The modulo-three table maps each nibble to a residue in `0..=2`, providing a
 small-radix representation for ternary accumulators without a general modulo
 interpreter.
+The adjacent-equality mask performs direct pair comparisons after numeric
+range checks. It consumes `n` checked nibbles and returns `n-1` ScriptNum bits,
+which exposes run boundaries without a lookup table or bit expansion. The
+representative row uses 32 data items, 31 output bits, and no hints.
+
 The bit-plane transpose reuses the 61-item checked bit table and adds a static
 stack permutation. It has no new witness or hint items; the representative
-16-nibble row above includes the reused decomposition and the transpose.
+16-nibble row above includes the reused decomposition and the transpose. Its
+standalone peak is `4*n + 61` items; with surrounding state the applicable
+bound is `4*n + 61 + preserved_main + preserved_alt <= 1000`, so callers must
+reduce the 234-nibble generator ceiling for live state.
 The bit-reversal primitive installs 16 table items, checks each nibble, and
 uses no witness hints beyond its input nibbles. Its 32-nibble row above is the
 representative batch; callers with unrelated live state must reduce the 981
@@ -372,10 +471,32 @@ The canonical altstack row adds one raw ScriptNum boundary check per nibble and
 stops before restoring the 128 output bits to the main stack. It measures 1,178
 bytes, 893 static non-push opcodes, and a 189-item peak.
 
+The odd-unit inverse query consumes its input as the `OP_PICK` index and leaves
+the selected inverse above the resident table. The query requires an odd numeric
+value in `1..=15`; it does not enforce byte-unique ScriptNum encoding. Move or
+consume the inverse before dropping the table. Tests copy-check all 16 table
+entries by index before cleanup. At pre-fix source commit
+`963e9aefb5a214eb323e750e45301e8412856945`, the complete setup/query/cleanup
+test failed for input 1 with `InvalidStackOperation` at the final equality check
+after cleanup; the fragment's `OP_SWAP OP_DROP` had removed a table entry.
+
+`mul::u4_mul_mod16()` checks that both numeric ScriptNum operands are in `0..=15`, looks up their product modulo 16 in a resident 256-item table, and retains that table below the result. The range checks do not establish byte-unique ScriptNum encodings; acceptance of non-minimal aliases depends on the execution profile. The representative witness has <!-- metric:u4_mul_mod16_witness -->5<!-- /metric:u4_mul_mod16_witness --> serialized bytes for two operand items and zero incremental hint items. The 21-byte, 17-opcode query measurement excludes table setup and cleanup; its strict tapscript metric fixture includes input staging, lookup, cleanup, output disposal, and a true terminal item and reaches a combined 261-item main/altstack peak.
+
+The separate full-table lifecycle regression stages all 256 products, checks
+the actual resident table after reuse, then drops that table and verifies every
+result. Its operand pairs are script constants, so it uses zero external data
+items and zero hints; the strict tapscript execution reaches a 516-item
+combined main/altstack peak. That regression is not the single-query metric
+boundary.
+
 ## Security
 
 No independent cryptographic security claim. Correctness requires callers to
-provide canonical nibbles; not every operation range-checks every input.
+respect each operation's documented input contract. For `mul::u4_mul_mod16()`,
+both numeric ScriptNum values are range-checked to `0..=15`; the range checks
+do not establish byte-unique encodings. Acceptance of non-minimal ScriptNum
+aliases depends on the execution profile, and callers that need byte-unique
+inputs must add a canonical-encoding check.
 
 For bit conversion, `check_inputs=true` proves the numeric range `0..=15`
 before using a value as an `OP_PICK` index. `check_inputs=false` must be used
@@ -395,10 +516,15 @@ the reusable altstack boundary.
 
 `compare::lexicographic_le(n)` range-checks two `n`-nibble big-endian vectors,
 compares the first differing nibble, consumes both vectors, and returns one
-truth value. For the representative 128-nibble vectors, the complete witness
-is <!-- metric:u4_lexicographic_le_128_witness -->259<!-- /metric:u4_lexicographic_le_128_witness --> bytes across <!-- metric:u4_lexicographic_le_128_witness_items -->256<!-- /metric:u4_lexicographic_le_128_witness_items --> data items and <!-- metric:u4_lexicographic_le_128_hints -->0<!-- /metric:u4_lexicographic_le_128_hints --> hint items; all data items coexist at entry. Numeric range validation does not make non-minimal raw ScriptNum encodings byte-unique under consensus.
+truth value. It accepts widths `1..=498`: the standalone combined peak is
+`2*n + 3`, leaving one item at the 498-nibble frontier for surrounding state.
+For the representative 128-nibble vectors, the complete witness is
+<!-- metric:u4_lexicographic_le_128_witness -->259<!-- /metric:u4_lexicographic_le_128_witness --> bytes across <!-- metric:u4_lexicographic_le_128_witness_items -->256<!-- /metric:u4_lexicographic_le_128_witness_items --> data items and <!-- metric:u4_lexicographic_le_128_hints -->0<!-- /metric:u4_lexicographic_le_128_hints --> hint items; all data items coexist at entry. Numeric range validation does not make non-minimal raw ScriptNum encodings byte-unique under consensus.
 Parity uses the same numeric range proof before its `OP_PICK` lookup. Its
 output is a ScriptNum bit, not a raw byte or a terminal truth value.
+Cyclic equality range-checks each source nibble once before making its numeric
+comparisons. Its output is a ScriptNum bit and does not authenticate the vector
+length, require minimal ScriptNum encodings, or provide a terminal predicate.
 Adjacent delta uses the same numeric range proof before subtraction. The
 conditional addition normalizes each result into `0..=15`; it does not prove
 byte-unique ScriptNum encodings or bind the initial nibble needed to invert the
@@ -504,6 +630,10 @@ For `u4_nibbles_to_parity_canonical(n)`, the standalone peak is `n + 19` because
 minimal ScriptNum validation adds one temporary item. The canonical generator
 rejects `n > 981`; compositions must satisfy
 `n + 19 + unrelated_live_items <= 1000`, counting both stacks.
+For `cyclic_equality::u4_nibbles_to_cyclic_equality(n, offset)`, input is
+consumed and replaced one-for-one by `nibble[i] == nibble[(i + offset) mod n]`.
+The standalone schedule keeps the source vector and staged results live
+together, so callers must reduce the 499-item ceiling for unrelated state.
 For `adjacent_delta::u4_nibbles_to_adjacent_delta(n)`, the input vector is
 consumed and replaced by `n-1` forward modulo-16 deltas in input order. The
 standalone schedule keeps the `n` input items and up to `n-1` output items
@@ -600,6 +730,11 @@ checked mode, verifies multi-input ordering, and executes the maximum
 standalone batch under the strict local stack limit. `parity.rs`, `one_hot.rs`, `centered.rs`, `mirror.rs`, `leading_zeros.rs`, `bit_transitions.rs`, `trailing_zeros.rs`, `lowbit.rs`, `gray_inverse.rs`, `power_of_two.rs`
 exhaustively check the 16-value lookup domain, reject malformed
 inputs and invalid batch sizes, and measure representative strict batches.
+
+`cyclic_equality.rs` retains periodic, zero-offset, and surrounding-stack
+checks, and adds asymmetric modulo-offset, raw-alias mutant, malformed-input,
+and 499-item frontier regressions. Alias and frontier cases use the local
+`TapscriptProfile::Consensus` executor.
 
 The four-equal-index query is derived from the combined nibble-table sketch in
 [`coins/bitcoin-scripts`](https://github.com/coins/bitcoin-scripts/blob/8f442e4bf8a744dd9bf69b2937bdebcaed5cae77/split-into-bits.md).

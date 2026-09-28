@@ -36,7 +36,10 @@ mod tests {
     use crate::{
         arithmetic::u4::stack::u4_hex_to_nibbles,
         support::{
-            execution::{execute_raw_script_with_inputs_strict, execute_script},
+            execution::{
+                execute_raw_script_with_inputs_strict, execute_script,
+                execute_script_with_inputs_strict,
+            },
             script::{script, Script, ScriptCompilation, MAX_OPTIMIZER_INPUT_BYTES},
         },
     };
@@ -179,5 +182,99 @@ mod tests {
                 .collect(),
         );
         assert_eq!(failure.error, Some(ExecError::StackSize));
+    }
+
+    fn scriptnum_nibble(value: u8) -> Vec<u8> {
+        if value == 0 {
+            Vec::new()
+        } else {
+            vec![value]
+        }
+    }
+
+    #[test]
+    fn asymmetric_boundary_vectors_keep_positions_for_every_threshold() {
+        for threshold in 0u8..16 {
+            // Bottom-to-top inputs: threshold-1, threshold, threshold+1, 0, 15.
+            let mut inputs = Vec::new();
+            if threshold > 0 {
+                inputs.push(threshold - 1);
+            }
+            inputs.push(threshold);
+            if threshold < 15 {
+                inputs.push(threshold + 1);
+            }
+            inputs.extend([0, 15]);
+            let masks: Vec<Vec<u8>> = inputs
+                .iter()
+                .map(|&value| scriptnum_nibble(u8::from(value < threshold)))
+                .collect();
+            if threshold > 0 {
+                let reversed: Vec<Vec<u8>> = masks.iter().rev().cloned().collect();
+                assert_ne!(masks, reversed, "threshold {threshold} vector is symmetric");
+            }
+
+            let nibble_count = inputs.len() as u32;
+            let result = execute_script_with_inputs_strict(
+                script! {
+                    77 OP_TOALTSTACK
+                    { u4_nibbles_to_lt_mask(threshold, nibble_count) }
+                    OP_FROMALTSTACK
+                },
+                std::iter::once(vec![99u8])
+                    .chain(inputs.iter().map(|&value| scriptnum_nibble(value)))
+                    .collect(),
+            );
+            assert!(result.error.is_none(), "threshold {threshold}: {result}");
+
+            let expected: Vec<Vec<u8>> = std::iter::once(vec![99u8])
+                .chain(masks)
+                .chain(std::iter::once(vec![77u8]))
+                .collect();
+            let actual: Vec<Vec<u8>> = (0..result.final_stack.len())
+                .map(|index| result.final_stack.get(index))
+                .collect();
+            assert_eq!(
+                actual, expected,
+                "threshold {threshold}, inputs {inputs:?}: bottom-to-top stack mismatch"
+            );
+        }
+    }
+
+    #[test]
+    fn exact_stack_frontier_admits_max_preserved_and_rejects_one_more() {
+        for nibble_count in [1, 16, 500, U4_LT_MASK_MAX_BATCH] {
+            let max_preserved = (U4_LT_MASK_MAX_BATCH - nibble_count) as usize;
+            for alt_items in [0usize, 1] {
+                let script = compile_boundary(script! {
+                    for _ in 0..alt_items { 77 OP_TOALTSTACK }
+                    { u4_nibbles_to_lt_mask(5, nibble_count) }
+                    for _ in 0..alt_items { OP_FROMALTSTACK }
+                });
+                for (preserved, fits) in [(max_preserved, true), (max_preserved + 1, false)] {
+                    let Some(main_items) = preserved.checked_sub(alt_items) else {
+                        continue;
+                    };
+                    let witness = std::iter::repeat_n(vec![99u8], main_items)
+                        .chain(std::iter::repeat_n(vec![4u8], nibble_count as usize))
+                        .collect();
+                    let result = execute_raw_script_with_inputs_strict(script.clone(), witness);
+                    let case = format!(
+                        "batch {nibble_count}, main {main_items}, alt {alt_items}, preserved {preserved}"
+                    );
+                    if fits {
+                        assert!(result.error.is_none(), "{case} failed: {result}");
+                        assert_eq!(result.stats.max_nb_stack_items, 1_000, "{case}");
+                        assert_eq!(
+                            result.final_stack.len(),
+                            preserved + nibble_count as usize,
+                            "{case}"
+                        );
+                    } else {
+                        assert_eq!(result.error, Some(ExecError::StackSize), "{case}");
+                    }
+                }
+            }
+        }
     }
 }

@@ -882,6 +882,8 @@
         "arithmetic::u4::threshold::tests::handles_threshold_endpoints",
         "arithmetic::u4::threshold::tests::preserves_surrounding_main_and_alt_stack_items",
         "arithmetic::u4::threshold::tests::composes_with_preserved_state_at_the_stack_boundary",
+        "arithmetic::u4::threshold::tests::asymmetric_boundary_vectors_keep_positions_for_every_threshold",
+        "arithmetic::u4::threshold::tests::exact_stack_frontier_admits_max_preserved_and_rejects_one_more",
         "primitive_metrics::u4_lt_mask_metrics_are_current"
       ],
       "references": [

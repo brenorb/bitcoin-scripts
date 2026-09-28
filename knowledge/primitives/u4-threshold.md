@@ -14,6 +14,14 @@ ceiling of 998 items. Composition must satisfy
 lower main-stack and alt-stack state and returns one mask item per input in the
 original order.
 
+Local tests exercise every threshold `0..=15` with asymmetric bottom-to-top
+vectors containing `threshold-1`, `threshold`, `threshold+1` (when in range),
+`0`, and `15` around preserved main and alt-stack sentinels. They also check
+the composition bound exactly: for batches of 1, 16, 500, and 998 nibbles, the
+largest preserved main or split main/alt state reaches a measured 1,000-item
+peak, and one more preserved item fails with `StackSize` in the strict
+executor.
+
 The numeric range check does not enforce byte-unique ScriptNum encoding. A
 caller that needs canonical witness bytes must compose the existing
 `verify_canonical_nibble()` boundary before this mask.

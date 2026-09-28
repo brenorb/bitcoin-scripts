@@ -1,4 +1,4 @@
-# NR-064: Standard Merkle branch composition without `OP_CAT`
+# NR-066: Standard Merkle branch composition without `OP_CAT`
 
 ## Question
 

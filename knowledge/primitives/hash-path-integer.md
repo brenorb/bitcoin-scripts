@@ -76,7 +76,7 @@ or branch routing. Its 129-byte one-byte fixture witness becomes 193 bytes for
 64 canonical two-byte payloads; both have 64 data items and zero hints. This is
 a backend-specific workaround profile, not a Merkle verifier or universal cost
 lower bound. Ordinary Merkle branches also differ from BIP341 TapBranch's
-tagged, ordered-node construction; see [NR-064](../negative-results/merkle-branch-composition.md),
+tagged, ordered-node construction; see [NR-066](../negative-results/merkle-branch-composition.md),
 [NR-057](../negative-results/index.md#nr-057-native-taproot-merkle-branch-adapter-is-not-available),
 and [OP-021](../open-problems.md#op-021--taproot-merkle-path-verifier).
 

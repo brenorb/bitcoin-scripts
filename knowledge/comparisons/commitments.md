@@ -35,4 +35,4 @@ result. The current byte-oriented SHA-256 backend measures one 64-byte layer
 at 1,060,200 unoptimized script bytes and 770,481 static non-push opcodes,
 with a 129-byte one-byte fixture witness or 193-byte canonical maximum for 64
 data items and zero hints. This is a backend-specific compile-only profile,
-not a universal lower bound or a complete branch verifier; see [NR-064](../negative-results/merkle-branch-composition.md).
+not a universal lower bound or a complete branch verifier; see [NR-066](../negative-results/merkle-branch-composition.md).

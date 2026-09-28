@@ -1587,7 +1587,7 @@ retained as a stack-shape primitive and a complete-width correctness result,
 not as a general script-byte optimization. Evidence is `locally-reproduced`;
 deployment is `unclassified`; OP-026 remains open.
 
-## NR-064: Standard Merkle branch composition without `OP_CAT`
+## NR-066: Standard Merkle branch composition without `OP_CAT`
 
 The conventional Bitcoin Merkle step is `HASH256(left || right)`, while the
 current Script opcode set has no enabled native concatenation. The existing

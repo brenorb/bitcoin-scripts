@@ -20,6 +20,9 @@ they do not use BN254 or any other field modulus.
 - `u32_and_constant(value)` checks one hostile word and ANDs it with the
   public compile-time `value`; the shared 256-entry table is local to the
   fragment and the mask contributes no witness items.
+- `u32_sub_constant(value)` checks one hostile word and subtracts the public
+  compile-time `value` modulo `2^32`; the constant contributes no witness
+  items.
 - `u32_sub[_drop](a, b)` computes `a - b` modulo `2^32` for either ordering of
   two distinct offsets. The non-`drop` form preserves the minuend.
 - `u32_conditional_negate()` normalizes a top condition and negates the next
@@ -103,6 +106,7 @@ as less-than-or-equal.
 | `u32_xnor_constant(0x89abcdef)` | <!-- metric:u32_xnor_constant -->686<!-- /metric:u32_xnor_constant --> bytes | <!-- metric:u32_xnor_constant_witness -->13<!-- /metric:u32_xnor_constant_witness --> bytes, 4 data items | <!-- metric:u32_xnor_constant_stack -->272<!-- /metric:u32_xnor_constant_stack --> items; <!-- metric:u32_xnor_constant_opcodes -->502<!-- /metric:u32_xnor_constant_opcodes --> static non-push opcodes |
 | `u32_or_constant(0x89abcdef)` | <!-- metric:u32_or_constant -->776<!-- /metric:u32_or_constant --> bytes | <!-- metric:u32_or_constant_witness -->13<!-- /metric:u32_or_constant_witness --> bytes, 4 data items | <!-- metric:u32_or_constant_stack -->272<!-- /metric:u32_or_constant_stack --> items; <!-- metric:u32_or_constant_opcodes -->548<!-- /metric:u32_or_constant_opcodes --> static non-push opcodes |
 | `u32_and_constant(0x89abcdef)` | <!-- metric:u32_and_constant -->620<!-- /metric:u32_and_constant --> bytes | <!-- metric:u32_and_constant_witness -->13<!-- /metric:u32_and_constant_witness --> bytes, 4 data items | <!-- metric:u32_and_constant_stack -->272<!-- /metric:u32_and_constant_stack --> items; <!-- metric:u32_and_constant_opcodes -->448<!-- /metric:u32_and_constant_opcodes --> static non-push opcodes |
+| `u32_sub_constant(value)` | <!-- metric:u32_sub_constant -->149<!-- /metric:u32_sub_constant --> bytes | <!-- metric:u32_sub_constant_witness -->9<!-- /metric:u32_sub_constant_witness --> bytes (<!-- metric:u32_sub_constant_witness_max -->13<!-- /metric:u32_sub_constant_witness_max --> max) | <!-- metric:u32_sub_constant_stack -->9<!-- /metric:u32_sub_constant_stack --> items |
 | `u32_compressed_add()` | <!-- metric:u32_compressed_add -->1016<!-- /metric:u32_compressed_add --> bytes | <!-- metric:u32_compressed_add_witness -->11<!-- /metric:u32_compressed_add_witness --> bytes (<!-- metric:u32_compressed_add_witness_max -->13<!-- /metric:u32_compressed_add_witness_max --> max) | <!-- metric:u32_compressed_add_stack -->11<!-- /metric:u32_compressed_add_stack --> items |
 | `u32_sub_drop(0, 1)` | <!-- metric:u32_sub_drop -->77<!-- /metric:u32_sub_drop --> bytes | 0 bytes | <!-- metric:u32_sub_drop_stack -->9<!-- /metric:u32_sub_drop_stack --> items |
 | `u32_conditional_negate()` | <!-- metric:u32_conditional_negate -->83<!-- /metric:u32_conditional_negate --> bytes | 0 bytes | <!-- metric:u32_conditional_negate_stack -->9<!-- /metric:u32_conditional_negate_stack --> items |
@@ -202,6 +206,23 @@ hints. Its 620-byte fragment peaks at 272 combined main-plus-alt-stack items
 and has 448 static non-push opcodes. This is a witness-width construction:
 the mask is public, while a caller that already has a second runtime word or
 can share the table should prefer the generic `u32_and` composition.
+
+`u32_sub_constant(value)` consumes one hostile four-limb word, checks each
+limb, subtracts the public compile-time constant modulo `2^32`, and returns
+four limbs. The representative fixture embeds `0x89abcdef` and supplies
+`0x12345678` as four data items. It requires no hints and preserves unrelated
+main- and alt-stack state. The fragment is
+<!-- metric:u32_sub_constant_static_opcodes -->83<!-- /metric:u32_sub_constant_static_opcodes --> static
+non-push opcodes, with 149 locking-script bytes, 9 serialized
+witness bytes (13 at the maximum canonical byte fixture), and a strict
+combined peak of
+<!-- metric:u32_sub_constant_stack -->9<!-- /metric:u32_sub_constant_stack --> items. The closest
+generic two-word baseline uses
+<!-- metric:u32_sub_drop_constant_witness -->21<!-- /metric:u32_sub_drop_constant_witness -->
+witness bytes across eight data items and peaks at
+<!-- metric:u32_sub_drop_constant_stack -->9<!-- /metric:u32_sub_drop_constant_stack --> items.
+This trades locking-script bytes for four fewer witness items; the constant is
+public and must not be treated as a secret.
 
 `u32_compressed_add()` is a checked wire adapter: it accepts two canonical
 compressed u32 ScriptNums, expands them through the existing byte carry chain,

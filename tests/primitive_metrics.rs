@@ -5923,6 +5923,16 @@ fn u4_clamp_metrics_are_current() {
         },
         Metric {
             readme: "src/arithmetic/u4/README.md",
+            key: "u4_clamp_16_witness_items",
+            value: witness.len(),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_clamp_16_hints",
+            value: 0,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
             key: "u4_clamp_16_stack",
             value: peak,
         },

@@ -169,7 +169,7 @@ The square row measures only the checked reusable query; its generated
 
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
 
-The embedded-cap fixture uses <!-- metric:u4_clamp_16_witness -->33<!-- /metric:u4_clamp_16_witness --> serialized witness bytes for <!-- metric:u4_clamp_16_witness_items -->16<!-- /metric:u4_clamp_16_witness_items --> canonical data items and returns one capped nibble per input. Numeric range checks accept non-minimal encodings; values below or equal to the cap retain their original bytes, while values above it are replaced by the embedded canonical cap. Compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
+The embedded-cap fixture uses <!-- metric:u4_clamp_16_witness -->33<!-- /metric:u4_clamp_16_witness --> serialized witness bytes for <!-- metric:u4_clamp_16_witness_items -->16<!-- /metric:u4_clamp_16_witness_items --> canonical data items and <!-- metric:u4_clamp_16_hints -->0<!-- /metric:u4_clamp_16_hints --> hint items; its combined main-plus-alt-stack peak in the table above is `nibble_count + 2` items. It returns one capped nibble per input. Numeric range checks accept non-minimal encodings; values below or equal to the cap retain their original bytes, while values above it are replaced by the embedded canonical cap. Compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
 
 <!-- metric:u4_nondecreasing_batch32_witness -->65<!-- /metric:u4_nondecreasing_batch32_witness --> serialized witness bytes for the representative nondecreasing batch.
 

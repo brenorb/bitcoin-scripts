@@ -109,6 +109,126 @@ mod tests {
         assert_eq!(result.stats.max_nb_stack_items, 1_000);
     }
 
+    /// Distinct runtime witness nibbles and distinct preserved main/alt items:
+    /// any reversed or permuted restoration schedule changes the final stack.
+    #[test]
+    fn keeps_asymmetric_witness_order_with_preserved_state() {
+        const MAXIMUM: u8 = 9;
+        let inputs: [u8; 12] = [11, 0, 9, 3, 15, 1, 10, 4, 8, 2, 14, 5];
+        let encode = |value: u8| if value == 0 { Vec::new() } else { vec![value] };
+        let clamped: Vec<Vec<u8>> = inputs
+            .iter()
+            .map(|&value| encode(value.min(MAXIMUM)))
+            .collect();
+        let mut reversed = clamped.clone();
+        reversed.reverse();
+        assert_ne!(clamped, reversed, "ordering vector must be asymmetric");
+
+        let checked_script = script! {
+            77 OP_TOALTSTACK
+            78 OP_TOALTSTACK
+            { u4_nibbles_to_clamp(MAXIMUM, inputs.len() as u32) }
+            OP_FROMALTSTACK
+            OP_FROMALTSTACK
+        }
+        .compile_with_policy()
+        .to_bytes();
+        let witness = [vec![99u8], vec![100u8]]
+            .into_iter()
+            .chain(inputs.iter().map(|&value| encode(value)))
+            .collect();
+        let result = execute_raw_script_with_inputs_strict(checked_script, witness);
+        assert!(result.error.is_none(), "asymmetric clamp failed: {result}");
+
+        let expected: Vec<Vec<u8>> = [vec![99u8], vec![100u8]]
+            .into_iter()
+            .chain(clamped)
+            .chain([vec![78u8], vec![77u8]])
+            .collect();
+        let actual: Vec<Vec<u8>> = (0..result.final_stack.len())
+            .map(|index| result.final_stack.get(index))
+            .collect();
+        assert_eq!(
+            actual, expected,
+            "clamp outputs or preserved state out of documented order"
+        );
+    }
+
+    /// The documented frontier `nibble_count + 2 + preserved_items <= 1000` is
+    /// exact: equality succeeds with a 1,000-item combined peak and preserved
+    /// state intact, while one more preserved item on the main stack, the alt
+    /// stack, or split across both fails with `StackSize`.
+    #[test]
+    fn preserved_state_stack_frontier_is_exact() {
+        use bitcoin::opcodes::all::{OP_FROMALTSTACK, OP_PUSHBYTES_1, OP_TOALTSTACK};
+
+        let run = |nibble_count: u32, main_items: usize, alt_items: usize| {
+            // Small batches use the production policy bytes; large batches
+            // bypass the optimizer only to keep the test fast, as elsewhere in
+            // this module. Raw alt-stack staging wraps the compiled fragment so
+            // the optimizer never sees the surrounding state.
+            let fragment = u4_nibbles_to_clamp(5, nibble_count);
+            let fragment = if nibble_count <= 16 {
+                fragment.compile_with_policy().to_bytes()
+            } else {
+                compile_boundary(fragment)
+            };
+            let mut checked_script = Vec::new();
+            for _ in 0..alt_items {
+                checked_script.extend([OP_PUSHBYTES_1.to_u8(), 77, OP_TOALTSTACK.to_u8()]);
+            }
+            checked_script.extend(fragment);
+            checked_script.extend(std::iter::repeat_n(OP_FROMALTSTACK.to_u8(), alt_items));
+            let witness = std::iter::repeat_n(vec![99u8], main_items)
+                .chain(std::iter::repeat_n(Vec::new(), nibble_count as usize))
+                .collect();
+            execute_raw_script_with_inputs_strict(checked_script, witness)
+        };
+
+        for nibble_count in [1, 16, U4_CLAMP_MAX_BATCH - 1, U4_CLAMP_MAX_BATCH] {
+            let frontier = (U4_CLAMP_MAX_BATCH - nibble_count) as usize;
+            for (main_items, alt_items) in [
+                (frontier, 0),
+                (0, frontier),
+                (frontier / 2, frontier - frontier / 2),
+            ] {
+                let result = run(nibble_count, main_items, alt_items);
+                assert!(
+                    result.error.is_none(),
+                    "frontier failed: nibbles={nibble_count}, main={main_items}, \
+                     alt={alt_items}: {result}"
+                );
+                assert_eq!(result.stats.max_nb_stack_items, 1_000);
+                assert_eq!(
+                    result.final_stack.len(),
+                    main_items + nibble_count as usize + alt_items
+                );
+                for index in 0..main_items {
+                    assert_eq!(result.final_stack.get(index), vec![99]);
+                }
+                for index in 0..alt_items {
+                    assert_eq!(
+                        result.final_stack.get(result.final_stack.len() - 1 - index),
+                        vec![77]
+                    );
+                }
+            }
+            for (main_items, alt_items) in [
+                (frontier + 1, 0),
+                (0, frontier + 1),
+                (frontier / 2 + 1, frontier - frontier / 2),
+            ] {
+                let result = run(nibble_count, main_items, alt_items);
+                assert_eq!(
+                    result.error,
+                    Some(ExecError::StackSize),
+                    "accepted one item past the frontier: nibbles={nibble_count}, \
+                     main={main_items}, alt={alt_items}: {result}"
+                );
+            }
+        }
+    }
+
     #[test]
     fn handles_cap_endpoints() {
         for (maximum, input, expected) in [(0, 0, 0), (0, 15, 0), (15, 14, 14), (15, 15, 15)] {

@@ -14,6 +14,17 @@ satisfy `nibble_count + 2 + preserved_items <= 1000`. The fragment preserves
 unrelated lower main-stack and alt-stack state and returns values in the
 original order.
 
+It processes the top input first and stages each result on the alt stack, so
+restoration returns the documented bottom-to-top order. Tests check this with
+distinct runtime witness nibbles and distinct preserved main and alt items;
+the earlier bottom-first `OP_ROLL` schedule returns the exact reversed vector
+and fails that test. The frontier test covers batches 1, 16, 997, and 998. At
+equality, with preserved items on the main stack, the alt stack, or both, it
+reaches a combined 1,000-item peak and leaves preserved state intact. One more
+preserved item fails with `StackSize`. The fragment adds zero hint items, so
+only the batch, its two temporary items, and the caller's preserved items count
+against the 1,000-item limit.
+
 The numeric range check does not enforce byte-unique ScriptNum encoding. A
 permissive execution profile accepts aliases such as `[1, 0]` and `[0x80]`;
 values at or below the cap preserve those original bytes, while values above

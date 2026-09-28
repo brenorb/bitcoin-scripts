@@ -172,12 +172,23 @@ terminal predicate. The local strict fixture measures
 <!-- metric:u32_compressed_add_static_opcodes -->765<!-- /metric:u32_compressed_add_static_opcodes --> static non-push operations;
 dynamic opcode counting is unavailable in the local executor.
 
+This is a witness-width tradeoff, not a general byte-cost improvement. At the
+representative values it saves nine serialized witness bytes and six entry
+items versus the four-byte `u32_add_drop` baseline, but adds 938 locking bytes
+and one stack item. It is useful only when witness width or item count matters
+more than locking-script bytes. All compressed inputs are treated as hostile:
+non-minimal aliases, negative zero, wrong five-byte values, and malformed
+widths are rejected before expansion.
+The same representative byte baseline has
+<!-- metric:u32_add_drop_witness -->20<!-- /metric:u32_add_drop_witness --> serialized witness bytes and a
+<!-- metric:u32_add_drop_byte_stack -->10<!-- /metric:u32_add_drop_byte_stack --> item strict peak.
+
 `u32_add_constant(value)` consumes one hostile four-limb word, checks each
 limb, adds the public compile-time constant modulo `2^32`, and returns four
 limbs. The representative fixture embeds `0x89abcdef` and supplies
 `0x12345678` as four data items. It requires no hints and preserves unrelated
-main- and alt-stack state. The fragment is
-138 bytes with 9
+main- and alt-stack state. The policy-compiled fragment is
+146 bytes with 9
 serialized witness bytes (13
 at the maximum canonical byte fixture), a strict combined peak of
 10 items, and
@@ -189,17 +200,6 @@ across eight data items and peaks at
 <!-- metric:u32_add_drop_constant_stack -->10<!-- /metric:u32_add_drop_constant_stack --> items.
 This trades locking-script bytes for four fewer witness items and a narrower
 serialized witness; the constant is public and must not be treated as a secret.
-
-This is a witness-width tradeoff, not a general byte-cost improvement. At the
-representative values it saves nine serialized witness bytes and six entry
-items versus the four-byte `u32_add_drop` baseline, but adds 938 locking bytes
-and one stack item. It is useful only when witness width or item count matters
-more than locking-script bytes. All compressed inputs are treated as hostile:
-non-minimal aliases, negative zero, wrong five-byte values, and malformed
-widths are rejected before expansion.
-The same representative byte baseline has
-<!-- metric:u32_add_drop_witness -->20<!-- /metric:u32_add_drop_witness --> serialized witness bytes and a
-<!-- metric:u32_add_drop_byte_stack -->10<!-- /metric:u32_add_drop_byte_stack --> item strict peak.
 
 The conditional-negation fragment contains <!-- metric:u32_conditional_negate_opcodes -->52<!-- /metric:u32_conditional_negate_opcodes --> static non-push opcodes under the repository's compilation policy. The local tapscript executor does not expose a useful dynamic opcode counter for this fragment.
 

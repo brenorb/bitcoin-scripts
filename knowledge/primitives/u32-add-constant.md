@@ -42,10 +42,20 @@ unchanged for this fixture.
 
 Evidence is `locally-reproduced`; deployment is `unclassified`. The measured
 fixture uses `value = 0x12345678` and `constant = 0x89abcdef`. Correctness
-tests cover zero, maximum values, carry into every boundary, wraparound, and a
-mixed random-looking pair. Adversarial tests cover negative, out-of-range, and
-non-minimal raw limb encodings at every position, canonical 128 and 255
-boundary limbs at every position, plus surrounding main- and alt-stack state.
+tests supply the word as runtime witness data to complete leaves that compare
+the result: no-carry pairs, wraparound modulo `2^32` (including
+`0xffffffff + c`), a carry across each single limb boundary, carries rippling
+through every lower limb, carry-in-only overflow at each limb, and 100 seeded
+random pairs. A second vector set pins literal expected outputs and requires
+each leaf to reject the carry-free limb-wise sum. Adversarial tests execute a
+complete leaf, which drops the four outputs before `OP_TRUE`, under the local
+Consensus profile (no global numeric minimality, stack limit enforced). At
+every position they reject -1 and 256 (`Verify`), negative zero `[0x80]` and
+`[0x00, 0x80]` plus non-minimal one `[0x01, 0x00]` (`EqualVerify`), and a
+five-byte value (`ScriptIntNumericOverflow`), while canonical 0, 1, 127, 128,
+and 255 controls succeed at every position. A test-only copy of the historical
+top-limb-only validator must accept the non-minimal alias at positions 0-2.
+Surrounding main- and alt-stack state is preserved.
 
 The strict metric fixture executes through the repository's locked
 `bitcoin-scriptexec` dependency in a tapscript context with the combined

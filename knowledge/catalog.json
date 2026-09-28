@@ -1697,7 +1697,8 @@
       "implementation": "src/arithmetic/u32/add_constant.rs",
       "documentation": "src/arithmetic/u32/README.md",
       "tests": [
-        "arithmetic::u32::add_constant::tests::adds_boundaries_and_wraps",
+        "arithmetic::u32::add_constant::tests::adds_boundaries_wraps_and_carries",
+        "arithmetic::u32::add_constant::tests::carry_vectors_match_reference",
         "arithmetic::u32::add_constant::tests::rejects_malformed_and_nonminimal_limbs",
         "arithmetic::u32::add_constant::tests::preserves_surrounding_main_and_alt_stack_items",
         "primitive_metrics::u32_add_constant_metrics_are_current"

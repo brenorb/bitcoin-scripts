@@ -50,6 +50,7 @@ the current byte-oriented and decode/re-encode configurations below.
 | 32 checked nibbles to nonzero-power-of-two bits | `u4_nibbles_to_power_of_two(32)` | 440 | 50-item peak; one predicate bit per input |
 | 32 checked nibbles to modulo-three residues | `u4_nibbles_to_mod3(32)` | 440 | 50-item peak; one residue per input |
 | 32 checked nibbles to parity bits | `u4_nibbles_to_parity(32)` | 440 | 50-item peak; one output bit per input |
+| 32 checked nibbles transition count | `u4_nibbles_transition_count(32)` | 588 | 35-item peak; 391 static non-push opcodes; one compact count; no table |
 | 16 checked nibbles to one XOR nibble | `u4_nibbles_to_xor(16)` | 740 | 273-item peak; 256-item full XOR table |
 | Variable u32 XNOR | `u32_xnor(0, 1, 3)` | 222 | 272-item peak; 182 static non-push opcodes; shared 256-item XOR table |
 | Embedded public-mask u32 XNOR | `u32_xnor_constant(0x89abcdef)` | 686 | 13-byte/four-data-item witness; zero hints; 272-item peak; 502 static non-push opcodes |

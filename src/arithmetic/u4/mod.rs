@@ -33,6 +33,7 @@ pub mod stack_shift;
 pub mod sum;
 pub mod trailing_zeros;
 pub mod trichotomy;
+pub mod transition_count;
 pub mod vector_rotate;
 pub mod xor_reduce;
 pub mod zero;

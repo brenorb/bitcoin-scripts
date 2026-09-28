@@ -15,6 +15,8 @@ these operations, but this module contains no hash-specific round logic.
 - `cyclic_equality::u4_nibbles_to_cyclic_equality(nibble_count, offset)` takes
   a checked batch size in `1..=499` and returns a wrapped equality bit per
   input nibble.
+- `transition_count::u4_nibbles_transition_count(nibble_count)` takes a
+  checked batch size in `1..=997` and returns the number of unequal neighbors.
 - `xor_reduce::u4_nibbles_to_xor(nibble_count)` takes a checked batch size in
   `1..=742` and reduces the batch to one nibble with the full XOR table.
 - `popcount::u4_nibbles_to_popcount(nibble_count)` takes a checked batch size
@@ -126,6 +128,7 @@ each input with the same output-restoration boundary.
 | `lexicographic_le_constant(128)` | <!-- metric:u4_lexicographic_le_constant_128 -->7628<!-- /metric:u4_lexicographic_le_constant_128 --> bytes | <!-- metric:u4_lexicographic_le_constant_128_stack -->259<!-- /metric:u4_lexicographic_le_constant_128_stack --> items | <!-- metric:u4_lexicographic_le_constant_128_opcodes -->4354<!-- /metric:u4_lexicographic_le_constant_128_opcodes --> |
 | Checked parity batch, 32 nibbles | <!-- metric:u4_parity_batch32 -->440<!-- /metric:u4_parity_batch32 --> bytes | <!-- metric:u4_parity_batch32_stack -->50<!-- /metric:u4_parity_batch32_stack --> items | <!-- metric:u4_parity_batch32_opcodes -->328<!-- /metric:u4_parity_batch32_opcodes --> |
 | Checked cyclic equality batch, 32 nibbles, offset 7 | <!-- metric:u4_cyclic_equality_batch32 -->569<!-- /metric:u4_cyclic_equality_batch32 --> bytes | <!-- metric:u4_cyclic_equality_batch32_stack -->65<!-- /metric:u4_cyclic_equality_batch32_stack --> items | <!-- metric:u4_cyclic_equality_batch32_opcodes -->368<!-- /metric:u4_cyclic_equality_batch32_opcodes --> |
+| Checked transition-count batch, 32 nibbles | <!-- metric:u4_transition_count_batch32 -->588<!-- /metric:u4_transition_count_batch32 --> bytes | <!-- metric:u4_transition_count_batch32_stack -->35<!-- /metric:u4_transition_count_batch32_stack --> items | <!-- metric:u4_transition_count_batch32_opcodes -->391<!-- /metric:u4_transition_count_batch32_opcodes --> |
 | Checked XOR reduction, 16 nibbles | <!-- metric:u4_xor_reduce_batch16 -->740<!-- /metric:u4_xor_reduce_batch16 --> bytes | <!-- metric:u4_xor_reduce_batch16_stack -->273<!-- /metric:u4_xor_reduce_batch16_stack --> items | <!-- metric:u4_xor_reduce_batch16_opcodes -->438<!-- /metric:u4_xor_reduce_batch16_opcodes --> |
 | Checked nondecreasing batch, 32 nibbles | <!-- metric:u4_nondecreasing_batch32 -->588<!-- /metric:u4_nondecreasing_batch32 --> bytes | <!-- metric:u4_nondecreasing_batch32_stack -->35<!-- /metric:u4_nondecreasing_batch32_stack --> items | <!-- metric:u4_nondecreasing_batch32_opcodes -->391<!-- /metric:u4_nondecreasing_batch32_opcodes --> |
 | Checked exact-sum batch, 32 nibbles | <!-- metric:u4_exact_sum_batch32 -->489<!-- /metric:u4_exact_sum_batch32 --> bytes | <!-- metric:u4_exact_sum_batch32_stack -->35<!-- /metric:u4_exact_sum_batch32_stack --> items | <!-- metric:u4_exact_sum_batch32_opcodes -->334<!-- /metric:u4_exact_sum_batch32_opcodes --> |
@@ -172,6 +175,8 @@ The square row measures only the checked reusable query; its generated
 
 
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
+
+<!-- metric:u4_transition_count_batch32_witness -->65<!-- /metric:u4_transition_count_batch32_witness --> serialized witness bytes for the representative transition-count batch.
 
 <!-- metric:u4_cyclic_equality_batch32_witness -->65<!-- /metric:u4_cyclic_equality_batch32_witness --> serialized witness bytes for the representative cyclic-equality batch.
 <!-- metric:u4_nondecreasing_batch32_witness -->65<!-- /metric:u4_nondecreasing_batch32_witness --> serialized witness bytes for the representative nondecreasing batch.
@@ -266,6 +271,15 @@ The cyclic equality fragment range-checks the source vector, compares each
 item numerically with the item at a caller-selected wrapped offset, and
 returns one ScriptNum bit per input. It is useful for periodicity checks and
 keeps the vector width unchanged, unlike a non-wrapped adjacent-pair mask.
+The transition counter directly folds numeric inequality bits into one
+ScriptNum count. It avoids returning `n-1` intermediate bits when a caller
+needs only the number of runs minus one, and remains correct for permissive
+non-minimal encodings of the same numeric nibble.
+The strict local frontier regression measured 997 data items at a 1,000-item
+combined peak. With one preserved main-stack item and one alt-stack item
+created by the caller, 995 data nibbles also reach 1,000; 996 nibbles fail at
+1,001 with `StackSize`. These frontier cases use zero witness hints and are
+local tapscript measurements, not Bitcoin Core validation.
 The zero-mask projection uses the existing canonical-nibble verifier followed
 by `OP_NUMEQUAL`, so it needs no resident table. A checked 32-nibble batch is
 414 bytes, has 318 static non-push opcodes, and peaks at 35 combined items.

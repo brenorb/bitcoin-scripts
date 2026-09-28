@@ -7,7 +7,10 @@
 use std::{env, fs, path::Path};
 
 use bitcoin::consensus::encode::serialize;
-use bitcoin::hashes::{ripemd160 as bitcoin_ripemd160, sha1 as bitcoin_sha1, sha256 as bitcoin_sha256, Hash, HashEngine};
+use bitcoin::hashes::{
+    ripemd160 as bitcoin_ripemd160, sha1 as bitcoin_sha1, sha256 as bitcoin_sha256, Hash,
+    HashEngine,
+};
 use bitcoin::{script::Instruction, Witness};
 use bitcoin_lab::arithmetic::rns::prime::carry::bound;
 use bitcoin_lab::{

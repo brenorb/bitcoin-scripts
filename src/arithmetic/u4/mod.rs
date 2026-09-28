@@ -17,6 +17,7 @@ pub mod lowbit;
 pub mod lsb;
 pub mod mirror;
 pub mod mod3;
+pub mod mul;
 pub mod mul_constant;
 pub mod nondecreasing;
 pub mod odd_inverse;

@@ -40,6 +40,7 @@ the source. Read a page together with its comparison page and evidence record.
 - [Checked u4 complement-reflection projection](u4-mirror.md)
 - [Checked u4 embedded-threshold trichotomy](u4-trichotomy.md)
 - [Checked u4 least-significant-bit projection](u4-lsb.md)
+- [Checked modulo-16 u4 multiplication](u4-mul-mod16.md)
 - [Checked u4 zero-mask projection](u4-zero-mask.md)
 - [Checked u4 modulo-16 sum](u4-sum-mod16.md)
 - [Checked u4 packed zero-bitmask projection](u4-zero-bitmask.md)

@@ -134,6 +134,7 @@ each input with the same output-restoration boundary.
 | Checked cyclic equality batch, 32 nibbles, offset 7 | <!-- metric:u4_cyclic_equality_batch32 -->569<!-- /metric:u4_cyclic_equality_batch32 --> bytes | <!-- metric:u4_cyclic_equality_batch32_stack -->65<!-- /metric:u4_cyclic_equality_batch32_stack --> items | <!-- metric:u4_cyclic_equality_batch32_opcodes -->368<!-- /metric:u4_cyclic_equality_batch32_opcodes --> |
 | Checked transition-count batch, 32 nibbles | <!-- metric:u4_transition_count_batch32 -->588<!-- /metric:u4_transition_count_batch32 --> bytes | <!-- metric:u4_transition_count_batch32_stack -->35<!-- /metric:u4_transition_count_batch32_stack --> items | <!-- metric:u4_transition_count_batch32_opcodes -->391<!-- /metric:u4_transition_count_batch32_opcodes --> |
 | Checked adjacent-equality batch, 32 nibbles | <!-- metric:u4_adjacent_equal_batch32 -->558<!-- /metric:u4_adjacent_equal_batch32 --> bytes | <!-- metric:u4_adjacent_equal_batch32_stack -->64<!-- /metric:u4_adjacent_equal_batch32_stack --> items | <!-- metric:u4_adjacent_equal_batch32_opcodes -->361<!-- /metric:u4_adjacent_equal_batch32_opcodes --> |
+| Checked modulo-16 nibble product | <!-- metric:u4_mul_mod16 -->21<!-- /metric:u4_mul_mod16 --> bytes | <!-- metric:u4_mul_mod16_stack -->261<!-- /metric:u4_mul_mod16_stack --> items with 256-item table | <!-- metric:u4_mul_mod16_opcodes -->17<!-- /metric:u4_mul_mod16_opcodes --> |
 | Checked XOR reduction, 16 nibbles | <!-- metric:u4_xor_reduce_batch16 -->740<!-- /metric:u4_xor_reduce_batch16 --> bytes | <!-- metric:u4_xor_reduce_batch16_stack -->273<!-- /metric:u4_xor_reduce_batch16_stack --> items | <!-- metric:u4_xor_reduce_batch16_opcodes -->438<!-- /metric:u4_xor_reduce_batch16_opcodes --> |
 | Checked nondecreasing batch, 32 nibbles | <!-- metric:u4_nondecreasing_batch32 -->588<!-- /metric:u4_nondecreasing_batch32 --> bytes | <!-- metric:u4_nondecreasing_batch32_stack -->35<!-- /metric:u4_nondecreasing_batch32_stack --> items | <!-- metric:u4_nondecreasing_batch32_opcodes -->391<!-- /metric:u4_nondecreasing_batch32_opcodes --> |
 | Checked exact-sum batch, 32 nibbles | <!-- metric:u4_exact_sum_batch32 -->489<!-- /metric:u4_exact_sum_batch32 --> bytes | <!-- metric:u4_exact_sum_batch32_stack -->35<!-- /metric:u4_exact_sum_batch32_stack --> items | <!-- metric:u4_exact_sum_batch32_opcodes -->334<!-- /metric:u4_exact_sum_batch32_opcodes --> |
@@ -433,10 +434,23 @@ entries by index before cleanup. At pre-fix source commit
 test failed for input 1 with `InvalidStackOperation` at the final equality check
 after cleanup; the fragment's `OP_SWAP OP_DROP` had removed a table entry.
 
+`mul::u4_mul_mod16()` checks that both numeric ScriptNum operands are in `0..=15`, looks up their product modulo 16 in a resident 256-item table, and retains that table below the result. The range checks do not establish byte-unique ScriptNum encodings; acceptance of non-minimal aliases depends on the execution profile. The representative witness has <!-- metric:u4_mul_mod16_witness -->5<!-- /metric:u4_mul_mod16_witness --> serialized bytes for two operand items and zero incremental hint items. The 21-byte, 17-opcode query measurement excludes table setup and cleanup; its strict tapscript metric fixture includes input staging, lookup, cleanup, output disposal, and a true terminal item and reaches a combined 261-item main/altstack peak.
+
+The separate full-table lifecycle regression stages all 256 products, checks
+the actual resident table after reuse, then drops that table and verifies every
+result. Its operand pairs are script constants, so it uses zero external data
+items and zero hints; the strict tapscript execution reaches a 516-item
+combined main/altstack peak. That regression is not the single-query metric
+boundary.
+
 ## Security
 
 No independent cryptographic security claim. Correctness requires callers to
-provide canonical nibbles; not every operation range-checks every input.
+respect each operation's documented input contract. For `mul::u4_mul_mod16()`,
+both numeric ScriptNum values are range-checked to `0..=15`; the range checks
+do not establish byte-unique encodings. Acceptance of non-minimal ScriptNum
+aliases depends on the execution profile, and callers that need byte-unique
+inputs must add a canonical-encoding check.
 
 For bit conversion, `check_inputs=true` proves the numeric range `0..=15`
 before using a value as an `OP_PICK` index. `check_inputs=false` must be used

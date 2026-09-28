@@ -10,9 +10,10 @@ normal u32 stack representation.
   table?
 - **Hypothesis:** four local range checks plus subtraction are smaller and
   simpler than a second Boolean table when callers need only NOT.
-- **Comparison:** the checked fragment is compared with the crate-private
-  unchecked SHA-256 helper; both use the same four-byte representation, while
-  only the public fragment validates hostile limbs.
+- **Comparison:** the checked fragment is compared with the unchecked
+  `hashes::sha256::sha2_u32::u32_not()` helper kept by the SHA-256 kernel;
+  both use the same four-byte representation, while only the arithmetic
+  fragment validates hostile limbs.
 - **Threat model:** every input limb may be malformed, non-minimal, negative,
   or outside `0..=255`; the primitive checks both canonical ScriptNum encoding
   and numeric range before subtraction. A terminal predicate remains a caller
@@ -23,9 +24,9 @@ normal u32 stack representation.
 
 The representative metric uses four canonical `0xff` data items, no hints,
 and measures the checked fragment, output cleanup, and strict combined stack
-peak. The SHA-256 kernel keeps using the unchecked helper to avoid changing
-the established full-hash cost; that helper is crate-private and is not a
-hostile-witness boundary.
+peak. The SHA-256 kernel is unchanged and keeps its own unchecked helper, so
+the established full-hash cost is unaffected; that helper operates only on
+kernel-produced limbs and is not a hostile-witness boundary.
 
 See the [u32 overview](u32.md), [implementation README](../../src/arithmetic/u32/README.md),
 and catalog record `arithmetic/u32-byte-not`.

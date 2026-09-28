@@ -17,6 +17,8 @@ these operations, but this module contains no hash-specific round logic.
   input nibble.
 - `transition_count::u4_nibbles_transition_count(nibble_count)` takes a
   checked batch size in `1..=997` and returns the number of unequal neighbors.
+- `msb::u4_nibbles_to_msb(nibble_count)` takes a checked batch size in
+  `1..=998` and returns one bit per input nibble.
 - `xor_reduce::u4_nibbles_to_xor(nibble_count)` takes a checked batch size in
   `1..=742` and reduces the batch to one nibble with the full XOR table.
 - `popcount::u4_nibbles_to_popcount(nibble_count)` takes a checked batch size
@@ -151,6 +153,7 @@ each input with the same output-restoration boundary.
 | Embedded-cap clamp, 16 nibbles | <!-- metric:u4_clamp_16 -->270<!-- /metric:u4_clamp_16 --> bytes | <!-- metric:u4_clamp_16_stack -->18<!-- /metric:u4_clamp_16_stack --> items | <!-- metric:u4_clamp_16_opcodes -->206<!-- /metric:u4_clamp_16_opcodes --> |
 | Embedded-equality mask, 16 nibbles | <!-- metric:u4_eq_mask_16 -->190<!-- /metric:u4_eq_mask_16 --> bytes | <!-- metric:u4_eq_mask_16_stack -->18<!-- /metric:u4_eq_mask_16_stack --> items | <!-- metric:u4_eq_mask_16_opcodes -->142<!-- /metric:u4_eq_mask_16_opcodes --> |
 | Embedded-threshold mask, 16 nibbles | <!-- metric:u4_lt_mask_16 -->190<!-- /metric:u4_lt_mask_16 --> bytes | <!-- metric:u4_lt_mask_16_stack -->18<!-- /metric:u4_lt_mask_16_stack --> items | <!-- metric:u4_lt_mask_16_opcodes -->142<!-- /metric:u4_lt_mask_16_opcodes --> |
+| Checked MSB batch, 32 nibbles | <!-- metric:u4_msb_batch32 -->446<!-- /metric:u4_msb_batch32 --> bytes | <!-- metric:u4_msb_batch32_stack -->34<!-- /metric:u4_msb_batch32_stack --> items | <!-- metric:u4_msb_batch32_opcodes -->350<!-- /metric:u4_msb_batch32_opcodes --> |
 | Checked XOR reduction, 16 nibbles | <!-- metric:u4_xor_reduce_batch16 -->740<!-- /metric:u4_xor_reduce_batch16 --> bytes | <!-- metric:u4_xor_reduce_batch16_stack -->273<!-- /metric:u4_xor_reduce_batch16_stack --> items | <!-- metric:u4_xor_reduce_batch16_opcodes -->438<!-- /metric:u4_xor_reduce_batch16_opcodes --> |
 | Checked nondecreasing batch, 32 nibbles | <!-- metric:u4_nondecreasing_batch32 -->588<!-- /metric:u4_nondecreasing_batch32 --> bytes | <!-- metric:u4_nondecreasing_batch32_stack -->35<!-- /metric:u4_nondecreasing_batch32_stack --> items | <!-- metric:u4_nondecreasing_batch32_opcodes -->391<!-- /metric:u4_nondecreasing_batch32_opcodes --> |
 | Checked exact-sum batch, 32 nibbles | <!-- metric:u4_exact_sum_batch32 -->489<!-- /metric:u4_exact_sum_batch32 --> bytes | <!-- metric:u4_exact_sum_batch32_stack -->35<!-- /metric:u4_exact_sum_batch32_stack --> items | <!-- metric:u4_exact_sum_batch32_opcodes -->334<!-- /metric:u4_exact_sum_batch32_opcodes --> |
@@ -202,6 +205,7 @@ generated table setup is <!-- metric:u4_odd_inverse_mod16_table -->16<!-- /metri
 
 
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
+<!-- metric:u4_msb_batch32_witness -->65<!-- /metric:u4_msb_batch32_witness --> serialized witness bytes for the representative MSB batch.
 
 The embedded-threshold fixture uses <!-- metric:u4_lt_mask_16_witness -->33<!-- /metric:u4_lt_mask_16_witness --> serialized witness bytes for <!-- metric:u4_lt_mask_16_witness_items -->16<!-- /metric:u4_lt_mask_16_witness_items --> data items and returns one Boolean mask item per input.
 

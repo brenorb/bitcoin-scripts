@@ -26,6 +26,7 @@ the source. Read a page together with its comparison page and evidence record.
 - [Checked odd u4 inverse modulo 16](u4-odd-inverse-mod16.md)
 - [Checked u4 embedded-cap clamp](u4-clamp.md)
 - [Checked u4 embedded-threshold mask](u4-threshold.md)
+- [Checked u4 most-significant-bit projection](u4-msb.md)
 - [Checked u4 triplet-to-u12 packing](u4-triplet.md)
 - [Checked u4 quad-to-u16 packing](u4-quad.md)
 - [Checked u4 XOR reduction](u4-xor-reduction.md)

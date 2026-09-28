@@ -150,7 +150,7 @@ and validate limbs that are dropped after the decision. It also avoids the
 256-item table resident in the population-count construction.
 
 The embedded-constant u32 AND row specializes the table-backed Boolean path
-for a public mask. It uses 612 locking bytes, a 13-byte/4-item witness, and a
+for a public mask. It uses 620 locking bytes, a 13-byte/4-item witness, and a
 272-item strict peak. It removes the second runtime word but still pays for a
 fresh 256-item table, so a caller with a reusable table or a runtime mask
 should keep the generic two-word operation.

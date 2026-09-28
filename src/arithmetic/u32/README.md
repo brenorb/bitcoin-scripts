@@ -166,8 +166,8 @@ uses minimal one-byte encodings; accepted four-byte numeric aliases can reach
 four-limb word, loads the shared 256-item Boolean table, ANDs each byte with
 the embedded public mask, and destructively removes the table before return.
 The representative fixture uses mask `0x89abcdef`, four data items, and zero
-hints. Its 612-byte fragment peaks at 272 combined main-plus-alt-stack items
-and has 444 static non-push opcodes. This is a witness-width construction:
+hints. Its 620-byte fragment peaks at 272 combined main-plus-alt-stack items
+and has 448 static non-push opcodes. This is a witness-width construction:
 the mask is public, while a caller that already has a second runtime word or
 can share the table should prefer the generic `u32_and` composition.
 

@@ -42,16 +42,23 @@ composition preferable for multiple operations.
 
 ## Evidence and execution class
 
-The implementation and metric boundary are currently `inspected`; the
-repository CI metric fixture is the executable reproduction gate. Deployment
-is `unclassified`. The fixture uses mask `0x89abcdef` and four canonical
-`0xff` data limbs. Correctness tests cover zero, all-zero/all-one masks,
-boundary masks, malformed and non-minimal limbs at every position, canonical
-128 and 255 limbs at every position, and surrounding main- and alt-stack state.
+Evidence is `locally-reproduced`; deployment is `unclassified`. The metric
+fixture uses mask `0x89abcdef` and four canonical `0xff` data limbs.
+Correctness tests supply runtime witnesses to complete leaves: six
+zero/all-one/boundary/pattern cases and 100 cases from a fixed RNG seed
+compare all four result limbs in order. Hostile-input tests wrap the fragment
+in a complete leaf that consumes all four outputs before `OP_TRUE`, under the
+local tapscript `Consensus` profile, where global numeric minimality is not
+enforced and the stack limit is. At every position they reject -1 and 256
+(`Verify`), negative zero and non-minimal one (`EqualVerify`), and a five-byte
+number (`ScriptIntNumericOverflow`); canonical 128 and 255 controls succeed at
+every position. A test-only historical mutant that checks only the top limb
+accepts non-minimal one at positions 0-2 and fails the all-position predicate.
+Surrounding main- and alt-stack state is preserved.
 
-The strict metric fixture is intended to execute through the repository's
-locked `bitcoin-scriptexec` dependency in a tapscript context with the
-combined main-plus-alt-stack limit. The 448 figure is a static non-push
+The strict metric fixture executes through the repository's locked
+`bitcoin-scriptexec` dependency in a tapscript context with the combined
+main-plus-alt-stack limit. The 448 figure is a static non-push
 opcode count, not a dynamic execution or validation-weight claim. No Bitcoin
 Core differential, complete-transaction, relay-policy, or cryptographic
 claim is made.

@@ -1,3 +1,4 @@
+use super::stack::verify_canonical_byte;
 use crate::support::script::*;
 
 /// Right rotation of an u32 element by 16 bits
@@ -7,11 +8,39 @@ pub fn u32_rrot16() -> Script {
     }
 }
 
+/// Checked right rotation of a four-byte u32 word by sixteen bits.
+pub fn u32_rrot16_checked() -> Script {
+    script! {
+        for _ in 0..4 {
+            { verify_canonical_byte() }
+            OP_TOALTSTACK
+        }
+        for _ in 0..4 {
+            OP_FROMALTSTACK
+        }
+        { u32_rrot16() }
+    }
+}
+
 /// Right rotation of an u32 element by 8 bits
 pub fn u32_rrot8() -> Script {
     script! {
       OP_2SWAP
       3 OP_ROLL
+    }
+}
+
+/// Checked right rotation of a four-byte u32 word by eight bits.
+pub fn u32_rrot8_checked() -> Script {
+    script! {
+        for _ in 0..4 {
+            { verify_canonical_byte() }
+            OP_TOALTSTACK
+        }
+        for _ in 0..4 {
+            OP_FROMALTSTACK
+        }
+        { u32_rrot8() }
     }
 }
 
@@ -83,6 +112,20 @@ pub fn u32_rrot7() -> Script {
     }
 }
 
+/// Checked right rotation of a four-byte u32 word by seven bits.
+pub fn u32_rrot7_checked() -> Script {
+    script! {
+        for _ in 0..4 {
+            { verify_canonical_byte() }
+            OP_TOALTSTACK
+        }
+        for _ in 0..4 {
+            OP_FROMALTSTACK
+        }
+        { u32_rrot7() }
+    }
+}
+
 /// Extracts (puts it at the top of the stack) the most significant bit of the u8 number and multiplies it by 2 modulo 256
 pub fn u8_extract_1bit() -> Script {
     script! {
@@ -131,6 +174,14 @@ pub fn u8_extract_hbit(hbit: usize) -> Script {
         }
 
         OP_FROMALTSTACK
+    }
+}
+
+/// Checked form of [`u8_extract_hbit`].
+pub fn u8_extract_hbit_checked(hbit: usize) -> Script {
+    script! {
+        OP_DUP 0 256 OP_WITHIN OP_VERIFY
+        { u8_extract_hbit(hbit) }
     }
 }
 /// Reorders (reverse and rotate) the bytes of an u32 number, assuming the starting order is 1 2 3 4 (4 being at the top):
@@ -221,9 +272,9 @@ pub fn u32_rrot(rot_num: usize) -> Script {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::arithmetic::test_helpers::{run_with_witness, word_witness};
     use crate::arithmetic::u32::stack::*;
-    use crate::support::execution::run;
-    use rand::Rng;
+    use rand::{rngs::StdRng, Rng, SeedableRng};
 
     fn rrot(x: u32, n: usize) -> u32 {
         if n == 0 {
@@ -234,37 +285,241 @@ mod tests {
 
     #[test]
     fn test_rrot() {
-        for i in 0..32 {
-            println!("u32_rrot({}): {} bytes", i, u32_rrot(i).len());
-        }
-        let mut rng = rand::thread_rng();
+        let scripts: Vec<_> = (0..32)
+            .map(|i| {
+                println!("u32_rrot({}): {} bytes", i, u32_rrot(i).len());
+                script! {
+                    { u32_rrot(i) }
+                    { u32_equal() }
+                }
+                .compile_with_policy()
+                .to_bytes()
+            })
+            .collect();
+        let mut rng = StdRng::seed_from_u64(0x7533325f726f74);
         for _ in 0..1000 {
             let x: u32 = rng.gen();
-            for i in 0..32 {
-                let script = script! {
-                    {u32_push(x)}
-                    {u32_rrot(i)}
-                    {u32_push(rrot(x, i))}
-                    {u32_equal()}
-                };
-                run(script);
+            for (i, script) in scripts.iter().enumerate() {
+                run_with_witness(script, word_witness(rrot(x, i)).chain(word_witness(x)));
             }
         }
     }
+
     #[test]
-    fn test_extract_hbit() {
-        for x in 0..256 {
-            for h in 1..8 {
-                let script = script! {
-                    { x }
-                    { u8_extract_hbit(h) }
-                    { x >> (8 - h) }
-                    OP_EQUALVERIFY
-                    { (x << h) % 256 }
-                    OP_EQUAL
-                };
-                run(script);
+    fn test_canonical_rrot8() {
+        let script = script! {
+            { u32_rrot8_checked() }
+            { u32_equal() }
+        }
+        .compile_with_policy()
+        .to_bytes();
+        for x in [0, 1, 0x0102_0304, 0x8000_0000, u32::MAX] {
+            run_with_witness(&script, word_witness(rrot(x, 8)).chain(word_witness(x)));
+        }
+    }
+
+    #[test]
+    fn test_canonical_rrot8_rejects_malformed_bytes() {
+        let script = script! {
+            { u32_rrot8_checked() }
+            OP_2DROP OP_2DROP
+            OP_TRUE
+        };
+        for position in 0..4 {
+            for replacement in [vec![1, 0], vec![0, 1], vec![0x80]] {
+                let mut witness = vec![vec![1]; 4];
+                witness[position] = replacement;
+                let result =
+                    crate::support::execution::execute_script_with_inputs(script.clone(), witness);
+                assert!(
+                    !result.success,
+                    "accepted malformed byte at {position}: {result}"
+                );
             }
         }
+    }
+
+    #[test]
+    fn test_canonical_rrot8_preserves_surrounding_stacks() {
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                99 OP_TOALTSTACK
+                { u32_rrot8_checked() }
+                OP_2DROP OP_2DROP
+                77 OP_EQUALVERIFY
+                OP_FROMALTSTACK 99 OP_EQUALVERIFY
+                OP_TRUE
+            },
+            vec![vec![77], vec![1], vec![2], vec![3], vec![4]],
+        );
+        assert!(result.success, "stack preservation failed: {result}");
+    }
+    #[test]
+    fn test_canonical_rrot16() {
+        let script = script! {
+            { u32_rrot16_checked() }
+            { u32_equal() }
+        }
+        .compile_with_policy()
+        .to_bytes();
+        for x in [0, 1, 0x0102_0304, 0x8000_0000, u32::MAX] {
+            run_with_witness(&script, word_witness(rrot(x, 16)).chain(word_witness(x)));
+        }
+    }
+
+    #[test]
+    fn test_canonical_rrot16_rejects_malformed_bytes() {
+        let script = script! {
+            { u32_rrot16_checked() }
+            OP_2DROP OP_2DROP
+            OP_TRUE
+        };
+        for position in 0..4 {
+            for replacement in [vec![1, 0], vec![0, 1], vec![0x80]] {
+                let mut witness = vec![vec![1]; 4];
+                witness[position] = replacement;
+                let result =
+                    crate::support::execution::execute_script_with_inputs(script.clone(), witness);
+                assert!(
+                    !result.success,
+                    "accepted malformed byte at {position}: {result}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_canonical_rrot16_preserves_surrounding_stacks() {
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                99 OP_TOALTSTACK
+                { u32_rrot16_checked() }
+                OP_2DROP OP_2DROP
+                77 OP_EQUALVERIFY
+                OP_FROMALTSTACK 99 OP_EQUALVERIFY
+                OP_TRUE
+            },
+            vec![vec![77], vec![1], vec![2], vec![3], vec![4]],
+        );
+        assert!(result.success, "stack preservation failed: {result}");
+    }
+
+    #[test]
+    fn test_extract_hbit() {
+        let scripts: Vec<_> = (1..8)
+            .map(|h| {
+                script! {
+                    { u8_extract_hbit(h) }
+                    OP_ROT OP_EQUALVERIFY
+                    OP_EQUAL
+                }
+                .compile_with_policy()
+                .to_bytes()
+            })
+            .collect();
+        for x in 0..256 {
+            for (i, script) in scripts.iter().enumerate() {
+                let h = i + 1;
+                run_with_witness(script, [(x << h) % 256, x >> (8 - h), x]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_checked_extract_hbit_rejects_non_bytes() {
+        for h in [1, 4, 7] {
+            for x in 0..=255 {
+                let result = crate::support::execution::execute_script(script! {
+                    { x }
+                    { u8_extract_hbit_checked(h) }
+                    { x >> (8 - h) } OP_EQUALVERIFY
+                    { (x << h) % 256 } OP_EQUAL
+                });
+                assert!(result.success, "failed for x={x}, h={h}: {result}");
+            }
+            for x in [-1, 256, 512] {
+                let result = crate::support::execution::execute_script(script! {
+                    { x }
+                    { u8_extract_hbit_checked(h) }
+                });
+                assert!(!result.success, "accepted non-byte x={x}, h={h}");
+            }
+        }
+    }
+
+    #[test]
+    fn test_checked_rrot7() {
+        let script = script! {
+            { u32_rrot7_checked() }
+            { u32_equal() }
+        }
+        .compile_with_policy()
+        .to_bytes();
+        let mut rng = StdRng::seed_from_u64(0x7533325f726f745f);
+        for _ in 0..1000 {
+            let x: u32 = rng.gen();
+            run_with_witness(&script, word_witness(rrot(x, 7)).chain(word_witness(x)));
+        }
+    }
+
+    #[test]
+    fn test_checked_rrot7_rejects_malformed_bytes() {
+        let script = script! {
+            { u32_rrot7_checked() }
+            for _ in 0..4 { OP_DROP }
+            OP_TRUE
+        };
+        for position in 0..4 {
+            for replacement in [vec![1, 0], vec![0, 1], vec![0x80]] {
+                let mut witness = vec![vec![1]; 4];
+                witness[position] = replacement.clone();
+                let result =
+                    crate::support::execution::execute_script_with_inputs(script.clone(), witness);
+                assert!(
+                    !result.success,
+                    "accepted malformed byte at {position} ({replacement:?}): {result}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_checked_rrot7_preserves_surrounding_stacks() {
+        let result = crate::support::execution::execute_script_with_inputs_strict(
+            script! {
+                99 OP_TOALTSTACK
+                { u32_rrot7_checked() }
+                for _ in 0..4 { OP_DROP }
+                77 OP_EQUALVERIFY
+                OP_FROMALTSTACK 99 OP_EQUALVERIFY
+                OP_TRUE
+            },
+            vec![vec![77], vec![1], vec![2], vec![3], vec![4]],
+        );
+        assert!(result.success, "{result}");
+    }
+    #[test]
+    fn byte_reorder_covers_all_offsets() {
+        for (offset, expected) in [
+            (0, 0x4433_2211),
+            (1, 0x1144_3322),
+            (2, 0x2211_4433),
+            (3, 0x3322_1144),
+        ] {
+            let result = crate::support::execution::execute_script(script! {
+                { u32_push(0x1122_3344) }
+                { byte_reorder(offset) }
+                { u32_push(expected) }
+                { u32_equal() }
+                OP_VERIFY
+                OP_TRUE
+            });
+            assert!(result.success, "offset {offset} failed: {result}");
+        }
+    }
+
+    #[test]
+    fn byte_reorder_rejects_invalid_offsets() {
+        assert!(std::panic::catch_unwind(|| byte_reorder(4)).is_err());
     }
 }

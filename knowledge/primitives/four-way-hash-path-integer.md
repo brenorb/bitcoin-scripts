@@ -12,9 +12,12 @@ and reconstructs a 1–31-bit non-negative Script integer.
   malformed-encoding, wrong-opening, wrong-preimage, selector-range, odd-width,
   and strict-stack tests. Execution is `research-unlimited` because the metric
   witness executor disables its stack-limit check.
-- **Representative result:** 31 bits use a 453-byte fragment, 61-byte
-  serialized witness, and 19 stack items. The binary path uses 520 bytes, 78
-  witness bytes, and 34 items under the same metric boundary.
+- **Representative result:** 31 bits use a 438-byte fragment, 61-byte
+  serialized witness, and 19 stack items. The binary path uses 457 bytes, 78
+  witness bytes, and 33 items under the same metric boundary.
+- **Retained-digit variant:** the generic 16-digit path uses a 360-byte
+  fragment, 61-byte witness, and 20-item strict local stack peak; it preserves
+  the original digit bytes on the altstack rather than reconstructing an integer.
 - **Security:** hiding requires a secret high-entropy preimage. The final
   160-bit digest caps generic collision resistance at 80 bits, and binding
   additionally relies on the non-standard mixed-hash schedule.
@@ -26,6 +29,6 @@ and reconstructs a 1–31-bit non-negative Script integer.
   without explicit range checks. Bitcoin Core consensus and policy validation
   have not been performed.
 
-See the [implementation README](../../src/commitments/README.md), the
+See the [implementation README](../../src/commitments/four_way_hash_path/README.md), the
 [commitment comparison](../comparisons/commitments.md), negative result
 `NR-012`, and catalog record `commitment/four-way-hash-path-integer`.

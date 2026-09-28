@@ -34,7 +34,7 @@ Bitcoin witness serialization framing. There are zero auxiliary hint items.
 
 ## Results
 
-The 31-bit representative is 924 policy-produced script bytes, 63 serialized
+The 31-bit representative is 947 policy-produced script bytes, 63 serialized
 witness bytes, 21 witness items, and a 24-item combined local peak. It is
 larger than the four-way path for this integer objective but preserves a native
 three-valued selector. The strict tapscript executor reports
@@ -44,13 +44,16 @@ private seed is part of the public fixture.
 
 ## Falsification attempts
 
-Focused tests cover all codewords, integer boundaries, wrong openings, padded
-encodings, and an out-of-range trit. The local strict executor accepts the
+Focused tests cover all codewords, integer boundaries, `2^width-1` acceptance
+and `2^width` rejection at every width `1..=31`, surrounding-stack
+preservation, ScriptNum overflow, wrong openings, padded encodings, and an
+out-of-range trit. The local strict executor accepts the
 valid fixtures and rejects those malformed witnesses. Bitcoin Core differential
 validation and policy testing remain open.
 
 ## Conclusion and knowledge updates
 
 The hypothesis survived the local correctness boundary. The implementation,
-metrics, comparison, catalog, negative result, and open problem are updated;
-the construction remains experimental and unclassified for deployment.
+metrics, comparison, catalog, negative result (NR-072), and open problem
+(OP-030) are updated; the construction remains experimental and unclassified
+for deployment.

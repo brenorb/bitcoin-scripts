@@ -46,7 +46,9 @@ For a 32-byte preimage and a 31-bit value:
 | --- | ---: | ---: | ---: | ---: |
 | `verify_ternary_hash_path_to_integer` | 947 | 63 | 21 | 24 |
 
-The benchmark reports zero auxiliary hint items. These are fragment-only
+There are zero hint items per invocation; all 21 data items (20 trits and the
+preimage) coexist at script entry. The stack peak is measured with strict local
+stack checks. These are fragment-only
 measurements: the verifier and integer reconstruction are included, while
 input pushes, terminal predicates, and transaction framing are excluded.
 The strict local tapscript benchmark's legacy `opcode_count` reports `0`, so
@@ -69,6 +71,8 @@ All trits are present at script entry and there are no hint items. The 20-trit
 representative stays below the 1,000-item combined stack limit in the strict
 local test, but composition with surrounding protocol state must be measured.
 
-See the [implementation README](../../src/commitments/README.md), the
-[commitment comparison](../comparisons/commitments.md), and catalog record
-`commitment/ternary-hash-path-integer`.
+See the [implementation README](../../src/commitments/ternary_hash_path/README.md), the
+[commitment comparison](../comparisons/commitments.md), catalog record
+`commitment/ternary-hash-path-integer`,
+[NR-072](../negative-results/index.md#nr-072-ternary-mixed-hash-paths-lose-to-four-way-integer-paths),
+and [OP-030](../open-problems.md#op-030--ternary-commitment-composition-frontier).

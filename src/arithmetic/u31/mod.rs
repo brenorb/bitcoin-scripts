@@ -11,6 +11,7 @@
 
 use bitcoin::ScriptBuf;
 
+use crate::arithmetic::scriptint;
 use crate::support::script::*;
 
 mod extension;
@@ -187,6 +188,46 @@ pub fn u31_to_bits_with_width(bit_width: u32) -> Script {
                 OP_SUB
             OP_ENDIF
         }
+    }
+}
+
+/// Decompose a numerically range-checked value into exactly `bit_width` bits.
+///
+/// This checks the positive ScriptNum domain before calling
+/// [`u31_to_bits_with_width`]. It does not enforce byte-minimal witness
+/// encoding; use a raw-encoding boundary when that distinction matters.
+pub fn u31_to_bits_with_width_checked(bit_width: u32) -> Script {
+    assert!(
+        (1..=31).contains(&bit_width),
+        "u31 bit width must be in 1..=31"
+    );
+
+    let upper_bound = if bit_width == 31 {
+        script! {
+            OP_DUP 0 OP_GREATERTHANOREQUAL OP_VERIFY
+            OP_DUP { 0x7fff_ffffu32 } OP_LESSTHANOREQUAL OP_VERIFY
+        }
+    } else {
+        script! {
+            OP_DUP 0 OP_GREATERTHANOREQUAL OP_VERIFY
+            OP_DUP { 1u32 << bit_width } OP_LESSTHAN OP_VERIFY
+        }
+    };
+
+    script! {
+        { upper_bound }
+        { u31_to_bits_with_width(bit_width) }
+    }
+}
+
+/// Decompose a range-checked value after enforcing minimal ScriptNum encoding.
+///
+/// This adds the raw witness boundary that [`u31_to_bits_with_width_checked`]
+/// deliberately leaves to its caller.
+pub fn u31_to_bits_with_width_canonical(bit_width: u32) -> Script {
+    script! {
+        { scriptint::verify_canonical() }
+        { u31_to_bits_with_width_checked(bit_width) }
     }
 }
 
@@ -437,7 +478,16 @@ mod tests {
         babybear::{babybear4::BabyBear4, u31::BabyBear},
         m31::{qm31::QM31, u31::M31},
     };
-    use crate::support::{execution::execute_script, script::script};
+    use crate::support::{
+        execution::{execute_script, execute_script_with_inputs_strict},
+        script::script,
+    };
+
+    fn scriptnum(value: i64) -> Vec<u8> {
+        let mut bytes = [0u8; 8];
+        let length = bitcoin::script::write_scriptint(&mut bytes, value);
+        bytes[..length].to_vec()
+    }
 
     struct TestField257;
 
@@ -600,6 +650,77 @@ mod tests {
             });
             assert!(result.success, "9-bit decomposition failed: {result}");
         }
+    }
+
+    #[test]
+    fn checked_bit_decomposition_enforces_width() {
+        for (value, width) in [
+            (0, 9),
+            (1, 9),
+            (255, 9),
+            (256, 9),
+            (511, 9),
+            (i32::MAX as u32, 31),
+        ] {
+            let bits = (0..width).map(|i| (value >> i) & 1).collect::<Vec<_>>();
+            let result = execute_script(script! {
+                { value }
+                { u31_to_bits_with_width_checked(width) }
+                for bit in bits {
+                    { bit }
+                    OP_EQUALVERIFY
+                }
+                OP_TRUE
+            });
+            assert!(
+                result.success,
+                "checked decomposition failed for {value}: {result}"
+            );
+        }
+
+        for (value, width) in [(-1, 9), (512, 9), (i32::MIN, 31)] {
+            let result = execute_script(script! {
+                { value }
+                { u31_to_bits_with_width_checked(width) }
+                for _ in 0..width { OP_DROP }
+                OP_TRUE
+            });
+            assert!(!result.success, "accepted out-of-range value {value}");
+        }
+    }
+
+    #[test]
+    fn canonical_bit_decomposition_rejects_raw_aliases() {
+        let script = script! {
+            { u31_to_bits_with_width_canonical(9) }
+            for _ in 0..9 { OP_DROP }
+            OP_TRUE
+        };
+        for raw in [vec![1, 0], vec![0x80], vec![0, 2], vec![0xff]] {
+            let result = execute_script_with_inputs_strict(script.clone(), vec![raw.clone()]);
+            assert!(!result.success, "accepted hostile width-9 input {raw:?}");
+        }
+    }
+
+    #[test]
+    fn canonical_bit_decomposition_preserves_state_and_outputs_bits() {
+        let result = execute_script_with_inputs_strict(
+            script! {
+                77 OP_TOALTSTACK
+                { u31_to_bits_with_width_canonical(9) }
+                for bit in 0..9 {
+                    { (511 >> bit) & 1 } OP_EQUALVERIFY
+                }
+                99 OP_EQUALVERIFY
+                OP_FROMALTSTACK 77 OP_EQUALVERIFY
+                OP_TRUE
+            },
+            vec![vec![99], scriptnum(511)],
+        );
+        assert!(
+            result.success,
+            "canonical bit decomposition failed: {result}"
+        );
     }
 
     #[test]

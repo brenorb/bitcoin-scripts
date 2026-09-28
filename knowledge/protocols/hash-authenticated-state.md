@@ -33,3 +33,9 @@ witness-backed state still needs the documented numeric range checks, any
 protocol-required byte-encoding canonicality, and a digest-binding predicate.
 Values in a wholly ignored selected-limb final half-block are padding, not
 authenticated protocol state.
+
+For [binary hash paths](../primitives/hash-path-integer.md), bind the starting
+state independently: otherwise changing `(x, 1)` to `(SHA256(x), 0)` preserves
+the result. Nested paths equal the joined path and do not encode round
+boundaries. Binohash/Lamport consumers must bind the normalized branch bits,
+not the original selector bytes. A complete wrapper and its costs remain OP-020.

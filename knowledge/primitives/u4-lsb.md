@@ -1,0 +1,29 @@
+# Checked u4 least-significant-bit projection
+
+`arithmetic::u4::lsb::u4_nibbles_to_lsb` consumes a contiguous batch of
+range-checked four-bit limbs, proves each value is in `0..=15`, and replaces it
+with its least-significant bit. It avoids materializing the other three bits
+when a bit-oriented encoding needs only the low bit.
+
+- **Input:** `preserved | nibble[0] | ... | nibble[n-1]`, with the last nibble
+  on top.
+- **Output:** `preserved | lsb[0] | ... | lsb[n-1]`, with the last bit on top.
+- **Evidence:** `locally-reproduced` by all-nibble ordering tests, malformed
+  input tests at every position, preserved-state and batch-size boundary tests,
+  and a strict metric fixture.
+- **Representative result:** 440 locking-script bytes, 65 serialized witness
+  bytes across 32 data items, 50 combined stack items, and no hints. The
+  fragment contains 328 static non-push opcodes; this is not an executed-opcode
+  or deployment claim.
+- **Execution class:** `unclassified`. The strict local executor uses a
+  tapscript context and the combined stack limit; Bitcoin Core consensus and
+  relay policy have not been differentially tested.
+
+This is a projection fragment, not a complete locking script. Numeric range
+checking does not establish canonical or byte-unique ScriptNum encoding.
+Callers still need any terminal predicate and clean-stack rule required by
+their protocol.
+
+See the [implementation README](../../src/arithmetic/u4/README.md),
+[arithmetic comparison](../comparisons/arithmetic.md), and catalog record
+`arithmetic/u4-lsb`.

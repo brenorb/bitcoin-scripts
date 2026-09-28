@@ -14,6 +14,23 @@ A protocol map should annotate every edge with its stack representation and
 trust status. Setup amortization is valid only if table memory can remain live
 across all intervening operations.
 
+Check the initial witness before any cleanup and the combined live depth after
+every instruction: an immediate drop cannot repair a prior overflow. The
+[resource regression suite](../../tests/execution_limits.rs) exercises these
+cases after the shared helper repair documented in
+[NR-056](../negative-results/index.md#nr-043-upstream-stack-limit-enforcement-misses-entry-and-data-pushes).
+The helper's explicit stack-limit flag is local execution evidence, not a
+complete consensus-validation result.
+
+Budget repeated signature checks against the serialized complete witness,
+including the leaf, control path, annex and CompactSize prefixes. Data-only
+fragment accounting can falsely reject a valid complete spend; byte boundaries
+can also change a repeated check from exact exhaustion to failure. The
+[funded budget experiment](../tapscript-budget-validation.md) records these
+boundaries with zero hints and all data items present at entry. Reusing a
+signature in Script does not remove the 50-unit charge for each executed
+nonempty check.
+
 Certificate provenance is part of that edge trust status. The prime-RNS
 composable multiplier, for example, is globally sound only when each operand
 vector is a verified-path output of its shared-integer field binder or a prior
@@ -38,3 +55,25 @@ and 29 hint items, but currently exposes no resident-table or batch API. Its
 stored values mean `E(x)=x/16`, so an ordinary-domain batch estimate cannot be
 transferred to it without also specifying conversions and downstream domain
 compatibility.
+
+The checked [`prince_verify`](../../src/ciphers/prince/README.md#checked-computation-leaf)
+illustrates a complete-leaf boundary: it accepts exactly 16 canonical nibble
+items, consumes them, and returns one true item. Its 633/685-item measured peaks
+include all 16 inputs, zero hints, tables and temporaries. Extra main-stack
+state rejects at entry, so its unused stack capacity cannot be advertised as
+composition capacity. The underlying `prince_encrypt` fragment preserves a
+surrounding prefix but requires the caller to validate nibble encodings/ranges,
+budget that live prefix, consume every ciphertext output and add authorization
+where the protocol requires it. The three Core-validated complete spends do
+not transfer their deployment class to a differently composed leaf.
+
+## Binary hash-path checkpoints
+
+The [optional-SHA256 hash path](../primitives/hash-path-integer.md) finishes
+each bit with RIPEMD-160, so nested paths equal the joined bit path. Checkpoints
+fit in one 20-byte item but do not encode round boundaries. Independently bind
+the initial preimage (NR-056), fix widths and ordering, and retain normalized
+branch bits for downstream authentication. A path has zero hints and `n+1`
+input data items; a retained path peaks at `n+2` combined items before unrelated
+protocol state. This bound does not include a surrounding pinning/signature
+wrapper (OP-020).

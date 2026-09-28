@@ -21,6 +21,23 @@ non-minimal limb encodings are rejected. The constant is public and embedded
 in the locking script; no terminal predicate or clean-stack guarantee is
 provided by the fragment.
 
+The local tests exercise complete leaves under the consensus tapscript
+profile. At each of the four limb positions, `-1`, `-127` and `256` fail at
+the range check, negative zero and a non-minimal one fail at the canonicality
+check, and a five-byte number fails with a numeric overflow; fewer than four
+limbs fail with an invalid stack operation. Canonical `128` and `255` at each
+position succeed with the correct result. A test-only copy whose four checks
+all inspect the top limb accepts the non-minimal alias at positions 0-2 and is
+rejected by the same regression predicate.
+
+The 256-item table exists only during a call. A state test places two
+out-of-byte-range sentinels below the word and two on the alt stack, requires
+`OP_DEPTH` to equal the sentinels plus one result word after every call, and
+restores all four sentinels. One call and three sequential calls both peak at
+276 items: the 272-item fragment peak plus the four sentinels. A test-only
+copy that drops 255 of the 256 table items still returns the correct word, but
+fails that depth check.
+
 The representative configuration is `u32_xor_constant(0x89abcdef)` with four
 canonical `0xff` witness limbs and no hints. It measures the generated
 fragment, including table setup, four checks, XOR queries, and table cleanup;

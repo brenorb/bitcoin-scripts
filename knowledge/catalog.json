@@ -2425,7 +2425,7 @@
       "id": "arithmetic/u32-xor-constant",
       "name": "Checked u32 XOR with embedded constant",
       "class": "arithmetic/word",
-      "summary": "Checked byte-oriented u32 XOR with a public generation-time constant and a reusable 256-entry XOR table.",
+      "summary": "Checked byte-oriented u32 XOR with a public generation-time constant and a per-call 256-entry XOR table that is fully dropped before return.",
       "status": "active",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
@@ -2436,6 +2436,7 @@
       "tests": [
         "arithmetic::u32::xor_constant::tests::projects_boundary_and_pattern_words",
         "arithmetic::u32::xor_constant::tests::rejects_malformed_and_nonminimal_limbs",
+        "arithmetic::u32::xor_constant::tests::drops_whole_table_and_restores_stack_state",
         "arithmetic::u32::xor_constant::tests::preserves_surrounding_main_and_alt_stack_items",
         "tests/primitive_metrics.rs"
       ],
@@ -2481,7 +2482,7 @@
         }
       ],
       "limitations": [
-        "The XOR table consumes 256 persistent stack items",
+        "The XOR table occupies 256 transient stack items during each call",
         "Table setup and cleanup repeat for each isolated call",
         "Static non-push opcode count is not a dynamic execution measurement",
         "No Bitcoin Core consensus or relay-policy validation"

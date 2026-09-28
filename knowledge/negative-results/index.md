@@ -3,6 +3,14 @@
 These records prevent repeated dead ends. They are scoped observations, not
 universal impossibility proofs.
 
+## NR-071: u4 MSB lookup table is dominated by a direct threshold at n=32
+
+The former 16-entry lookup implementation measured 440 locking-script bytes
+and a 50-item peak, while the direct range-checked `nibble >= 8` implementation
+measures 446 bytes and a 34-item peak at the same 32-nibble boundary. This is
+scoped to `n=32` and does not claim dominance for other batch sizes. Evidence
+is `locally-reproduced`; deployment is `unclassified`.
+
 ## NR-049: Signature opcodes still diverge after resource repairs
 
 The [funded signature experiment](../tapscript-signature-validation.md) records
@@ -1538,8 +1546,10 @@ concatenation of two hostile 32-byte nodes. Current Script can hash one stack
 item but has no enabled native byte concatenation/splitting boundary, so a
 compact adapter cannot bind separately supplied nodes to a 64-byte witness
 blob. The repository's mixed-hash path commits to nested SHA256/RIPEMD160
-outputs and is not TapBranch. A full u4 SHA256 circuit remains possible but is
-not a compact native primitive; this inspected result is tracked under OP-021.
+outputs and is not TapBranch. PR #17 provides a fixed-prefix u4 circuit for
+already ordered nibble-encoded nodes; its generated script is unoptimized and
+not a compact native primitive, and the fragment remains unclassified until a
+complete-spend validation. This inspected result is tracked under OP-021.
 ## NR-058: Constant-composition byte recovery is not yet a composable Script primitive
 
 The fixed-composition Winternitz verifier locally authenticates 49 digit slots,
@@ -1587,7 +1597,120 @@ retained as a stack-shape primitive and a complete-width correctness result,
 not as a general script-byte optimization. Evidence is `locally-reproduced`;
 deployment is `unclassified`; OP-026 remains open.
 
-## NR-064: Signed-window tables are not a universal scalar-schedule win
+## Historical PR #3: rotate-and-mask loses on the tested compressed-input shifts
+
+The question is whether the rotate-and-mask construction proposed in
+[PR #3](https://github.com/solving-bitcoin/bitcoin-scripts/pull/3) improves
+logical right shifts when both alternatives consume the same canonical
+compressed u32 input. The
+[review published on 2026-09-18](https://github.com/solving-bitcoin/bitcoin-scripts/pull/3#issuecomment-5725210260)
+reports that PR #8 is smaller at each tested shift: `1, 7, 8, 16, 24, 31`.
+The review provides the following exact measurements for input `0xa5c319e7`:
+
+| Shift | PR #3 script bytes | PR #8 script bytes | PR #3 combined peak | PR #8 combined peak |
+| --- | ---: | ---: | ---: | ---: |
+| 7 | 1,141 | 519 | 272 | 5 |
+| 31 | 1,136 | 58 | 272 | 5 |
+
+Boundary: `fragment-only:` policy-compiled operation size excludes input
+pushes and terminal checks on both sides; combined main/alt-stack peaks
+include identical result checks. Each isolated invocation has one entry data
+item, zero hint items, and six serialized data-witness bytes, excluding script
+and control block. No repeated configuration is reported. Executed-opcode,
+validation-budget, and complete-transaction measurements are unavailable.
+
+Provenance: PR #3's reviewed implementation is pinned at
+[`e9cbd4788962a727945eb8d8dc618a8696693fdb`](https://github.com/solving-bitcoin/bitcoin-scripts/blob/e9cbd4788962a727945eb8d8dc618a8696693fdb/src/arithmetic/u32/rshift.rs);
+PR #8's implementation is pinned at
+[`e6159c65edd10f57a77833888dfb3e14a4fa66b2`](https://github.com/solving-bitcoin/bitcoin-scripts/blob/e6159c65edd10f57a77833888dfb3e14a4fa66b2/src/arithmetic/u32/shift.rs).
+These are historical measurements, separate from NR-062's shift-by-eight
+decode/re-encode comparison. They must not replace current metric snapshots.
+
+Evidence for this archived comparison is `reported`: the reviewer labels the
+probes `locally-reproduced` using strict local execution, but this documentation
+change does not rerun them. Deployment remains `unclassified`. The review
+does not supply the exact comparison harness or interpreter revision; a fresh
+reproduction must pin those, compile both fragments through
+`compile_with_policy()`, and use identical witness and result-check boundaries.
+It must also test malformed encodings and semantic boundaries before extending
+the claim beyond the reported input and shifts.
+
+The measured compressed-input configurations justify retiring PR #3 as a
+competing implementation. They do not establish dominance over its standalone
+four-byte `u32_bytes_rshift()` API. That remains an open comparison under
+[OP-014](../open-problems.md#op-014--total-domain-scriptnum-right-shift-frontier):
+for an identified byte-oriented caller, compare direct byte shifting with
+compression, PR #8's shift, and conversion back, including validation,
+table setup/cleanup, routing, and the same output checks on both sides.
+
+## NR-064: Data-only signature budgets falsely reject complete spends
+
+The [complete-witness budget experiment](../tapscript-budget-validation.md)
+compares `Exec::new` and `Exec::new_tapscript` at the same immutable interpreter
+revision `f678467784475b1072557de70166514e52753f66`, against funded Bitcoin Core
+v30.3 spends. Data-only initialization disagrees on 16 of 32 cases: 15 false
+rejections and one wrong rejection category. The full-witness path agrees on
+all 32. This is a same-revision constructor counterexample, not a historical
+before/after report.
+
+An 11-byte leaf repeats CHECKSIGVERIFY four times. It has three data items,
+five complete witness items, zero hint items/bytes per invocation and across all
+four checks, and a measured combined stack peak of four. All data coexist at
+entry under the 1,000-item limit. Data serialize to 104 bytes; script and control
+raise the full witness to 150 bytes. The legacy budget is 154, below the 200-unit
+cost; the complete-witness budget is exactly 200. Core accepts this spend under
+consensus and default policy. Evidence is `differentially-validated`; the exact
+funded fixture is `policy-validated`. Legacy local rejection does not establish
+consensus incompatibility of the transaction.
+
+Composition lesson: include the complete witness count, item prefixes, script,
+control block and annex when pricing repeated signature checks. Reusing a
+signature does not remove its per-check charge. The additive constructor fixes
+this boundary while legacy fragment APIs intentionally retain compatibility;
+commitment and complete-transaction validation remain separate obligations.
+
+
+## NR-065: Narrowing five-byte CSV operands before masking panics
+
+BIP112 accepts a positive five-byte ScriptNum even when it exceeds `u32`. The
+original `bitcoin-scriptexec` converted that full operand to `u32` with `expect`
+in `check_sequence`, after which a valid `2^32` operand panicked. This was
+`locally-reproduced` on upstream `ba96bc2` with transaction version 2 and
+input sequence zero. Under BIP68 the operand's type bit and low 16 bits are
+zero, and the high bit 32 has no meaning. Pinned Core v30.3 accepts the funded
+spend under consensus and default policy.
+
+The [funded CSV experiment](../tapscript-csv-validation.md) measures the fixed
+interpreter integration `a09e87af444034698697f0a2267e755cf72f9aed` on 19
+cases: all local consensus/numeric-policy results and rejection categories
+match Core. The smallest direct counterexample has a three-byte locking leaf,
+one five-byte data item, three complete witness items, a 45-byte serialized
+complete witness and a combined one-item stack peak. It uses zero hint items
+per invocation and in total; all data coexist at entry under the 1,000-item
+limit. Evidence for this exact spend is `differentially-validated`; deployment
+is `policy-validated` for the pinned funded transaction.
+
+Mask the type bit and low 16 bits in a wide integer before narrowing. Do not
+mask before checking the negative, overlong or operand-disable cases. A local
+leaf verdict still does not establish BIP68 maturity or complete transaction
+validity.
+
+## NR-066: Standard Merkle branch composition without `OP_CAT`
+
+The conventional Bitcoin Merkle step is `HASH256(left || right)`, while the
+current Script opcode set has no enabled native concatenation. The existing
+mixed-hash path is unary and is not a Merkle proof. A compile-only probe of the
+byte-oriented `sha2_u32::sha256(64)` backend measures 1,060,200 unoptimized
+script bytes and 770,481 static non-push opcodes before double hashing or
+routing; 64 one-byte items serialize to a 129-byte fixture witness, while
+64 canonical two-byte payloads serialize to 193 bytes. This is a
+`locally-reproduced`, backend-specific profile, not a universal lower bound,
+complete verifier, consensus result, or policy result. Ordinary Merkle
+composition is distinct from Taproot `TapBranch`; see [NR-057](#nr-057-native-taproot-merkle-branch-adapter-is-not-available),
+[OP-021](../open-problems.md#op-021--taproot-merkle-path-verifier), and the
+[full record](merkle-branch-composition.md).
+
+## NR-067: Signed-window tables are not a universal scalar-schedule win
 
 Composing the signed-radix-32 decoder with an exact U256 Horner consumer and
 terminal equality check produces a real scalar-reconstruction boundary, but the
@@ -1599,7 +1722,7 @@ adding 136 peak combined stack items; both 32-digit schedules remain below
 establish a drop-in elliptic-curve multiplication or complete-transaction
 construction.
 
-## NR-065: Width-5 fixed-base CSFS is dominated by width 8
+## NR-068: Width-5 fixed-base CSFS is dominated by width 8
 
 The existing fixed-base secp256k1 generator MSM was parameterized for a
 five-bit signed window as a curve-level integration probe. It executes

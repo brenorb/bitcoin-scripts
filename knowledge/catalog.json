@@ -3547,7 +3547,7 @@
       "id": "commitment/four-way-hash-path-integer",
       "name": "Four-way mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
+      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -3594,7 +3594,12 @@
         {
           "id": "retained-digits-16",
           "label": "16 retained four-way hash-path digits",
-          "parameters": { "digit_count": 16, "bit_width": 31, "preimage_bytes": 32, "retained_items": 16 },
+          "parameters": {
+            "digit_count": 16,
+            "bit_width": 31,
+            "preimage_bytes": 32,
+            "retained_items": 16
+          },
           "includes": "fragment-only: four-way verifier retaining raw digit encodings on altstack; excludes staging, retained-digit cleanup, and terminal predicate; witness has 16 digit items and one preimage, zero hints",
           "script_bytes": 360,
           "witness_bytes": 61,
@@ -3702,7 +3707,7 @@
       "id": "commitment/hash-path-integer",
       "name": "Mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1\u201331-bit integer.",
+      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1–31-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -3750,7 +3755,11 @@
         {
           "id": "retained-bits-31",
           "label": "31-bit retained hash-path bits",
-          "parameters": { "bit_width": 31, "preimage_bytes": 32, "retained_items": 31 },
+          "parameters": {
+            "bit_width": 31,
+            "preimage_bytes": 32,
+            "retained_items": 31
+          },
           "includes": "fragment-only: hash-path verifier retaining normalized bits on altstack; excludes staging, initial-state binding, retained-bit cleanup, and terminal predicate; witness has 31 selector items and one preimage, zero hints",
           "script_bytes": 302,
           "witness_bytes": 78,
@@ -3861,7 +3870,10 @@
         {
           "id": "offset-0-boundary",
           "label": "Empty preimage at offset 0",
-          "parameters": { "offset": 0, "preimage_bytes": 0 },
+          "parameters": {
+            "offset": 0,
+            "preimage_bytes": 0
+          },
           "includes": "fragment-only: preimage hash and zero-length result; excludes terminal predicate; one empty data item and zero hints",
           "script_bytes": 42,
           "witness_bytes": 2,
@@ -3880,7 +3892,10 @@
         {
           "id": "offset-520-boundary",
           "label": "520-byte preimage at offset 520",
-          "parameters": { "offset": 520, "preimage_bytes": 520 },
+          "parameters": {
+            "offset": 520,
+            "preimage_bytes": 520
+          },
           "includes": "fragment-only: consensus-size preimage hash and zero-length result; excludes terminal predicate; one 520-byte data item and zero hints; no relay-policy claim",
           "script_bytes": 46,
           "witness_bytes": 524,
@@ -5755,7 +5770,15 @@
         {
           "id": "n129-t1-index-boundary",
           "label": "n=129, t=1 HORS index serialization boundary",
-          "parameters": { "n": 129, "t": 1, "preimage_bytes": 32, "indices": [127, 128] },
+          "parameters": {
+            "n": 129,
+            "t": 1,
+            "preimage_bytes": 32,
+            "indices": [
+              127,
+              128
+            ]
+          },
           "includes": "fragment-only: locking verifier and canonical index boundary witnesses; index 127 is one byte and index 128 is two bytes; zero hints; verifier clamps out-of-range indices with OP_MIN",
           "script_bytes": 2792,
           "witness_bytes": 36,
@@ -12711,6 +12734,72 @@
         "OP-002",
         "OP-003",
         "OP-026"
+      ]
+    },
+    {
+      "id": "arithmetic/u4-adjacent-equality",
+      "name": "Checked u4 adjacent-equality mask",
+      "class": "arithmetic/word",
+      "summary": "Range-checked batch projection from u4 nibbles to equality bits for adjacent pairs.",
+      "status": "active",
+      "evidence": "locally-reproduced",
+      "execution": "unclassified",
+      "as_of": "2026-09-17",
+      "knowledge_page": "knowledge/primitives/u4-adjacent-equality.md",
+      "implementation": "src/arithmetic/u4/adjacent_eq.rs",
+      "documentation": "src/arithmetic/u4/README.md",
+      "tests": [
+        "src/arithmetic/u4/adjacent_eq.rs",
+        "tests/primitive_metrics.rs"
+      ],
+      "references": [
+        "bitcoin-script-locked",
+        "bitcoin-scriptexec-locked"
+      ],
+      "techniques": [
+        "stack-scheduling",
+        "digit-arithmetic"
+      ],
+      "security": "Every hostile input is range-checked before pair comparison; numeric range checking does not prove byte-unique ScriptNum encoding or a terminal predicate.",
+      "stack_contract": "Consumes preserved | nibble[0] ... nibble[n-1] and returns preserved | equal[0] ... equal[n-2], with the last adjacent result on top. The standalone schedule keeps the input and result items below the 1,000-item stack limit.",
+      "configurations": [
+        {
+          "id": "checked-batch32",
+          "label": "u4_adjacent_equal_mask(32)",
+          "parameters": {
+            "nibble_count": 32,
+            "data_items": 32,
+            "output_items": 31,
+            "hint_items": 0
+          },
+          "includes": "fragment-only: 32 numeric range checks, 31 direct adjacent comparisons, result storage on the altstack, and input cleanup; excludes input pushes, witness serialization from the script, terminal predicate, unrelated live state, and transaction context",
+          "script_bytes": 558,
+          "witness_bytes": 65,
+          "witness_bytes_max": null,
+          "max_stack_items": 64,
+          "executed_opcodes": null,
+          "validation_weight": null,
+          "setup_script_bytes": 0,
+          "per_use_script_bytes": 558,
+          "metric_keys": [
+            "u4_adjacent_equal_batch32",
+            "u4_adjacent_equal_batch32_witness",
+            "u4_adjacent_equal_batch32_stack",
+            "u4_adjacent_equal_batch32_opcodes"
+          ],
+          "static_non_push_opcodes": 361
+        }
+      ],
+      "limitations": [
+        "Outputs are one ScriptNum bit per adjacent pair rather than a packed bitstring",
+        "The 499-input standalone ceiling must be reduced when unrelated stack state is live",
+        "Static non-push opcode count is not an executed-opcode measurement",
+        "No Bitcoin Core consensus or relay-policy validation"
+      ],
+      "open_problems": [
+        "OP-001",
+        "OP-002",
+        "OP-003"
       ]
     }
   ]

@@ -26,6 +26,8 @@ these operations, but this module contains no hash-specific round logic.
   `0..=4*nibble_count`.
 - `pack::u4_nibbles_to_bytes(nibble_count)` takes an even checked batch size in
   `2..=664` and returns one byte per high/low nibble pair.
+- `adjacent_eq::u4_adjacent_equal_mask(nibble_count)` takes a checked batch
+  size in `2..=499` and returns one equality bit per adjacent pair.
 - `adjacent_delta::u4_nibbles_to_adjacent_delta(nibble_count)` takes a checked
   batch size in `2..=499` and returns one forward modulo-16 delta per edge.
 - `vector_rotate::u4_nibbles_rotate_left(nibble_count)` takes a checked batch
@@ -129,6 +131,7 @@ each input with the same output-restoration boundary.
 | Checked parity batch, 32 nibbles | <!-- metric:u4_parity_batch32 -->440<!-- /metric:u4_parity_batch32 --> bytes | <!-- metric:u4_parity_batch32_stack -->50<!-- /metric:u4_parity_batch32_stack --> items | <!-- metric:u4_parity_batch32_opcodes -->328<!-- /metric:u4_parity_batch32_opcodes --> |
 | Checked cyclic equality batch, 32 nibbles, offset 7 | <!-- metric:u4_cyclic_equality_batch32 -->569<!-- /metric:u4_cyclic_equality_batch32 --> bytes | <!-- metric:u4_cyclic_equality_batch32_stack -->65<!-- /metric:u4_cyclic_equality_batch32_stack --> items | <!-- metric:u4_cyclic_equality_batch32_opcodes -->368<!-- /metric:u4_cyclic_equality_batch32_opcodes --> |
 | Checked transition-count batch, 32 nibbles | <!-- metric:u4_transition_count_batch32 -->588<!-- /metric:u4_transition_count_batch32 --> bytes | <!-- metric:u4_transition_count_batch32_stack -->35<!-- /metric:u4_transition_count_batch32_stack --> items | <!-- metric:u4_transition_count_batch32_opcodes -->391<!-- /metric:u4_transition_count_batch32_opcodes --> |
+| Checked adjacent-equality batch, 32 nibbles | <!-- metric:u4_adjacent_equal_batch32 -->558<!-- /metric:u4_adjacent_equal_batch32 --> bytes | <!-- metric:u4_adjacent_equal_batch32_stack -->64<!-- /metric:u4_adjacent_equal_batch32_stack --> items | <!-- metric:u4_adjacent_equal_batch32_opcodes -->361<!-- /metric:u4_adjacent_equal_batch32_opcodes --> |
 | Checked XOR reduction, 16 nibbles | <!-- metric:u4_xor_reduce_batch16 -->740<!-- /metric:u4_xor_reduce_batch16 --> bytes | <!-- metric:u4_xor_reduce_batch16_stack -->273<!-- /metric:u4_xor_reduce_batch16_stack --> items | <!-- metric:u4_xor_reduce_batch16_opcodes -->438<!-- /metric:u4_xor_reduce_batch16_opcodes --> |
 | Checked nondecreasing batch, 32 nibbles | <!-- metric:u4_nondecreasing_batch32 -->588<!-- /metric:u4_nondecreasing_batch32 --> bytes | <!-- metric:u4_nondecreasing_batch32_stack -->35<!-- /metric:u4_nondecreasing_batch32_stack --> items | <!-- metric:u4_nondecreasing_batch32_opcodes -->391<!-- /metric:u4_nondecreasing_batch32_opcodes --> |
 | Checked exact-sum batch, 32 nibbles | <!-- metric:u4_exact_sum_batch32 -->489<!-- /metric:u4_exact_sum_batch32 --> bytes | <!-- metric:u4_exact_sum_batch32_stack -->35<!-- /metric:u4_exact_sum_batch32_stack --> items | <!-- metric:u4_exact_sum_batch32_opcodes -->334<!-- /metric:u4_exact_sum_batch32_opcodes --> |
@@ -175,6 +178,8 @@ The square row measures only the checked reusable query; its generated
 
 
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative parity batch.
+
+<!-- metric:u4_adjacent_equal_batch32_witness -->65<!-- /metric:u4_adjacent_equal_batch32_witness --> serialized witness bytes for the representative adjacent-equality batch.
 
 <!-- metric:u4_transition_count_batch32_witness -->65<!-- /metric:u4_transition_count_batch32_witness --> serialized witness bytes for the representative transition-count batch.
 
@@ -380,6 +385,11 @@ selectors that must be a single set bit.
 The modulo-three table maps each nibble to a residue in `0..=2`, providing a
 small-radix representation for ternary accumulators without a general modulo
 interpreter.
+The adjacent-equality mask performs direct pair comparisons after numeric
+range checks. It consumes `n` checked nibbles and returns `n-1` ScriptNum bits,
+which exposes run boundaries without a lookup table or bit expansion. The
+representative row uses 32 data items, 31 output bits, and no hints.
+
 The bit-plane transpose reuses the 61-item checked bit table and adds a static
 stack permutation. It has no new witness or hint items; the representative
 16-nibble row above includes the reused decomposition and the transpose. Its

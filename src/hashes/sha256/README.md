@@ -8,11 +8,19 @@ the concrete algorithm to SHA-256.
 
 - Message length is supplied at script-generation time.
 - `sha2_u32`: one byte per stack item internally; optimized paths exist for 32
-  and 80 bytes. The documented default is 32 bytes.
+  and 80 bytes. `sha256_80bytes_from_midstate` continues a fixed 64-byte
+  prefix from its caller-supplied chaining state using a 16-byte suffix and a
+  final SHA-256 length field of 640 bits. `sha256_tagged_hash_32bytes` provides
+  BIP340-style tagged hashing for a fixed 32-byte message. The documented
+  default is 32 bytes.
 - `sha2_u32::sha256_prefix`: retains the first 1..=32 digest bytes after the
   complete compression schedule.
 - `sha2_u4`: two nibbles per input byte and optional addition-table use chosen
   from the block count. The documented default is 32 bytes.
+- `sha256_80bytes_from_midstate`: one fixed 64-byte prefix is represented by a
+  caller-supplied chaining state; the u4 fragment consumes the remaining 16
+  bytes as 32 nibble witness items. Both backends require exactly the 16-byte
+  suffix; the fragment does not authenticate the supplied state.
 - `sha256_prefix`: the u4 backend can retain a leading digest prefix measured
   in nibbles after hashing.
 - `sha2_u4_stack`: the tracked-stack generator additionally selects addition
@@ -36,6 +44,19 @@ uses 129 bytes. Their active combined peaks and static non-push counts are:
 - u32 prefix: `<!-- metric:sha2_u32_prefix_32_8_witness -->65<!-- /metric:sha2_u32_prefix_32_8_witness -->` witness bytes, `<!-- metric:sha2_u32_prefix_32_8_stack -->856<!-- /metric:sha2_u32_prefix_32_8_stack -->` peak items, `<!-- metric:sha2_u32_prefix_32_8_opcodes -->372178<!-- /metric:sha2_u32_prefix_32_8_opcodes -->` static non-push opcodes.
 - u4 prefix: `<!-- metric:sha2_u4_prefix_32_8_witness -->129<!-- /metric:sha2_u4_prefix_32_8_witness -->` witness bytes, `<!-- metric:sha2_u4_prefix_32_8_stack -->969<!-- /metric:sha2_u4_prefix_32_8_stack -->` peak items, `<!-- metric:sha2_u4_prefix_32_8_opcodes -->195231<!-- /metric:sha2_u4_prefix_32_8_opcodes -->` static non-push opcodes.
 
+The tagged-hash fragment precomputes the constant 64-byte `tag_hash ||
+tag_hash` block and measures the final whole continuation fragment:
+
+| Configuration | Locking script | Unlocking witness | Strict stack peak |
+| --- | ---: | ---: | ---: |
+| BIP340 challenge tag + 32-byte message | <!-- metric:sha2_u32_tagged_32 -->530755<!-- /metric:sha2_u32_tagged_32 --> bytes | <!-- metric:sha2_u32_tagged_32_witness -->65<!-- /metric:sha2_u32_tagged_32_witness --> bytes | <!-- metric:sha2_u32_tagged_32_stack -->856<!-- /metric:sha2_u32_tagged_32_stack --> items |
+
+The representative witness has 32 byte-valued message items (65 serialized
+bytes); the canonical numeric-byte maximum is 97 bytes. The fragment uses no
+auxiliary hint items, consumes exactly those 32 message items, and encodes the
+final 768-bit SHA-256 length. It is BIP340-style tagged hashing of a payload,
+not the complete BIP340 challenge computation.
+
 The `sha2_u4` multi-chunk path reuses its 16-entry row-offset lookup table
 while replacing the 136-entry XOR/AND table between chunks. For an 80-byte
 two-chunk message this saves 11 bytes over reloading the unchanged lookup
@@ -52,6 +73,30 @@ evidence only and does not establish consensus or relay-policy deployment.
 
 Both fragments exceed the repository optimizer's 32 KiB input cutoff and are
 reported unoptimized.
+
+The SHA-256 midstate continuation is a separate fixed-shape fragment:
+
+| Configuration | Locking script | Unlocking witness | Maximum stack items |
+| --- | ---: | ---: | ---: |
+| 64-byte prefix midstate + 16-byte suffix | <!-- metric:sha2_u32_80_midstate -->530686<!-- /metric:sha2_u32_80_midstate --> bytes | <!-- metric:sha2_u32_80_midstate_witness -->33<!-- /metric:sha2_u32_80_midstate_witness --> bytes | <!-- metric:sha2_u32_80_midstate_stack -->856<!-- /metric:sha2_u32_80_midstate_stack --> |
+
+The representative u32 witness is 16 one-byte items (33 serialized bytes); the
+canonical maximum is 49 bytes when each byte uses a two-byte ScriptNum. The
+stack figure uses empty zero-value suffix items in the composition wrapper. The
+caller must bind the supplied chaining state to the fixed prefix; the fragment
+does not prove that relation.
+
+The u4 midstate continuation has a separate fixed-shape boundary:
+
+| Configuration | Locking script | Unlocking witness | Combined peak | Static non-push opcodes |
+| --- | ---: | ---: | ---: | ---: |
+| 64-byte prefix midstate + 16-byte suffix | <!-- metric:sha2_u4_80_midstate -->332830<!-- /metric:sha2_u4_80_midstate --> bytes | <!-- metric:sha2_u4_80_midstate_witness -->48<!-- /metric:sha2_u4_80_midstate_witness --> bytes | <!-- metric:sha2_u4_80_midstate_stack -->969<!-- /metric:sha2_u4_80_midstate_stack --> items | <!-- metric:sha2_u4_80_midstate_opcodes -->195219<!-- /metric:sha2_u4_80_midstate_opcodes --> |
+
+The representative u4 witness is 32 nibble items (48 serialized bytes); the
+canonical maximum is 65 bytes. The stack figure uses empty zero-value suffix
+items in the strict composition wrapper. No auxiliary hint items are used.
+The row is a research boundary: its state is not authenticated against the
+fixed prefix by the fragment, and complete deployment remains unclassified.
 
 Maximum stack depth depends on input length and implementation. The
 `sha2_u4_stack` generator records it with `StackTracker`; executable hash tests
@@ -82,7 +127,9 @@ truncated digest binding.
 
 No hints are required. `sha2_u32` consumes one stack item per byte;
 `sha2_u4` consumes two canonical nibbles per byte in the order documented by
-the push helpers.
+the push helpers. The u32 midstate continuation consumes exactly 16 byte-valued
+suffix items; the u4 continuation consumes 32 canonical nibble items. Tagged
+hashing supplies its tag block as generation-time script data.
 
 `sha256_prefix` retains the leading digest nibbles and drops the remainder;
 the full hash is still evaluated, so this is an output-shape adapter rather

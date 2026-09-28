@@ -5222,6 +5222,75 @@ fn u4_staged_word_verifier_metrics_are_current() {
 }
 
 #[test]
+fn u32_compression_metrics_are_current() {
+    let compress = u32::stack::u32_compress();
+    let compress_witness = byte_u32_witness(0x1234_5678).to_vec();
+    let compress_stack = max_stack_items_strict(
+        script! {
+            { compress.clone() }
+            OP_DROP
+            OP_TRUE
+        },
+        compress_witness.clone(),
+    );
+    let compress_witness_max = byte_u32_witness(0x8080_8080).to_vec();
+
+    let uncompress = u32::stack::u32_uncompress();
+    let uncompress_witness = vec![scriptnum(-2_147_483_648)];
+    let uncompress_stack = max_stack_items_strict(
+        script! {
+            { uncompress.clone() }
+            { u32::stack::u32_drop() }
+            OP_TRUE
+        },
+        uncompress_witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_compress",
+            value: script_len(compress),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_compress_witness",
+            value: witness_size(&compress_witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_compress_witness_max",
+            value: witness_size(&compress_witness_max),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_compress_stack",
+            value: compress_stack,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress",
+            value: script_len(uncompress),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_witness",
+            value: witness_size(&uncompress_witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_witness_max",
+            value: witness_size(&uncompress_witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_stack",
+            value: uncompress_stack,
+        },
+    ]);
+}
+
+#[test]
 fn u32_reverse_byte_adapter_metrics_are_current() {
     let fragment = u32::stack::u8_reverse_toaltstack(4);
     let witness = vec![vec![0x11], vec![0x22], vec![0x33], vec![0x44]];

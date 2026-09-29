@@ -20,6 +20,11 @@ class CoreHarnessTests(unittest.TestCase):
         self.assertFalse(rejection_matches(result, "stack-size"))
         self.assertFalse(rejection_matches(result, None))
 
+    def test_invalid_control_size_has_its_own_core_diagnostic(self):
+        result = {"accepted": False, "reason": "TestBlockValidity failed: block-script-verify-flag-failed (Invalid Taproot control block size), input 0 of abc"}
+        self.assertTrue(rejection_matches(result, "taproot-control-size"))
+        self.assertFalse(rejection_matches(result, "taproot-commitment"))
+
     def test_policy_failure_is_distinct_from_consensus_failure(self):
         result = {"allowed": False, "reject-reason": "bad-witness-nonstandard"}
         self.assertTrue(rejection_matches(result, "witness-stack-item-size", policy=True))

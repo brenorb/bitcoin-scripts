@@ -7,7 +7,10 @@
 use std::{env, fs, path::Path};
 
 use bitcoin::consensus::encode::serialize;
-use bitcoin::hashes::{sha256 as bitcoin_sha256, Hash};
+use bitcoin::hashes::{
+    ripemd160 as bitcoin_ripemd160, sha1 as bitcoin_sha1, sha256 as bitcoin_sha256, Hash,
+    HashEngine,
+};
 use bitcoin::{script::Instruction, Witness};
 use bitcoin_lab::arithmetic::rns::prime::carry::bound;
 use bitcoin_lab::{
@@ -17,9 +20,11 @@ use bitcoin_lab::{
         four_way_hash_path_integer_commitment, four_way_hash_path_integer_witness,
         hash_path_commitment as compute_hash_path_commitment, hash_path_integer_commitment,
         hash_path_integer_witness, preimage_length_commitment, tapbranch_hash_u4,
-        tapbranch_hash_u4_witness, verify_four_way_hash_path_to_altstack,
+        tapbranch_hash_u4_witness, ternary_hash_path_integer_commitment,
+        ternary_hash_path_integer_witness, verify_four_way_hash_path_to_altstack,
         verify_four_way_hash_path_to_integer, verify_hash_path_chain, verify_hash_path_to_altstack,
         verify_hash_path_to_integer, verify_preimage_length, verify_preimage_length_with_offset,
+        verify_ternary_hash_path_to_integer,
     },
     curves::bn254::groups::{g1::G1Affine, g2::G2Affine},
     fields::{
@@ -54,6 +59,32 @@ use num_traits::One;
 
 // FullWidth comparison rows remain stable when the public default changes.
 type FullWidthWots32 = FastWinternitz<32, Hash160, FullWidth>;
+
+fn ripemd160_midstate_42x64() -> [u32; 5] {
+    let mut engine = bitcoin_ripemd160::HashEngine::default();
+    engine.input(&[0x42; 64]);
+    let bytes = engine.midstate();
+    std::array::from_fn(|index| {
+        u32::from_le_bytes(bytes[index * 4..index * 4 + 4].try_into().unwrap())
+    })
+}
+
+fn ripemd160_midstate_witness() -> Vec<Vec<u8>> {
+    (0u8..16).map(|byte| vec![byte]).collect()
+}
+
+fn sha1_midstate_42x64() -> [u32; 5] {
+    let mut engine = bitcoin_sha1::HashEngine::default();
+    engine.input(&[0x42; 64]);
+    let bytes = engine.midstate();
+    std::array::from_fn(|index| {
+        u32::from_be_bytes(bytes[index * 4..index * 4 + 4].try_into().unwrap())
+    })
+}
+
+fn sha1_midstate_witness() -> Vec<Vec<u8>> {
+    (0u8..16).map(|byte| vec![byte]).collect()
+}
 
 const SHA256_MIDSTATE_42X64: [u32; 8] = [
     0x8aab60bc, 0xcc769b35, 0x02b9786a, 0x434e707f, 0x943ce9ea, 0xd219ae8e, 0xdd54f002, 0xdc7dbb82,
@@ -2310,6 +2341,7 @@ fn metrics() -> Vec<Metric> {
     const U4_BITS_BATCH: u32 = 32;
     let u4_bits_checked_batch = u4::bits::u4_nibbles_to_be_bits(U4_BITS_BATCH, true);
     let u4_bits_unchecked_batch = u4::bits::u4_nibbles_to_be_bits(U4_BITS_BATCH, false);
+    let u4_bits_to_nibble = u4::bits::u4_be_bits_to_nibble(true);
     let u4_bits_branch_batch = script! {
         for _ in 0..U4_BITS_BATCH {
             { bitcoin_lab::arithmetic::bigint::bits::limb_to_be_bits_toaltstack(4) }
@@ -2538,6 +2570,37 @@ fn metrics() -> Vec<Metric> {
             readme: "src/arithmetic/u4/README.md",
             key: "u4_bits_checked_query",
             value: script_len(u4::bits::u4_nibble_below_bits_table_toaltstack(true)),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble",
+            value: script_len(u4_bits_to_nibble.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble_witness_min",
+            value: witness_size(&vec![Vec::new(); 4]),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble_witness_max",
+            value: witness_size(&vec![vec![1]; 4]),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble_stack",
+            value: max_stack_items(
+                script! {
+                    { u4_bits_to_nibble.clone() }
+                    OP_DROP OP_TRUE
+                },
+                vec![vec![1]; 4],
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble_opcodes",
+            value: static_non_push_opcodes(u4_bits_to_nibble),
         },
         Metric {
             readme: "src/arithmetic/u4/README.md",
@@ -4073,9 +4136,21 @@ fn metrics() -> Vec<Metric> {
             value: script_len(ripemd160::ripemd160(32)),
         },
         Metric {
+            readme: "src/hashes/ripemd160/README.md",
+            key: "ripemd160_u32_80_midstate",
+            value: script_len(ripemd160::ripemd160_80bytes_from_midstate(
+                ripemd160_midstate_42x64(),
+            )),
+        },
+        Metric {
             readme: "src/hashes/sha1/README.md",
             key: "sha1_u32_32",
             value: script_len(sha1::sha1(32)),
+        },
+        Metric {
+            readme: "src/hashes/sha1/README.md",
+            key: "sha1_u32_80_midstate",
+            value: script_len(sha1::sha1_80bytes_from_midstate(sha1_midstate_42x64())),
         },
         Metric {
             readme: "src/hashes/sha256/README.md",
@@ -4546,6 +4621,7 @@ fn metrics() -> Vec<Metric> {
     ]
     .into_iter()
     .chain(commitment_metrics())
+    .chain(ternary_hash_path_metrics())
     .chain(u32_compressed_rshift_metrics())
     .chain(u32_compressed_lshift_metrics())
     .chain(prince_metrics())
@@ -4629,6 +4705,44 @@ fn aes128_shift_rows_metrics_are_current() {
 }
 
 #[test]
+fn u4_bits_to_nibble_metrics_are_current() {
+    let fragment = u4::bits::u4_be_bits_to_nibble(true);
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble_witness_min",
+            value: witness_size(&vec![Vec::new(); 4]),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble_witness_max",
+            value: witness_size(&vec![vec![1]; 4]),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble_stack",
+            value: max_stack_items_strict(
+                script! {
+                    { fragment.clone() }
+                    OP_DROP OP_TRUE
+                },
+                vec![vec![1]; 4],
+            ),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_bits_to_nibble_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
+#[test]
 fn aes_key_profile_metrics_are_current() {
     let profiles = [
         ([0u8; 16], "aes128_encrypt"),
@@ -4673,6 +4787,38 @@ fn winternitz_metrics_are_current() {
             .chain(winternitz20_mixed_sum_metrics())
             .collect(),
     );
+}
+
+fn ternary_hash_path_metrics() -> Vec<Metric> {
+    let preimage = vec![0x42; 32];
+    let value = 0x1234_5678;
+    let commitment = ternary_hash_path_integer_commitment(&preimage, value, 31);
+    let witness = ternary_hash_path_integer_witness(&preimage, value, 31);
+    vec![
+        Metric {
+            readme: "src/commitments/ternary_hash_path/README.md",
+            key: "ternary_hash_path_integer_31",
+            value: script_len(verify_ternary_hash_path_to_integer(31, commitment)),
+        },
+        Metric {
+            readme: "src/commitments/ternary_hash_path/README.md",
+            key: "ternary_hash_path_integer_witness_31",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/commitments/ternary_hash_path/README.md",
+            key: "ternary_hash_path_integer_stack_31",
+            value: max_stack_items_strict(
+                verify_ternary_hash_path_to_integer(31, commitment),
+                witness,
+            ),
+        },
+    ]
+}
+
+#[test]
+fn ternary_hash_path_metrics_are_current() {
+    check_readme_metrics(ternary_hash_path_metrics());
 }
 
 #[test]
@@ -4913,6 +5059,271 @@ fn ed25519_packed_decoder_metrics_are_current() {
             readme: "src/fields/ed25519/README.md",
             key: "ed25519_packed_decoder_witness_max",
             value: witness_size(&witness),
+        },
+    ]);
+}
+
+#[test]
+fn u4_word_transfer_metrics_are_current() {
+    let copy = u4::stack::u4_copy_u32_from(0);
+    let move_script = u4::stack::u4_move_u32_from(0);
+    let witness = (0..8).map(scriptnum).collect::<Vec<_>>();
+    let copy_peak = max_stack_items_strict(
+        script! {
+            { copy.clone() }
+            for _ in 0..8 { OP_2DROP }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    let move_peak = max_stack_items_strict(
+        script! {
+            { move_script.clone() }
+            for _ in 0..4 { OP_2DROP }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from",
+            value: script_len(copy.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from_stack",
+            value: copy_peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_copy_u32_from_opcodes",
+            value: static_non_push_opcodes(copy),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from",
+            value: script_len(move_script.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from_stack",
+            value: move_peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_move_u32_from_opcodes",
+            value: static_non_push_opcodes(move_script),
+        },
+    ]);
+}
+
+#[test]
+fn u4_altstack_transport_metrics_are_current() {
+    let to_alt = u4::stack::u4_toaltstack(4);
+    let from_alt = u4::stack::u4_fromaltstack(4);
+    let witness = (0..4).map(scriptnum).collect::<Vec<_>>();
+    let to_alt_peak = max_stack_items_strict(
+        script! {
+            { to_alt.clone() }
+            OP_FROMALTSTACK OP_DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    let from_alt_peak = max_stack_items_strict(
+        script! {
+            { to_alt.clone() }
+            { from_alt.clone() }
+            for _ in 0..4 { OP_DROP }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_toaltstack4",
+            value: script_len(to_alt),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_toaltstack4_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_toaltstack4_stack",
+            value: to_alt_peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_toaltstack4_opcodes",
+            value: static_non_push_opcodes(u4::stack::u4_toaltstack(4)),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_fromaltstack4",
+            value: script_len(from_alt.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_fromaltstack4_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_fromaltstack4_stack",
+            value: from_alt_peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_fromaltstack4_opcodes",
+            value: static_non_push_opcodes(from_alt),
+        },
+    ]);
+}
+
+#[test]
+fn u4_lookup_lifecycle_metrics_are_current() {
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_half_lookup_push",
+            value: script_len(u4::logic::u4_push_half_lookup()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_half_lookup_drop",
+            value: script_len(u4::logic::u4_drop_half_lookup()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_full_lookup_push",
+            value: script_len(u4::logic::u4_push_full_lookup()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_full_lookup_drop",
+            value: script_len(u4::logic::u4_drop_full_lookup()),
+        },
+    ]);
+}
+
+#[test]
+fn u4_staged_word_verifier_metrics_are_current() {
+    let verifier = u4::stack::u4_u32_verify_from_altstack();
+    let witness = vec![scriptnum(0x12); 16];
+    let peak = max_stack_items_strict(
+        script! {
+            { u4::stack::u4_toaltstack(8) }
+            { verifier.clone() }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_u32_verify_from_altstack",
+            value: script_len(verifier.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_u32_verify_from_altstack_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_u32_verify_from_altstack_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_u32_verify_from_altstack_opcodes",
+            value: static_non_push_opcodes(verifier),
+        },
+    ]);
+}
+
+#[test]
+fn u32_compression_metrics_are_current() {
+    let compress = u32::stack::u32_compress();
+    let compress_witness = byte_u32_witness(0x1234_5678).to_vec();
+    let compress_stack = max_stack_items_strict(
+        script! {
+            { compress.clone() }
+            OP_DROP
+            OP_TRUE
+        },
+        compress_witness.clone(),
+    );
+    let compress_witness_max = byte_u32_witness(0x8080_8080).to_vec();
+
+    let uncompress = u32::stack::u32_uncompress();
+    let uncompress_witness = vec![scriptnum(-2_147_483_648)];
+    let uncompress_stack = max_stack_items_strict(
+        script! {
+            { uncompress.clone() }
+            { u32::stack::u32_drop() }
+            OP_TRUE
+        },
+        uncompress_witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_compress",
+            value: script_len(compress),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_compress_witness",
+            value: witness_size(&compress_witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_compress_witness_max",
+            value: witness_size(&compress_witness_max),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_compress_stack",
+            value: compress_stack,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress",
+            value: script_len(uncompress),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_witness",
+            value: witness_size(&uncompress_witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_witness_max",
+            value: witness_size(&uncompress_witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_stack",
+            value: uncompress_stack,
         },
     ]);
 }
@@ -6495,6 +6906,51 @@ fn u4_parity_metrics_are_current() {
     ]);
 }
 
+/// This isolated fixture measures checked u4 presence-bit projection.
+#[test]
+fn u4_presence_bits_metrics_are_current() {
+    const NIBBLE_COUNT: u32 = 16;
+    let fragment = u4::presence::u4_nibbles_to_presence_bits(NIBBLE_COUNT);
+    let witness = vec![scriptnum(15); NIBBLE_COUNT as usize];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            for _ in 0..16 {
+                OP_DROP
+            }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_presence_bits_16",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_presence_bits_16_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_presence_bits_16_witness_items",
+            value: witness.len(),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_presence_bits_16_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_presence_bits_16_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
 /// This isolated fixture measures only checked modulo-16 nibble multiplication.
 #[test]
 fn u4_mul_mod16_metrics_are_current() {
@@ -6726,6 +7182,46 @@ fn u4_msb_metrics_are_current() {
 }
 
 #[test]
+fn u4_parity_canonical_metrics_are_current() {
+    const NIBBLE_COUNT: u32 = 32;
+    let fragment = u4::parity::u4_nibbles_to_parity_canonical(NIBBLE_COUNT);
+    let witness = vec![scriptnum(15); NIBBLE_COUNT as usize];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            for _ in 0..NIBBLE_COUNT {
+                OP_DROP
+            }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_parity_canonical_batch32",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_parity_canonical_batch32_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_parity_canonical_batch32_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_parity_canonical_batch32_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
+#[test]
 fn u4_xor_reduce_metrics_are_current() {
     const NIBBLE_COUNT: u32 = 16;
     let fragment = u4::xor_reduce::u4_nibbles_to_xor(NIBBLE_COUNT);
@@ -6944,6 +7440,49 @@ fn u4_odd_inverse_mod16_metrics_are_current() {
     ]);
 }
 
+/// This isolated fixture measures a fixed-symbol u4 occurrence count.
+#[test]
+fn u4_symbol_count_metrics_are_current() {
+    const NIBBLE_COUNT: u32 = 16;
+    let fragment = u4::count::u4_nibbles_count(0, NIBBLE_COUNT);
+    let witness = vec![scriptnum(15); NIBBLE_COUNT as usize];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            OP_DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_symbol_count_16",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_symbol_count_16_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_symbol_count_16_witness_items",
+            value: witness.len(),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_symbol_count_16_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_symbol_count_16_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
 /// This isolated fixture measures only the checked u32 population count.
 #[test]
 fn u32_popcount_metrics_are_current() {
@@ -6978,6 +7517,46 @@ fn u32_popcount_metrics_are_current() {
         Metric {
             readme: "src/arithmetic/u32/README.md",
             key: "u32_popcount_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
+/// This isolated fixture measures checked u32 XOR with an embedded constant.
+#[test]
+fn u32_xor_constant_metrics_are_current() {
+    let fragment = u32::xor_constant::u32_xor_constant(0x89ab_cdef);
+    let witness = vec![scriptnum(255); 4];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            OP_2DROP
+            OP_2DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    assert_eq!(witness.len(), 4);
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_xor_constant",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_xor_constant_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_xor_constant_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_xor_constant_opcodes",
             value: static_non_push_opcodes(fragment),
         },
     ]);
@@ -7023,6 +7602,46 @@ fn u32_byte_popcounts_metrics_are_current() {
     ]);
 }
 
+/// This isolated fixture measures only the checked u32 bytewise complement.
+#[test]
+fn u32_not_metrics_are_current() {
+    let fragment = u32::stack::u32_not();
+    let witness = vec![scriptnum(255); 4];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            OP_2DROP
+            OP_2DROP
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    assert_eq!(witness.len(), 4);
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_not",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_not_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_not_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_not_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
 /// This isolated fixture measures only the checked u4 LSB projection.
 #[test]
 fn u4_lsb_metrics_are_current() {
@@ -7060,6 +7679,46 @@ fn u4_lsb_metrics_are_current() {
         Metric {
             readme: "src/arithmetic/u4/README.md",
             key: "u4_lsb_batch32_opcodes",
+            value: static_non_push_opcodes(fragment),
+        },
+    ]);
+}
+
+#[test]
+fn u4_lsb_canonical_metrics_are_current() {
+    const NIBBLE_COUNT: u32 = 32;
+    let fragment = u4::lsb::u4_nibbles_to_lsb_canonical(NIBBLE_COUNT);
+    let witness = vec![scriptnum(15); NIBBLE_COUNT as usize];
+    let peak = max_stack_items_strict(
+        script! {
+            { fragment.clone() }
+            for _ in 0..NIBBLE_COUNT {
+                OP_DROP
+            }
+            OP_TRUE
+        },
+        witness.clone(),
+    );
+
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_lsb_canonical_batch32",
+            value: script_len(fragment.clone()),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_lsb_canonical_batch32_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_lsb_canonical_batch32_stack",
+            value: peak,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_lsb_canonical_batch32_opcodes",
             value: static_non_push_opcodes(fragment),
         },
     ]);
@@ -10167,6 +10826,66 @@ fn consuming_bitwise_and_hash_metrics_are_current() {
         },
     ]);
     check_readme_metrics(metrics);
+}
+
+#[test]
+fn ripemd160_midstate_metrics_are_current() {
+    let fragment = ripemd160::ripemd160_80bytes_from_midstate(ripemd160_midstate_42x64());
+    let boundary = script! {
+        { fragment.clone() }
+        for _ in 0..20 { OP_DROP }
+        OP_TRUE
+    };
+    let witness = ripemd160_midstate_witness();
+    assert_eq!(witness_size(&witness), 33);
+    assert_eq!(witness_size(&vec![vec![0x80, 0]; 16]), 49);
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/hashes/ripemd160/README.md",
+            key: "ripemd160_u32_80_midstate",
+            value: script_len(fragment),
+        },
+        Metric {
+            readme: "src/hashes/ripemd160/README.md",
+            key: "ripemd160_u32_80_midstate_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/hashes/ripemd160/README.md",
+            key: "ripemd160_u32_80_midstate_stack",
+            value: max_stack_items_strict(boundary, vec![Vec::new(); 16]),
+        },
+    ]);
+}
+
+#[test]
+fn sha1_midstate_metrics_are_current() {
+    let fragment = sha1::sha1_80bytes_from_midstate(sha1_midstate_42x64());
+    let boundary = script! {
+        { fragment.clone() }
+        for _ in 0..20 { OP_DROP }
+        OP_TRUE
+    };
+    let witness = sha1_midstate_witness();
+    assert_eq!(witness_size(&witness), 33);
+    assert_eq!(witness_size(&vec![vec![0x80, 0]; 16]), 49);
+    check_readme_metrics(vec![
+        Metric {
+            readme: "src/hashes/sha1/README.md",
+            key: "sha1_u32_80_midstate",
+            value: script_len(fragment),
+        },
+        Metric {
+            readme: "src/hashes/sha1/README.md",
+            key: "sha1_u32_80_midstate_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/hashes/sha1/README.md",
+            key: "sha1_u32_80_midstate_stack",
+            value: max_stack_items_strict(boundary, vec![Vec::new(); 16]),
+        },
+    ]);
 }
 
 /// This isolated fixture measures only the checked u4 cyclic equality mask.

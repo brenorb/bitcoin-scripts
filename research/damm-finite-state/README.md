@@ -98,11 +98,11 @@ properties, each measured output and witness byte count. Original C# execution
 has not been performed, and this does not claim Bitcoin Core validation.
 Empty numeric folds remain distinct from the upstream string API.
 
-Initial tested source: `INITIAL_SOURCE_REVISION_PENDING`. Source/dependency
+Initial tested source: `75a22bdaa4ec03da1cb0c3b013f21226ff1e2fd2`. Source/dependency
 pins and final artifact hashes are in `initial-probe.json`. Reproduce:
 
 ```sh
-CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example damm_finite_state_probe -- INITIAL_SOURCE_REVISION_PENDING > /tmp/damm-probe.json
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example damm_finite_state_probe -- 75a22bdaa4ec03da1cb0c3b013f21226ff1e2fd2 > /tmp/damm-probe.json
 cmp research/damm-finite-state/initial-probe.json /tmp/damm-probe.json
 python3 research/damm-finite-state/verify_reference.py
 ```
@@ -111,3 +111,7 @@ A shared target directory may be used to reuse already built dependencies.
 The public API, full caller main/alt frontier suite, policy probes, immutable
 integrated artifact contracts, catalog/README markers and required full tests
 remain to be completed before any public promotion or PR.
+
+The preserved upstream C# files include original trailing whitespace. The
+scoped .gitattributes entry retains these exact SHA256-bound bytes without
+applying local whitespace cleanup to foreign source snapshots.

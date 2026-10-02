@@ -14623,7 +14623,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; observable canonical state outputs",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -14688,7 +14688,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; observable canonical state outputs",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -14753,7 +14753,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; observable canonical state outputs",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -14818,7 +14818,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; observable canonical state outputs",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -14888,7 +14888,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "exact final state, then TRUE",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -14955,7 +14955,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; observable canonical state outputs",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -15020,7 +15020,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; observable canonical state outputs",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -15085,7 +15085,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "exact final state, then TRUE",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -15150,7 +15150,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; observable canonical state outputs",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -15215,7 +15215,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "exact final state, then TRUE",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -15280,7 +15280,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; observable canonical state outputs",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",
@@ -15341,7 +15341,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "all independent exact states, then TRUE",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "b53af2109f200fc21c1f70a28d39954ed078b139",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "reference_revision": "734afa2d3596862ef4c3bb3ec404b512b96b8965",

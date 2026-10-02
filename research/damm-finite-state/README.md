@@ -125,7 +125,7 @@ caller stacks, and returns one canonical state. Original sibling sum APIs and
 catalog evidence remain unchanged. Its initial source/probe/oracle bytes are
 retained for the reproduction-before-production boundary.
 
-Qualified source revision: `FINAL_SOURCE_REVISION_PENDING`.
+Qualified source revision: `b53af2109f200fc21c1f70a28d39954ed078b139`.
 [`metrics.json`](metrics.json) binds that revision, every source file affecting
 the new report, compiler/interpreter identities, exact execution options and
 final whole-artifact hashes. It contains 56 scalar rows, seven resident lifecycle
@@ -167,7 +167,7 @@ forgeability. No C# or Bitcoin Core execution is claimed.
 Reproduce from the qualified source plus its bound report:
 
 ```sh
-CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example damm_metrics -- FINAL_SOURCE_REVISION_PENDING > /tmp/damm-metrics.json
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example damm_metrics -- b53af2109f200fc21c1f70a28d39954ed078b139 > /tmp/damm-metrics.json
 cmp research/damm-finite-state/metrics.json /tmp/damm-metrics.json
 python3 research/damm-finite-state/verify_metrics.py
 python3 research/damm-finite-state/verify_reference.py

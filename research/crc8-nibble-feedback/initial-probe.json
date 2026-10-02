@@ -3429,7 +3429,7 @@
       "witness_sha256": "3a168575416bc25fb8098f217ecb15dc6ed7783b01f5eb9f0539332dcc750a30"
     }
   ],
-  "source_revision": "0000000000000000000000000000000000000000",
+  "source_revision": "0db90b9450d96a0bdf292d633fff14036bac2745",
   "source_sha256": {
     "Cargo.lock": "13cceb87703b0d63d66d1c5c3406dfa00f5d8f166b9bfcfe68509dd5fe803de7",
     "examples/crc8_probe.rs": "066ed97f5d196a7657ca55df97dd58d6bc42f31c2a62f2d4521e9337e4208144",

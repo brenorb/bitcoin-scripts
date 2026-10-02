@@ -116,10 +116,10 @@ not a defect or fix in existing production source. Its artifact records the
 actual compiled hash, error, output digest and resource statistics. Expected
 caught assertion panics appear in probe stderr; the complete probe exits zero.
 
-Initial tested source: `CRC8_INITIAL_SOURCE_PENDING`. Reproduce after source pin:
+Initial tested source: `0db90b9450d96a0bdf292d633fff14036bac2745`. Reproduce after source pin:
 
 ```sh
-CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example crc8_probe -- CRC8_INITIAL_SOURCE_PENDING > /tmp/crc8-probe.json
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example crc8_probe -- 0db90b9450d96a0bdf292d633fff14036bac2745 > /tmp/crc8-probe.json
 cmp research/crc8-nibble-feedback/initial-probe.json /tmp/crc8-probe.json
 python3 research/crc8-nibble-feedback/verify_probe.py
 ```

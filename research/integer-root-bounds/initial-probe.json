@@ -6869,7 +6869,7 @@
       "witness_sha256": "7152d11c0f95df59b41567362346f2965dca029d5dc827d7864dc04654d28085"
     }
   ],
-  "source_revision": "0000000000000000000000000000000000000000",
+  "source_revision": "4d5b08e0f6c19e1a52bbc0805da4f307bd422fd5",
   "source_sha256": {
     "Cargo.lock": "13cceb87703b0d63d66d1c5c3406dfa00f5d8f166b9bfcfe68509dd5fe803de7",
     "examples/integer_root_probe.rs": "64f23567e542ce0b7d3f1ee4dd981889d4e09d5d4afaba41cad0835937a8f46f",

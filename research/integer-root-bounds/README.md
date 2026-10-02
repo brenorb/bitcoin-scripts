@@ -64,7 +64,7 @@ all 92,681 distinct endpoints `q*q-1`, `q*q`, and `(q+1)^2-1` clipped to the
 31-bit range. An independent exact Python math.isqrt oracle checks the output
 stream digests, every measured output, witness serialization and source/Cargo
 bindings. These are 223,753 scalar executions before additional malformed,
-alias, constructor-domain and frontier controls; this is not Core execution.
+alias, width-domain and frontier controls; this is not Core execution.
 
 | Input width | Restoring fragment / exact-root leaf | Threshold fragment / leaf | Options restoring / threshold |
 | --- | ---: | ---: | --- |
@@ -102,11 +102,11 @@ candidate square while maintaining `residual=x-r*r` and greedily accepting only
 root bits whose candidate square fits x. Exhaustive square-edge tests support
 this arithmetic argument; broader composition/contract qualification remains.
 
-Initial tested source: `INITIAL_SOURCE_REVISION_PENDING`. The report records
+Initial tested source: `4d5b08e0f6c19e1a52bbc0805da4f307bd422fd5`. The report records
 all final hashes, exact profile and dependency pins. Reproduce:
 
 ```sh
-CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example integer_root_probe -- INITIAL_SOURCE_REVISION_PENDING > /tmp/integer-root-probe.json
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example integer_root_probe -- 4d5b08e0f6c19e1a52bbc0805da4f307bd422fd5 > /tmp/integer-root-probe.json
 cmp research/integer-root-bounds/initial-probe.json /tmp/integer-root-probe.json
 python3 research/integer-root-bounds/verify_probe.py
 ```

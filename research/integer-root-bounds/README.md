@@ -115,3 +115,78 @@ The prototype is private research code; production source has not changed.
 Public parameter/API design, small-width crossover measurements, shared policy
 and adversarial contracts, all-entry repeated composition, named metrics, catalog
 integration and the full required non-field test run remain before promotion.
+
+## Qualified public schedule
+
+The original source/probe/oracle above are retained unchanged. The public
+[`arithmetic::integer_root::scriptnum_isqrt`](../../src/arithmetic/integer_root/README.md)
+uses widths 1..=31, no hints, one ordinary numeric input and canonical output,
+preserving both caller stacks. Existing helper APIs and base catalog records
+remain unchanged; actual scalar bytecode matches the prototype at every width.
+
+Integrated source revision: `FINAL_SOURCE_REVISION_PENDING`.
+[`metrics.json`](metrics.json) contains 66 scalar rows, four exact shared-family
+artifacts (numeric/canonical compositions), and eight preloaded compositions.
+All final hashes, raw sizes, policy options, input/witness/output hashes, exact
+execution options and compiler/interpreter sources are bound to immutable source.
+The independent Python verifier checks actual Cargo identities and exact
+math.isqrt/witness outputs. The artifact contract regenerates the full report,
+compares catalog configurations and inspects immutable source bytes locally;
+a shallow CI checkout must identify itself as shallow and still checks current
+source hashes and recomputed artifacts.
+
+Matched small-width measurements: restoring/threshold fragments 27/18 at one
+or two bits, 48/34 at four and 72/70 at six. Eight bits gives 99/147; sixteen
+232/2,989. Both include numeric guards and full calculation/cleanup. Threshold
+uses peak three rather than five; canonical threshold compositions peak four.
+The public numeric contract remains distinct from optional canonical guards.
+
+Two 31-bit folds: component sum 1,232 plus delta -2 yields fragment 1,230 and
+checked leaf 1,235; witness four bytes, two ordinary data items, zero hints and
+peak six. Thirty-two: sum 19,712 plus delta -2 yields fragment 19,710 and leaf
+19,803; witness 89, 32 ordinary data / zero hints / peak 36. All use ALL.
+At 996, raw components / final fragment 615,528 and leaf 618,389 are explicitly
+unoptimized NONE. Individually ALL-compiled components sum to 613,536; the
++1,992 whole-policy delta includes the change to NONE, not cross-component
+rewrite loss alone. Witness 2,738, 996 data / zero hints / peak exactly 1,000;
+997 fails StackSize at 1,001. Every future input and produced root is counted.
+Allowed maxima including numeric aliases are 11/161/4,983 bytes at 2/32/996.
+
+The shared contracts audit both schedules and their canonical-input
+compositions, all 16-bit inputs per family, all public 31-bit square endpoints,
+deterministic interiors, malformed/alias/short inputs at every live position,
+all caller main/alt bytes, exact limits and every independent output. Actual
+compiled range, canonicality and terminal bypasses preserve valid controls and
+are caught by the same typed assertion; root-trial and ordering regressions
+are caught by the same exact-result assertion.
+
+Reproduce:
+
+```sh
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example integer_root_metrics -- FINAL_SOURCE_REVISION_PENDING > /tmp/integer-root-metrics.json
+cmp research/integer-root-bounds/metrics.json /tmp/integer-root-metrics.json
+python3 research/integer-root-bounds/verify_metrics.py
+python3 research/integer-root-bounds/verify_probe.py
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test integer_root_contract
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test primitive_metrics scriptnum_isqrt_metrics_are_current
+python3 tools/kb.py validate
+cargo fmt --all -- --check
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked -- --skip fields::
+```
+
+Debug assertions and overflow checks remain enabled. Classification is
+locally-reproduced/unclassified for every published configuration. Root
+calculation does not authenticate its input, permit five-byte arithmetic,
+prove a complete transaction budget or establish relay acceptance.
+[NR-080](../../knowledge/negative-results/integer-root-bounds.md) and
+[OP-038](../../knowledge/open-problems.md#op-038--unsigned-word-integer-root-frontier)
+retain the tradeoffs and wider representation question.
+
+
+The 53-root fragment has raw size 32,754 and final size 32,646 with ALL; its
+exact-output leaf has raw/final size 32,903 with NONE, explicitly unoptimized.
+Adding 149 raw predicate bytes therefore changes final size by 257 because the
+whole compilation policy changes. Both use 53 ordinary data items, zero hints,
+142 fixture witness bytes (allowed maximum 266), and peak 57. At 54 roots,
+fragment/leaf are 33,372/33,525, both unoptimized NONE. Fragment compilation
+options must not be inherited by a composed leaf.

@@ -14622,7 +14622,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 29,
@@ -14675,7 +14675,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 29,
@@ -14728,7 +14728,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 74,
@@ -14781,7 +14781,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 101,
@@ -14834,7 +14834,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 234,
@@ -14889,7 +14889,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 239,
@@ -14944,7 +14944,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 407,
@@ -14997,7 +14997,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 616,
@@ -15055,7 +15055,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 622,
@@ -15110,7 +15110,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 234,
@@ -15163,7 +15163,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 619,
@@ -15216,7 +15216,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 1236,
@@ -15272,7 +15272,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 19869,
@@ -15328,7 +15328,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 618389,
@@ -15384,7 +15384,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 32754,
@@ -15440,7 +15440,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 32903,
@@ -15496,7 +15496,7 @@
               "verify_csv": true,
               "verify_minimal_if": true
             },
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "5985e2c02c0c9a8ff778bf361acc017b4671a2f3",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "raw_bytes": 100,

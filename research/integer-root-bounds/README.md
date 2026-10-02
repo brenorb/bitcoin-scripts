@@ -124,7 +124,7 @@ uses widths 1..=31, no hints, one ordinary numeric input and canonical output,
 preserving both caller stacks. Existing helper APIs and base catalog records
 remain unchanged; actual scalar bytecode matches the prototype at every width.
 
-Integrated source revision: `FINAL_SOURCE_REVISION_PENDING`.
+Integrated source revision: `5985e2c02c0c9a8ff778bf361acc017b4671a2f3`.
 [`metrics.json`](metrics.json) contains 66 scalar rows, four exact shared-family
 artifacts (numeric/canonical compositions), and eight preloaded compositions.
 All final hashes, raw sizes, policy options, input/witness/output hashes, exact
@@ -163,7 +163,7 @@ are caught by the same exact-result assertion.
 Reproduce:
 
 ```sh
-CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example integer_root_metrics -- FINAL_SOURCE_REVISION_PENDING > /tmp/integer-root-metrics.json
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example integer_root_metrics -- 5985e2c02c0c9a8ff778bf361acc017b4671a2f3 > /tmp/integer-root-metrics.json
 cmp research/integer-root-bounds/metrics.json /tmp/integer-root-metrics.json
 python3 research/integer-root-bounds/verify_metrics.py
 python3 research/integer-root-bounds/verify_probe.py

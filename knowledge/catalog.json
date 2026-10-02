@@ -14619,7 +14619,8 @@
             "report": "research/u32-fermat-residue/metrics.json",
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed",
-            "stack_limit_enforced": true
+            "stack_limit_enforced": true,
+            "source_revision": "87f324464d641e4263f696af3b0a4063c8c4ba94"
           },
           "includes": "fragment-only: four raw canonical byte checks, two 16-bit lane packings, signed difference and normalization; excludes input pushes, terminal expected-residue OP_EQUAL and transaction; serialized witness is complete four-item data-only vector, all data coexist at entry; peak measured on recorded policy-produced complete leaf; no table, setup or hints; dynamic opcodes unavailable",
           "script_bytes": 100,
@@ -14662,7 +14663,8 @@
             "report": "research/u32-fermat-residue/metrics.json",
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed",
-            "stack_limit_enforced": true
+            "stack_limit_enforced": true,
+            "source_revision": "87f324464d641e4263f696af3b0a4063c8c4ba94"
           },
           "includes": "complete-leaf: four canonical byte checks, lane packings, modular difference and terminal expected-residue 17476 OP_EQUAL, ending with one truthy item for the fixed runtime input; no table or hints; full serialized data-only witness has four entry items and excludes leaf/control-block/annex; transaction, Taproot commitment, full consensus and policy context excluded; dynamic opcodes unavailable",
           "script_bytes": 104,

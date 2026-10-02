@@ -9,6 +9,9 @@ question, hypothesis, proof, threat model, exact boundaries and limitations.
 The source base is `bf9ee0bb34987a9130ad9dc13a06e18fef137296`; the delivered
 commit and final test outcomes are recorded in the PR validation description.
 Exact artifact hashes are actively checked, independently of documentation edits.
+The immutable source/artifact revision is `87f324464d641e4263f696af3b0a4063c8c4ba94`. This manifest
+and catalog annotation are a documentation-only follow-up; the PR records the
+exact delivered revision against which the final required suite runs.
 
 The representative runtime word is `0x89abcdef` in canonical most-significant
 byte-first ScriptNums, with residue 17,476. Each complete computation leaf ends

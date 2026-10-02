@@ -79,7 +79,9 @@ used by the all-pairs test are test-only data and excluded from metric witnesses
 Wrong-product terminal rejection has a valid control and a cleanup mutation.
 Artifact checks rebuild every report row and match catalog boundaries and pins.
 
-The source identity is pinned by a follow-up after the measurement commit.
+The measured implementation source is `121dbc16104671914393c2431323f53b474e0e82`.
+Catalog parameters pin that immutable measurement tree; this documentation-only
+follow-up records its identity.
 The delivered PR head identifies the clean integrated tree tested before
 submission. Reproduction (host optimization retains assertions and overflow
 checks; Script optimization policy is independent):

@@ -14614,7 +14614,8 @@
             "compilation": "compile_with_policy: every measured fragment and leaf below 32KiB raw cutoff, CompileOptions::ALL",
             "terminal_predicate": "reverse compare every product against49 with OP_EQUALVERIFY then OP_TRUE",
             "artifact_report": "research/u4-quarter-square/metrics.json",
-            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints"
+            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints",
+            "source_revision": "121dbc16104671914393c2431323f53b474e0e82"
           },
           "includes": "fragment-with-memory: table setup, canonical/range checks, pair routing from below memory, all ordered products, table cleanup and restoration; excludes input pushes and output comparisons; complete data-only witness; combined peak measured on recorded complete leaf",
           "script_bytes": 118,
@@ -14646,7 +14647,8 @@
             "compilation": "compile_with_policy: every measured fragment and leaf below 32KiB raw cutoff, CompileOptions::ALL",
             "terminal_predicate": "reverse compare every product against49 with OP_EQUALVERIFY then OP_TRUE",
             "artifact_report": "research/u4-quarter-square/metrics.json",
-            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints"
+            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints",
+            "source_revision": "121dbc16104671914393c2431323f53b474e0e82"
           },
           "includes": "fragment-with-memory: table setup, canonical/range checks, pair routing from below memory, all ordered products, table cleanup and restoration; excludes input pushes and output comparisons; complete data-only witness; combined peak measured on recorded complete leaf",
           "script_bytes": 159,
@@ -14678,7 +14680,8 @@
             "compilation": "compile_with_policy: every measured fragment and leaf below 32KiB raw cutoff, CompileOptions::ALL",
             "terminal_predicate": "reverse compare every product against49 with OP_EQUALVERIFY then OP_TRUE",
             "artifact_report": "research/u4-quarter-square/metrics.json",
-            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints"
+            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints",
+            "source_revision": "121dbc16104671914393c2431323f53b474e0e82"
           },
           "includes": "fragment-with-memory: table setup, canonical/range checks, pair routing from below memory, all ordered products, table cleanup and restoration; excludes input pushes and output comparisons; complete data-only witness; combined peak measured on recorded complete leaf",
           "script_bytes": 405,
@@ -14710,7 +14713,8 @@
             "compilation": "compile_with_policy: every measured fragment and leaf below 32KiB raw cutoff, CompileOptions::ALL",
             "terminal_predicate": "reverse compare every product against49 with OP_EQUALVERIFY then OP_TRUE",
             "artifact_report": "research/u4-quarter-square/metrics.json",
-            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints"
+            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints",
+            "source_revision": "121dbc16104671914393c2431323f53b474e0e82"
           },
           "includes": "fragment-with-memory: table setup, canonical/range checks, pair routing from below memory, all ordered products, table cleanup and restoration; excludes input pushes and output comparisons; complete data-only witness; combined peak measured on recorded complete leaf",
           "script_bytes": 1389,
@@ -14747,7 +14751,8 @@
             "compilation": "compile_with_policy: every measured fragment and leaf below 32KiB raw cutoff, CompileOptions::ALL",
             "terminal_predicate": "reverse compare every product against49 with OP_EQUALVERIFY then OP_TRUE",
             "artifact_report": "research/u4-quarter-square/metrics.json",
-            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints"
+            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints",
+            "source_revision": "121dbc16104671914393c2431323f53b474e0e82"
           },
           "includes": "fragment-with-memory: table setup, canonical/range checks, pair routing from below memory, all ordered products, table cleanup and restoration; excludes input pushes and output comparisons; complete data-only witness; combined peak measured on recorded complete leaf",
           "script_bytes": 5325,
@@ -14779,7 +14784,8 @@
             "compilation": "compile_with_policy: every measured fragment and leaf below 32KiB raw cutoff, CompileOptions::ALL",
             "terminal_predicate": "reverse compare every product against49 with OP_EQUALVERIFY then OP_TRUE",
             "artifact_report": "research/u4-quarter-square/metrics.json",
-            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints"
+            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints",
+            "source_revision": "121dbc16104671914393c2431323f53b474e0e82"
           },
           "includes": "fragment-with-memory: table setup, canonical/range checks, pair routing from below memory, all ordered products, table cleanup and restoration; excludes input pushes and output comparisons; complete data-only witness; combined peak measured on recorded complete leaf",
           "script_bytes": 15247,
@@ -14811,7 +14817,8 @@
             "compilation": "compile_with_policy: every measured fragment and leaf below 32KiB raw cutoff, CompileOptions::ALL",
             "terminal_predicate": "reverse compare every product against49 with OP_EQUALVERIFY then OP_TRUE",
             "artifact_report": "research/u4-quarter-square/metrics.json",
-            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints"
+            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints",
+            "source_revision": "121dbc16104671914393c2431323f53b474e0e82"
           },
           "includes": "fragment-with-memory: table setup, canonical/range checks, pair routing from below memory, all ordered products, table cleanup and restoration; excludes input pushes and output comparisons; complete data-only witness; combined peak measured on recorded complete leaf",
           "script_bytes": 19880,
@@ -14843,7 +14850,8 @@
             "compilation": "compile_with_policy: every measured fragment and leaf below 32KiB raw cutoff, CompileOptions::ALL",
             "terminal_predicate": "reverse compare every product against49 with OP_EQUALVERIFY then OP_TRUE",
             "artifact_report": "research/u4-quarter-square/metrics.json",
-            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints"
+            "input_generator": "2*n canonical sevens, all operands present at entry, zero hints",
+            "source_revision": "121dbc16104671914393c2431323f53b474e0e82"
           },
           "includes": "complete-leaf: canonical exact products with private table lifecycle plus reverse expected49 OP_EQUALVERIFY predicates and OP_TRUE; excludes input pushes; data-only witness excludes leaf/control block",
           "script_bytes": 1486,

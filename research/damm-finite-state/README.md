@@ -115,3 +115,80 @@ remain to be completed before any public promotion or PR.
 The preserved upstream C# files include original trailing whitespace. The
 scoped .gitattributes entry retains these exact SHA256-bound bytes without
 applying local whitespace cleanup to foreign source snapshots.
+
+## Qualified public implementation
+
+The prototype above is preserved at its original source revision. The public
+[`u4_decimal_digits_to_damm`](../../src/arithmetic/u4/damm/README.md) supports
+0..=896 numeric decimal digits, validates hostile numeric range, preserves both
+caller stacks, and returns one canonical state. Original sibling sum APIs and
+catalog evidence remain unchanged. Its initial source/probe/oracle bytes are
+retained for the reproduction-before-production boundary.
+
+Qualified source revision: `FINAL_SOURCE_REVISION_PENDING`.
+[`metrics.json`](metrics.json) binds that revision, every source file affecting
+the new report, compiler/interpreter identities, exact execution options and
+final whole-artifact hashes. It contains 56 scalar rows, seven resident lifecycle
+breakdowns and four preloaded independent compositions. The new independent
+Python oracle also checks the actual Cargo dependency identities, all composed
+witness hashes, output order and optimizer deltas. Full artifact/catalog
+contracts recompute the report and inspect immutable source bytes when the
+commit is available; a shallow CI checkout still verifies current source hashes
+and recomputed artifacts and must identify itself as shallow.
+
+The public resident loop is byte-identical to the original prototype at all
+shared valid sizes. Its 32-digit fragment/leaf are 766/769 bytes with the same
+61-byte fixture witness, 32 data items and exactly zero hints. Four-byte numeric
+aliases are legal when numeric minimality is off; the full allowed witness
+maximum is 161 bytes, not the canonical-encoding bound. Policy probes separate
+MinimalData and entry-size prechecks from numeric consensus-oriented execution;
+they are partial local policy evidence and never relay classification.
+
+Two preloaded independent folds use 64 ordinary items, zero total hints,
+67 serialized witness bytes and peak 168. Component sum 1,536 plus whole-policy
+delta -4 gives a 1,532-byte fragment; a leaf checking both states is 1,537.
+At 28 folds, 896 ordinary items and zero total hints give witness 927 bytes and
+peak 1,000; component sum 21,504 plus delta -56 gives fragment 21,448 and checked
+leaf 21,505. All use ALL. The 29th fold fails StackSize at 1,001. Allowed witness
+maxima including numeric aliases are 321/4,483 bytes. Every future message,
+parked state and caller main/alt item is counted; no shared-table API is claimed.
+
+The shared suite covers four Damm schedules plus existing canonical modulo-16
+and numeric exact sums: all short vectors, asymmetric/order vectors, typed
+malformed inputs and aliases at each position, all short prefixes, exact combined
+frontiers and every preserved caller byte. Compiled mutations bypass range and
+canonicality guards, reverse input order, or omit terminal equality; unchanged
+valid controls and the **same** typed-error or exact-output assertion catch them.
+Additional composition tests bypass all 64 digit guards and shorten every prefix
+of a two-message witness. Error-detection properties are checked independently
+and exercised on all 100 three-digit valid codewords; 000/130 demonstrate
+forgeability. No C# or Bitcoin Core execution is claimed.
+
+Reproduce from the qualified source plus its bound report:
+
+```sh
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example damm_metrics -- FINAL_SOURCE_REVISION_PENDING > /tmp/damm-metrics.json
+cmp research/damm-finite-state/metrics.json /tmp/damm-metrics.json
+python3 research/damm-finite-state/verify_metrics.py
+python3 research/damm-finite-state/verify_reference.py
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test damm_contract
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test primitive_metrics u4_damm_metrics_are_current
+python3 tools/kb.py validate
+cargo fmt --all -- --check
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked -- --skip fields::
+```
+
+Test optimization keeps debug assertions and overflow checks. Every published
+configuration remains `locally-reproduced`/`unclassified`; no deployment class
+is inherited from strict stack success, a partial Policy probe or checksum
+algebra. The [negative result](../../knowledge/negative-results/damm-finite-state.md)
+and [OP-037](../../knowledge/open-problems.md#op-037--authenticated-decimal-transducer-composition)
+record the cost and authentication boundaries.
+
+At 32 digits the independently policy-compiled lifecycle is 100 bytes of table
+setup, one byte of initial state, 613 bytes of validated queries/routing, and
+52 bytes of table cleanup/state restoration. The whole optimizer delta is zero,
+so these sum to the final 766-byte fragment. At 128/896 digits, query/routing
+components are 2,533/17,893 bytes; setup/state/cleanup remain 100/1/52 and deltas
+remain zero. Query depth encodings vary with n, so this is not a constant
+per-digit charge or a shared-table API.

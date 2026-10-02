@@ -447,3 +447,74 @@ fn report_binds_artifacts_inputs_options_and_dependency_pins() {
         .collect();
     assert_eq!(configs, expected_configs);
 }
+
+#[test]
+fn catalog_configurations_match_the_reported_artifact_boundary() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let report: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(root.join("research/u4-prefix-reconstruction/metrics.json"))
+            .unwrap(),
+    )
+    .unwrap();
+    let catalog: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(root.join("knowledge/catalog.json")).unwrap(),
+    )
+    .unwrap();
+    let record = catalog["records"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["id"] == "arithmetic/u4-prefix-sum")
+        .unwrap();
+    for config in record["configurations"].as_array().unwrap() {
+        let n = config["parameters"]["nibble_count"].as_u64().unwrap();
+        let row = report["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["name"] == "conditional" && r["nibble_count"] == n)
+            .unwrap();
+        let complete = config["includes"]
+            .as_str()
+            .unwrap()
+            .starts_with("complete-leaf:");
+        assert_eq!(
+            config["script_bytes"],
+            row[if complete {
+                "leaf_bytes"
+            } else {
+                "fragment_bytes"
+            }]
+        );
+        assert_eq!(config["witness_bytes"], row["witness_bytes"]);
+        assert_eq!(config["witness_bytes_max"], row["witness_bytes"]);
+        assert_eq!(config["max_stack_items"], row["combined_peak"]);
+        assert_eq!(
+            config["static_non_push_opcodes"],
+            row["static_non_push_opcodes"].as_u64().unwrap() + if complete { n } else { 0 }
+        );
+        assert_eq!(
+            config["parameters"]["static_non_push_opcodes"],
+            config["static_non_push_opcodes"]
+        );
+        for key in ["fragment_sha256", "leaf_sha256", "witness_sha256"] {
+            assert_eq!(config["parameters"][key], row[key]);
+        }
+        assert_eq!(
+            config["parameters"]["compiler_source"],
+            report["compiler_source"]
+        );
+        assert_eq!(
+            config["parameters"]["interpreter_source"],
+            report["interpreter_source"]
+        );
+        assert_eq!(
+            config["parameters"]["terminal_predicate"],
+            report["terminal_predicate"]
+        );
+        assert_eq!(config["parameters"]["data_items"], n);
+        assert_eq!(config["parameters"]["hint_items"], 0);
+        assert!(config["executed_opcodes"].is_null());
+        assert!(config["validation_weight"].is_null());
+    }
+}

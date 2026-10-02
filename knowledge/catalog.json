@@ -14612,7 +14612,8 @@
             "witness_sha256": "b44aeb3ea4489f5a532950e5ff789e718031e15cc04d6f00a26f627895b0ce08",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
-            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE"
+            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE",
+            "source_revision": "c1700d3c175dafab2cf8c990d2f2e0db565b5cd7"
           },
           "includes": "fragment-with-memory: canonical checks, input staging and every ordered prefix output; excludes input pushes and terminal checks; n data items at entry, zero hints; data-only serialized witness; peak measured with complete expected-prefix leaf",
           "script_bytes": 10,
@@ -14644,7 +14645,8 @@
             "witness_sha256": "1ab1dd8fd4f1e5c9347f9013d6547d2d89329309d5a36b4095ec59c05590d07f",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
-            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE"
+            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE",
+            "source_revision": "c1700d3c175dafab2cf8c990d2f2e0db565b5cd7"
           },
           "includes": "fragment-with-memory: canonical checks, input staging and every ordered prefix output; excludes input pushes and terminal checks; n data items at entry, zero hints; data-only serialized witness; peak measured with complete expected-prefix leaf",
           "script_bytes": 31,
@@ -14676,7 +14678,8 @@
             "witness_sha256": "ebe39248bbb31b8fe3fca809b24e4ff0ac9da1a553cb735e0dd63049fec9c647",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
-            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE"
+            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE",
+            "source_revision": "c1700d3c175dafab2cf8c990d2f2e0db565b5cd7"
           },
           "includes": "fragment-with-memory: canonical checks, input staging and every ordered prefix output; excludes input pushes and terminal checks; n data items at entry, zero hints; data-only serialized witness; peak measured with complete expected-prefix leaf",
           "script_bytes": 661,
@@ -14713,7 +14716,8 @@
             "witness_sha256": "a3c016fe74ee6f9e094554fff5e9401244d444994f949673778bbeb6578c7922",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
-            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE"
+            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE",
+            "source_revision": "c1700d3c175dafab2cf8c990d2f2e0db565b5cd7"
           },
           "includes": "fragment-with-memory: canonical checks, input staging and every ordered prefix output; excludes input pushes and terminal checks; n data items at entry, zero hints; data-only serialized witness; peak measured with complete expected-prefix leaf",
           "script_bytes": 2677,
@@ -14745,7 +14749,8 @@
             "witness_sha256": "b30f7d72cc08eed30befc25fc65e3014ccb932d1576eacff31b47391d4fe1d93",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
-            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE"
+            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE",
+            "source_revision": "c1700d3c175dafab2cf8c990d2f2e0db565b5cd7"
           },
           "includes": "fragment-with-memory: canonical checks, input staging and every ordered prefix output; excludes input pushes and terminal checks; n data items at entry, zero hints; data-only serialized witness; peak measured with complete expected-prefix leaf",
           "script_bytes": 20275,
@@ -14777,7 +14782,8 @@
             "witness_sha256": "ff596336dd5253ed5b4bc9c6db5a0cc9c875e7f7db34d2f5e366131557cc36db",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
-            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE"
+            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE",
+            "source_revision": "c1700d3c175dafab2cf8c990d2f2e0db565b5cd7"
           },
           "includes": "fragment-with-memory: canonical checks, input staging and every ordered prefix output; excludes input pushes and terminal checks; n data items at entry, zero hints; data-only serialized witness; peak measured with complete expected-prefix leaf",
           "script_bytes": 20926,
@@ -14798,7 +14804,7 @@
             "nibble_count": 32,
             "data_items": 32,
             "hint_items": 0,
-            "static_non_push_opcodes": 503,
+            "static_non_push_opcodes": 535,
             "input_generator": "n canonical sevens",
             "complete_leaf_bytes": 726,
             "compilation": "CompileOptions::ALL via compile_with_policy",
@@ -14809,7 +14815,8 @@
             "witness_sha256": "ebe39248bbb31b8fe3fca809b24e4ff0ac9da1a553cb735e0dd63049fec9c647",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
-            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE"
+            "terminal_predicate": "reverse i=n..1 compare output with (7*i)%16 using OP_EQUALVERIFY, then OP_TRUE",
+            "source_revision": "c1700d3c175dafab2cf8c990d2f2e0db565b5cd7"
           },
           "includes": "complete-leaf: canonical prefix scan and reverse expected-prefix OP_EQUALVERIFY checks then OP_TRUE; input pushes excluded; serialized data-only witness excludes leaf/control block",
           "script_bytes": 726,
@@ -14823,7 +14830,7 @@
           "metric_keys": [
             "u4_prefix_sum32_leaf"
           ],
-          "static_non_push_opcodes": 503
+          "static_non_push_opcodes": 535
         }
       ],
       "limitations": [

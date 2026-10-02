@@ -73,9 +73,10 @@ sources are obtained from the producer's embedded lockfile, respectively
 `a09e87af444034698697f0a2267e755cf72f9aed`. All measured fragments and leaves
 are below the 32KiB raw cutoff and compile via centralized `CompileOptions::ALL`.
 The artifact contract reconstructs every report row, hashes, serialized witness,
-static counts, outputs, peaks and dependency pins. Source revision is pinned in
-catalog parameters by the follow-up provenance commit; the delivered PR head
-identifies the exact integrated tree validated before submission.
+static counts, outputs, peaks and dependency pins. The measured implementation revision is `c1700d3c175dafab2cf8c990d2f2e0db565b5cd7`. Catalog parameters
+pin that source tree; a documentation-only follow-up records this identity.
+The delivered PR head identifies the exact integrated tree validated before
+submission.
 
 ```sh
 CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example u4_prefix_reconstruction_probe > /tmp/u4-prefix-reproduced.json

@@ -14621,7 +14621,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; payloads and count returned",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",
@@ -14672,7 +14672,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; payloads and count returned",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",
@@ -14723,7 +14723,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; payloads and count returned",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",
@@ -14774,7 +14774,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; payloads and count returned",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",
@@ -14830,7 +14830,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "count and each retained raw payload EQUALVERIFY then TRUE",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",
@@ -14885,7 +14885,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; payloads and count returned",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",
@@ -14936,7 +14936,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; payloads and count returned",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",
@@ -14987,7 +14987,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "none; payloads and count returned",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",
@@ -15038,7 +15038,7 @@
               "verify_minimal_if": true
             },
             "terminal_predicate": "count and each retained raw payload EQUALVERIFY then TRUE",
-            "source_revision": "0000000000000000000000000000000000000000",
+            "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
             "compiler_source": "git+https://github.com/BitVM/rust-bitcoin-script#124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_source": "git+https://github.com/adrienlacombe/rust-bitcoin-scriptexec?rev=a09e87af444034698697f0a2267e755cf72f9aed#a09e87af444034698697f0a2267e755cf72f9aed",
             "report": "research/stable-stack-compaction/metrics.json",

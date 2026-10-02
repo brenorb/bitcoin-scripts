@@ -4528,7 +4528,7 @@
     }
   ],
   "schema_version": 1,
-  "source_revision": "0000000000000000000000000000000000000000",
+  "source_revision": "666643cf20198f4e831e66f705a7192a216b33b2",
   "source_sha256": {
     "Cargo.lock": "13cceb87703b0d63d66d1c5c3406dfa00f5d8f166b9bfcfe68509dd5fe803de7",
     "examples/stable_stack_compaction_probe.rs": "a330842300147258e4b097879f04cf4af1c08c09e80d068edcc597e814acf2f8",

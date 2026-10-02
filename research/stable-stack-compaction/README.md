@@ -16,7 +16,7 @@ central compilation policy and observable output checks.
 
 ## Immutable provenance and reproduction
 
-Tested source revision: `SOURCE_REVISION_PENDING`.
+Tested source revision: `666643cf20198f4e831e66f705a7192a216b33b2`.
 Integration base: `bf9ee0bb34987a9130ad9dc13a06e18fef137296`.
 The source revision pins the generator, comparison families, shared contract
 suite, report producer, lockfile and compilation/execution helpers. The report
@@ -37,7 +37,7 @@ CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test primitive_metrics stab
 python3 tools/kb.py validate
 cargo fmt --all -- --check
 CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked -- --skip fields::
-CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example stable_stack_compaction_probe -- SOURCE_REVISION_PENDING > /tmp/stable-selection-reproduced.json
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example stable_stack_compaction_probe -- 666643cf20198f4e831e66f705a7192a216b33b2 > /tmp/stable-selection-reproduced.json
 cmp research/stable-stack-compaction/metrics.json /tmp/stable-selection-reproduced.json
 ```
 

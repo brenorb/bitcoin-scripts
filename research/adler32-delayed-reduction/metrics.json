@@ -1599,7 +1599,7 @@
     }
   ],
   "schema_version": 1,
-  "source_revision": "0000000000000000000000000000000000000000",
+  "source_revision": "250f23861a87ee10b2a7e1ea3de07dcf8569e820",
   "source_sha256": {
     "Cargo.lock": "13cceb87703b0d63d66d1c5c3406dfa00f5d8f166b9bfcfe68509dd5fe803de7",
     "examples/adler32_delayed_probe.rs": "78289660a65dcfd595b9b94473332728860de93ddfa7d08234cd7c99d27cb75f",

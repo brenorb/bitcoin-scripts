@@ -98,7 +98,7 @@ inputs, asymmetric ordering and exact composed main/alt peaks are tested.
 ## Source and reproduction
 
 Source base: bf9ee0bb34987a9130ad9dc13a06e18fef137296.
-Measured source revision: SOURCE_REVISION_PENDING.
+Measured source revision: 250f23861a87ee10b2a7e1ea3de07dcf8569e820.
 Compiler/interpreter identities are extracted from the binary's embedded
 Cargo.lock; metrics.json binds source SHA256s, the immutable source revision,
 all 31 comparison rows, options, witness hashes, final bytecode hashes and
@@ -113,7 +113,7 @@ is added without editing or dropping the 122 existing records.
 ```sh
 python3 research/adler32-delayed-reduction/oracle.py > /tmp/adler32-oracle.json
 cmp /tmp/adler32-oracle.json research/adler32-delayed-reduction/oracle.json
-CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example adler32_delayed_probe -- SOURCE_REVISION_PENDING > /tmp/adler32-metrics.json
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example adler32_delayed_probe -- 250f23861a87ee10b2a7e1ea3de07dcf8569e820 > /tmp/adler32-metrics.json
 cmp /tmp/adler32-metrics.json research/adler32-delayed-reduction/metrics.json
 CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test adler32_contract
 CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test primitive_metrics adler32_state_metrics_are_current

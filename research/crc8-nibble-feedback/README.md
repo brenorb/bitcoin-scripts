@@ -138,7 +138,7 @@ checked numeric nibble input, canonical numeric CRC and zero hints. Existing
 helper APIs and the full base catalog are retained. Policy-produced bytecode
 matches the frozen schedule at empty, small, cutoff and maximum sizes.
 
-Integrated source revision: `CRC8_FINAL_SOURCE_PENDING`.
+Integrated source revision: `1231ed087025ab136fcfe7c1f904bf898b328b48`.
 [metrics.json](metrics.json) binds 136 scalar rows, four exact alias contracts
 and 24 preloaded repeated configurations to final script/Tapleaf hashes,
 raw sizes, separate whole-policy options, inputs/witnesses/outputs, compiler/
@@ -183,7 +183,7 @@ null. Source artifacts and catalog rows do not silently upgrade siblings.
 Reproduce:
 
 ```sh
-CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example crc8_metrics -- CRC8_FINAL_SOURCE_PENDING > /tmp/crc8-metrics.json
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example crc8_metrics -- 1231ed087025ab136fcfe7c1f904bf898b328b48 > /tmp/crc8-metrics.json
 cmp research/crc8-nibble-feedback/metrics.json /tmp/crc8-metrics.json
 python3 research/crc8-nibble-feedback/verify_metrics.py
 python3 research/crc8-nibble-feedback/verify_probe.py

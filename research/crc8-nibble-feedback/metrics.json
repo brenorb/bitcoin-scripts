@@ -10323,7 +10323,7 @@
       "witness_sha256": "a4f137761978755aec458d6adc2366e2828b8025d1d351d0bedfece4f8cb2b6c"
     }
   ],
-  "source_revision": "0000000000000000000000000000000000000000",
+  "source_revision": "1231ed087025ab136fcfe7c1f904bf898b328b48",
   "source_sha256": {
     "Cargo.lock": "13cceb87703b0d63d66d1c5c3406dfa00f5d8f166b9bfcfe68509dd5fe803de7",
     "examples/crc8_metrics.rs": "db89e734eb572abf36a0e2a9cdf0e98fafda212fa2d471fc7461833e2419cf5b",

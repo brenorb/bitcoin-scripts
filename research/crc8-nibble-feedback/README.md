@@ -128,3 +128,78 @@ Debug assertions and overflow checks stay enabled. Public API design, canonical
 sibling contracts, asymmetric ordering and terminal mutations, partial Policy
 controls, composition, named metrics, full non-field checks and KB promotion
 remain before any primitive PR. The original reproduction will be preserved.
+
+## Qualified complete-byte primitive
+
+The original probe, artifact and oracle above remain unchanged. The public
+[`arithmetic::checksums::crc8::crc8_smbus_nibbles`](../../src/arithmetic/checksums/crc8/README.md)
+uses a complete-byte count in 0..=406, zero initial state, no reflection/xor,
+checked numeric nibble input, canonical numeric CRC and zero hints. Existing
+helper APIs and the full base catalog are retained. Policy-produced bytecode
+matches the frozen schedule at empty, small, cutoff and maximum sizes.
+
+Integrated source revision: `CRC8_FINAL_SOURCE_PENDING`.
+[metrics.json](metrics.json) binds 136 scalar rows, four exact alias contracts
+and 24 preloaded repeated configurations to final script/Tapleaf hashes,
+raw sizes, separate whole-policy options, inputs/witnesses/outputs, compiler/
+interpreter identities and explicit execution options. All classification is
+locally-reproduced/unclassified; local Policy is only a documented subset.
+Unknown executed counts and complete transaction budgets remain null.
+
+Four exact generators are shared by measurements and the contract suite:
+public numeric feedback, numeric serial register, and their canonical-input
+compositions using the existing `verify_canonical_nibble`. Exhaustive two-byte
+messages, long deterministic inputs, aliases, every malformed live position,
+every short prefix, asymmetric ordering and every independent output are checked.
+The same typed assertions catch actual compiled range/canonicality/terminal
+bypasses after unchanged valid controls; the same exact-result assertion catches
+ordering mutations. The retained original-step regression proves the private
+serial-reference fix against its original counterexample.
+
+Caller state is supplied as runtime opaque witness bytes, staged to the altstack
+before the fragment and compared after it. This prevents compile-time constant
+folding from removing the preserved state in the empty-message case. Every
+caller byte is observed at exactly 1,000; one extra fails StackSize at 1,001.
+The selected alt count is capped by available caller slots: the 406-byte maximum
+has none, and R=45 nine-byte messages have two. Smaller configurations exercise
+three alt items plus enough main caller items to reach the same boundary.
+
+Repeated messages contain every future input and parked output. Numeric feedback
+at R=2/8/25/26/45 has 36/144/450/468/810 ordinary data items, zero incremental
+and total hints, and peaks 224/332/638/656/998. Witnesses serialize to
+71/280/875/910/1,573 fixture bytes, and attained four-byte-alias maxima are
+181/721/2,253/2,343/4,053. R=46's 828 data / zero hints fail at measured 1,001.
+The component sum includes output park/restore; its whole-policy delta includes
+any ALL-to-NONE transition. R=25 has fragment/leaf 31,550/31,638 with ALL;
+R=26 has 32,890/32,982, both explicitly unoptimized NONE. R=45 is
+56,925/57,083, also unoptimized NONE. Canonical/serial siblings have separately
+measured bytes, aliases, cutoffs and resource outcomes.
+
+Numeric witness maxima are attained by four-byte aliases of the exact fixture,
+so the bound CRC remains unchanged. Canonical domain encoding caps are recorded
+separately; their exact maximum under a fixed checksum is unknown and stays
+null. Source artifacts and catalog rows do not silently upgrade siblings.
+
+Reproduce:
+
+```sh
+CARGO_PROFILE_DEV_OPT_LEVEL=1 cargo run --locked --example crc8_metrics -- CRC8_FINAL_SOURCE_PENDING > /tmp/crc8-metrics.json
+cmp research/crc8-nibble-feedback/metrics.json /tmp/crc8-metrics.json
+python3 research/crc8-nibble-feedback/verify_metrics.py
+python3 research/crc8-nibble-feedback/verify_probe.py
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test crc8_contract
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked --test primitive_metrics crc8_smbus_metrics_are_current
+python3 tools/kb.py validate
+cargo fmt --all -- --check
+CARGO_PROFILE_TEST_OPT_LEVEL=1 cargo test --locked -- --skip fields::
+```
+
+The artifact test regenerates the full report with those same generators,
+checks every catalog configuration, and compares immutable source bytes. A
+shallow CI checkout must prove that it is shallow if the source commit is
+unavailable; current source hashes and complete artifact recomputation still
+apply. Debug assertions and overflow checks stay enabled. The primitive is
+error detection, not cryptographic authentication or a deployment claim.
+[NR-081](../../knowledge/negative-results/crc8-nibble-feedback.md) and
+[OP-039](../../knowledge/open-problems.md#op-039--streamed-crc-8-frontier) record
+startup, stack, repeated-setup and wider-byte limitations.

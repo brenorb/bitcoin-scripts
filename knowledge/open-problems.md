@@ -1186,7 +1186,7 @@ executed opcodes and combined peaks. Record either a consumer-level improvement
 or dominance. A general compression or deployment claim requires its own
 semantics and full-spend/Core validation; odd complement centers remain excluded.
 
-## OP-043 — Multiset-equality consumer frontier
+## OP-044 — Multiset-equality consumer frontier
 
 The packed histogram test is measured standalone. **Accept when:** a concrete
 consumer (for example a permutation check on witness-supplied nibbles) uses

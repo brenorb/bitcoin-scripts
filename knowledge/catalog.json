@@ -21599,7 +21599,7 @@
         "No Bitcoin Core consensus or relay-policy validation"
       ],
       "open_problems": [
-        "OP-043"
+        "OP-044"
       ]
     }
   ]

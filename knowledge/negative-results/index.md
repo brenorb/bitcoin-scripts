@@ -1992,7 +1992,7 @@ witness layout would save 3 bytes and was not adopted. Byte counts are
 and deployment is `unclassified`. See the
 [generator record](blake3-short-generator.md).
 
-## NR-087: Per-symbol histograms are dominated for u4 multiset equality
+## NR-088: Per-symbol histograms are dominated for u4 multiset equality
 
 Deciding whether two u4 vectors have equal multisets by counting each of the
 sixteen symbols in each vector (via `u4_nibbles_count`) and comparing is

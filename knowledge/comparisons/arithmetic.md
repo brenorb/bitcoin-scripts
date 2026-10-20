@@ -471,4 +471,4 @@ vectors in 1,158 script bytes, 63 witness bytes, zero hints and a 53-item peak
 (strict local `unclassified` tapscript, `locally-reproduced`). The per-symbol
 alternative needs 32 fixed-symbol counts, a lower bound of 8,512 script bytes
 before vector copies and comparisons (an estimate, not a built comparator);
-see [the primitive](../primitives/u4-multiset-equal.md) and NR-087.
+see [the primitive](../primitives/u4-multiset-equal.md) and NR-088.

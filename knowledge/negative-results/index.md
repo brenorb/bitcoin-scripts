@@ -3,6 +3,34 @@
 These records prevent repeated dead ends. They are scoped observations, not
 universal impossibility proofs.
 
+## NR-087: Hinted u4 sorting loses at small widths
+
+The [exact sorter](../primitives/u4-sort.md) replaces repeated min/max scans
+with `n-1` bounded destructive-selection hints. Against the checked zero-hint
+selection network in `src/arithmetic/u4/sort.rs`, two inputs cost 37 script + 6
+serialized data-witness bytes versus 30 + 5; four cost 97 + 14 versus 88 + 9.
+The hinted form loses combined bytes by 8 and 14, respectively, without
+reducing the stack peak. At eight inputs the measured combined cost reverses
+to 247 versus 283, at the expense of seven hint items and an 18 versus 12-item
+peak. This is a measured crossover against this baseline, not an impossibility
+or optimum claim. Evidence is `locally-reproduced`; execution `unclassified`.
+
+All operands and hints coexist at entry: width 32 carries 31 hints plus 32
+operands, and width 499 carries 498 hints plus 499 operands. Deriving a batch
+capacity from hints alone would overstate composability. The exact combined
+peak is `2*n+2` for `n>=2`; width 499 reaches 1,000. An extra preserved item
+rejects. The caller cannot treat sorted output as an order-sensitive message
+binding: sorting removes order, and valid equal-value hint schedules are not
+unique. The existing nondecreasing predicate only checks existing order and
+does not prove multiset equality with an unrelated sorted witness.
+
+Reproduce with `cargo test --locked arithmetic::u4::sort --lib -- --nocapture`.
+The experiment includes full canonical checks on both sides, all stack
+routing and cleanup, and final policy-produced bytes. Terminal comparisons and
+transaction context are excluded on both sides. No optimized Batcher/bitonic
+network has yet been measured; see OP-043.
+
+
 ## NR-078: Forward stable filtering and redundant flag guards
 
 The [stable-selection experiment](stable-selection.md) reproduces 970/1,070
@@ -1547,11 +1575,12 @@ measurement because the live state, lookup table, and output all coexist.
 ## NR-055: Binohash legacy core does not establish the full protocol
 
 The local helper reproduces opcode-boundary `FindAndDelete`, subset-dependent
-legacy sighashes, and the historical `SIGHASH_SINGLE` constant. That boundary
-does not prove Binohash's two-round collision resistance, grinding work,
-signature validity, complete legacy transaction execution, or Script
-authentication. Those require a pinned Bitcoin Core regtest and remain under
-OP-011.
+legacy sighashes, and the historical `SIGHASH_SINGLE` constant. A separate
+two-choice fixture verifies fixed signatures in complete funded P2SH spends
+against pinned Core v30.3, but default relay policy rejects them under
+`CONST_SCRIPTCODE`. Neither result proves Binohash's two-round collision
+resistance, grinding work, mutation boundaries, Script-readable digest
+extraction, or downstream authentication. Those remain under OP-011.
 
 ## NR-056: Optional-SHA256 hash paths do not bind a free starting preimage
 
@@ -1810,6 +1839,17 @@ integer objective and is not retained as a byte-efficiency improvement. The
 result does not rule out a ternary path when protocol state is naturally
 three-valued or when a different consumer amortizes its dispatcher; see
 [OP-030](../open-problems.md#op-030--ternary-commitment-composition-frontier).
+
+## NR-109: Adler byte validation overlapping accumulators loses capacity
+
+The initial interleaved canonical-byte schedule peaks at n+5 and rejects
+n996/997 with typed StackSize. Prevalidating before allocating A/B reaches
+n+3 and accepts n997 at exactly 1,000 items, without increasing bytes. All
+997 data items coexist at entry, zero hints, 2,994 witness bytes. Naive
+per-byte reduction is also dominated at n32 by prefix-bounded streaming,
+which in turn costs 740 versus 636 deferred bytes. See the
+[reproduced counterexample and scope limits](adler32-scheduling.md).
+Evidence is `locally-reproduced`, deployment `unclassified`; no Core claim.
 
 ## NR-073: Forward modulo-17 nibble routing loses to a reverse fold
 

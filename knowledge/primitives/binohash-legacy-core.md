@@ -12,10 +12,11 @@ dummy-signature byte vectors, selected candidate indices, and a raw legacy
 sighash type. It returns the 32-byte legacy digest. Deletion is performed only
 at opcode boundaries, matching the legacy signature-hash construction model.
 
-The implementation deliberately stops before the probabilistic parts of the
-published Binohash protocol: it does not grind ECDSA signatures, prove the
-two-round collision/work bound, execute a complete legacy `OP_CHECKMULTISIG`
-spend, or expose transaction fields to a Script consumer.
+The host helper stops before the probabilistic parts of the published
+Binohash protocol. A separate fixed two-choice fixture constructs valid ECDSA
+signatures and executes complete legacy `OP_CHECKMULTISIG` spends. It does not
+grind signatures, prove the two-round collision/work bound, or expose a digest
+to a Script consumer.
 
 ## Evidence
 
@@ -27,9 +28,25 @@ changes, invalid selection/input errors, and the out-of-range-input
 suite also passes its eight covered Python tests with `PYTHONPATH=src` and
 `python-bitcoinlib`.
 
-The execution class is `unclassified`: the helper uses rust-bitcoin's legacy
-sighash serializer, but no complete transaction has been compared against a
-pinned Bitcoin Core regtest from this repository.
+The host-only configuration remains `locally-reproduced` and `unclassified`.
+The [funded two-choice fixture](../../research/binohash-legacy-core/README.md)
+is `differentially-validated` against pinned Bitcoin Core v30.3 commit
+`49faec4f87f5cd19c88db01a82e5c68b087c8227`. Core mines both selected
+spends under consensus and rejects both unchanged puzzle signatures when their
+pool selection is flipped. This checks the local digest through ECDSA
+verification, rather than comparing a Core-exposed digest. Core's default
+relay policy rejects even the valid spends with `Signature is found in
+scriptCode`, so this configuration is `consensus-validated`, not
+`policy-validated`.
+
+The P2SH locking scriptPubKey is 23 bytes and its raw redeemScript is 220
+bytes. Complete two-input, one-output valid
+transactions weigh 1,744 and 1,740 WU, including scriptSigs of 2 and 297/296
+bytes respectively. No witness or hint items are used. Maximum combined stack
+peak and executed opcodes were not measured. The
+[checked report](../../tests/data/binohash-core-v30.3.json) records both full
+serialized transactions, Core verdicts, and archive/binary hashes. These are
+costs of a reduced two-choice fixture, not of full Binohash.
 
 ## Security and limitations
 

@@ -1207,3 +1207,8 @@ See [the knowledge page](../../../knowledge/primitives/u4-reflection.md),
 catalog record `arithmetic/u4-reflection`. The palindromic coefficient
 interpretation is reported in [Gao, arXiv:2109.09006v1](https://arxiv.org/abs/2109.09006v1);
 our nibble encoding and cost results are local.
+
+The one-bit-per-item `balanced::bracket_items_balanced(len)` comparator is
+bounded separately from the packed variant: `1 <= len <= 995` (no default),
+with `len + 5 + preserved_main + preserved_alt <= 1000`. The packed variant
+retains its independent `n + 37` bound. Exact tests cover both frontiers.

@@ -31,7 +31,7 @@ stack state is preserved.
 
 Every nibble is hostile. Tests cover `-1`, `16` and `255` at every position of a
 length-4 batch, exhaustive agreement with a bracket-by-bracket Rust model for
-every one to three nibbles (4,368 vectors), 200 random Dyck words and 200 random
+every one to three nibbles (4,368 vectors), 200 total deterministic vectors split between Dyck words and random
 strings at each of 4, 8 and 16 nibbles (at least 20 accepted and 20 rejected
 each), first-nibble-first ordering, preserved main/alt state, generation bounds,
 and an exact stack frontier (accepted at 963 nibbles with a 1,000-item peak, and
@@ -75,3 +75,15 @@ cargo test --locked arithmetic::u4::balanced::tests --lib
 cargo test --locked --test primitive_metrics u4_balanced_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The bit-item comparator has a separate bound of **995 items**, with combined
+peak `n + 5 + preserved_main + preserved_alt <= 1000`. At 995 there is no
+caller-state slot; 994 permits one preserved main or alt item. Constructor
+lengths 996 and above are rejected. Dedicated comparator tests exercise these
+frontiers independently of the packed decoder. The longer-string sampling loop
+runs **200 vectors total per length**, choosing a Dyck word or an arbitrary
+bit string on each iteration; it does not run 200 of each category.
+
+Metrics execute the exact policy-compiled fragment under the explicit local
+consensus numeric profile with stack checks; no terminal wrapper is recompiled.
+Data-witness sizes include the item count, all length prefixes and payloads.

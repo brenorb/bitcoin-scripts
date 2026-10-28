@@ -61,13 +61,19 @@ pub fn u4_nibbles_balanced(len: u32) -> Script {
     }
 }
 
+/// Largest item-comparator batch: `n + 5 + preserved_main + preserved_alt <= 1000`.
+pub const BRACKET_ITEMS_MAX_LEN: u32 = 995;
+
 /// Bit-per-item comparator with the same verdict as [`u4_nibbles_balanced`].
 ///
 /// Before: `preserved | b[0] ... b[m-1]`, each `b` in `{0, 1}` (`1` is open).
 /// Scans from the top item with open and close exchanged, which decides the
 /// same balanced-string predicate as a forward scan.
 pub fn bracket_items_balanced(len: u32) -> Script {
-    assert!((1..=996).contains(&len), "length out of range");
+    assert!(
+        (1..=BRACKET_ITEMS_MAX_LEN).contains(&len),
+        "length out of range"
+    );
     script! {
         0 100000
         for _ in 0..len {
@@ -311,6 +317,40 @@ mod tests {
         assert!(at_limit <= 1_000);
         let rejected = run(1_000 - at_limit + 1);
         assert_eq!(rejected.error, Some(ExecError::StackSize), "{rejected}");
+    }
+
+    #[test]
+    fn item_comparator_frontier_includes_preserved_caller_state() {
+        assert!(std::panic::catch_unwind(|| bracket_items_balanced(996)).is_err());
+        assert!(std::panic::catch_unwind(|| bracket_items_balanced(997)).is_err());
+        let run = |len: u32, preserved: usize, alt: bool| {
+            let compiled = script! {
+                if alt { { len } OP_ROLL OP_TOALTSTACK }
+                { bracket_items_balanced(len) }
+                // All input bits are zero, so the balance verdict is false.
+                OP_NOT OP_VERIFY
+                if alt { OP_FROMALTSTACK 9 OP_EQUALVERIFY }
+                else { for _ in 0..preserved { 9 OP_EQUALVERIFY } }
+                OP_TRUE
+            }
+            .compile_with_policy()
+            .to_bytes();
+            let mut witness = vec![vec![9]; preserved];
+            witness.extend(vec![Vec::new(); len as usize]);
+            execute_raw_script_with_inputs_strict(compiled, witness)
+        };
+        let maximum = run(BRACKET_ITEMS_MAX_LEN, 0, false);
+        assert!(maximum.success, "{maximum}");
+        assert_eq!(maximum.stats.max_nb_stack_items, 1_000);
+        let over = run(BRACKET_ITEMS_MAX_LEN, 1, false);
+        assert_eq!(over.error, Some(ExecError::StackSize));
+        for alt in [false, true] {
+            let preserved = run(BRACKET_ITEMS_MAX_LEN - 1, 1, alt);
+            assert!(preserved.success, "alt={alt}: {preserved}");
+            assert_eq!(preserved.stats.max_nb_stack_items, 1_000);
+            let rejected = run(BRACKET_ITEMS_MAX_LEN, 1, alt);
+            assert_eq!(rejected.error, Some(ExecError::StackSize));
+        }
     }
 
     #[test]

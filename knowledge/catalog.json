@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21551,7 +21551,7 @@
         "stack-scheduling"
       ],
       "security": "Every nibble is range-checked before it indexes a stack table; the verdict depends only on validated witness values. No hint, key or cryptographic security claim.",
-      "stack_contract": "Consumes preserved | v[0..n-1] (last on top, v[0] the first four brackets) and returns preserved | balanced in {0,1}; peak n+37+preserved; unrelated main/alt state preserved.",
+      "stack_contract": "Consumes preserved | v[0..n-1] (last on top, v[0] the first four brackets) and returns preserved | balanced in {0,1}; peak n+37+preserved; unrelated main/alt state preserved. The bit-item comparator is capped separately at 995 items with n+5+preserved_main+preserved_alt <=1000.",
       "configurations": [
         {
           "id": "packed-128-brackets",
@@ -21570,7 +21570,7 @@
             "form": "nibble-packed",
             "data_items": 32
           },
-          "includes": "fragment-only: nibble range checks, table pushes, per-nibble summary lookups with slack and height updates, final Boolean and table cleanup; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: nibble range checks, table pushes, per-nibble summary lookups with slack and height updates, final Boolean and table cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete data-witness serialization includes the item count, all item lengths and payloads",
           "script_bytes": 895,
           "witness_bytes": 65,
           "witness_bytes_max": null,
@@ -21604,7 +21604,7 @@
             "form": "one-item-per-bracket",
             "data_items": 128
           },
-          "includes": "fragment-only: nibble range checks, table pushes, per-nibble summary lookups with slack and height updates, final Boolean and table cleanup; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: numeric bit-item checks in 0..2, two-accumulator height/minimum fold and final balance Boolean; no lookup table; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete data-witness serialization includes the item count, all item lengths and payloads",
           "script_bytes": 2059,
           "witness_bytes": 193,
           "witness_bytes_max": null,

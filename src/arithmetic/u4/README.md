@@ -1223,3 +1223,9 @@ and cleanup; input pushes and terminal predicate excluded. Fixture
 | Hint-checked projection, 64 nibbles | <!-- metric:u4_presence_hinted_64 -->1029<!-- /metric:u4_presence_hinted_64 --> | <!-- metric:u4_presence_hinted_64_witness -->188<!-- /metric:u4_presence_hinted_64_witness --> | <!-- metric:u4_presence_hinted_64_witness_items -->96<!-- /metric:u4_presence_hinted_64_witness_items --> | 32 | <!-- metric:u4_presence_hinted_64_stack -->100<!-- /metric:u4_presence_hinted_64_stack --> | <!-- metric:u4_presence_hinted_64_opcodes -->632<!-- /metric:u4_presence_hinted_64_opcodes --> |
 
 See the [knowledge page](../../../knowledge/primitives/u4-presence-hinted.md).
+
+`presence_hinted` compares witnessed nibbles numerically, including aliases
+under the explicit local consensus numeric profile; byte-sensitive callers must
+validate canonical input bytes. Flag canonicality relies on tapscript MINIMALIF.
+Callers must consume or verify the 16 output flags and preserved state, enforce
+their predicate and leave exactly one truthy item at a complete leaf.

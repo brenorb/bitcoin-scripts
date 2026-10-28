@@ -19,7 +19,11 @@ pub const PRESENCE_HINTED_MAX_LEN: u32 = 964;
 /// `p[15] ... p[0]` with `p[s] = 1` iff symbol `s` occurs in `x`, `p[0]` on top;
 /// the vector and the indices are consumed. Flags must be the empty item or `[1]`
 /// (in tapscript MINIMALIF aborts any other flag encoding); an index is only used
-/// for a set flag and must lie in `0..n`.
+/// for a set flag and must lie in `0..n`. Nibbles and set-flag indices are
+/// compared numerically, so nonminimal ScriptNums are accepted when MINIMALDATA
+/// is disabled. Callers requiring unique raw encodings must validate them.
+/// Consume or verify all 16 returned flags and preserved state, enforce the
+/// intended predicate, and leave a clean truthy stack for a complete leaf.
 pub fn u4_nibbles_to_presence_bits_hinted(len: u32) -> Script {
     assert!(
         (1..=PRESENCE_HINTED_MAX_LEN).contains(&len),
@@ -40,7 +44,7 @@ pub fn u4_nibbles_to_presence_bits_hinted(len: u32) -> Script {
                 OP_DUP 0 { len } OP_WITHIN OP_VERIFY
                 { len - 1 + 32 } OP_SWAP OP_SUB
                 OP_PICK
-                { symbol } OP_EQUALVERIFY
+                { symbol } OP_NUMEQUALVERIFY
             OP_ENDIF
         }
         // Keep the flags: park them, drop the vector and indices, restore.
@@ -103,6 +107,54 @@ mod tests {
         } else {
             Some(result.success)
         }
+    }
+
+    #[test]
+    fn numeric_aliases_and_forged_membership_under_consensus_profile() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        use bitcoin::ScriptBuf;
+        for (value, aliases) in [
+            (0u8, vec![vec![], vec![0], vec![0x80]]),
+            (1u8, vec![vec![1], vec![1, 0], vec![1, 0, 0, 0]]),
+        ] {
+            let (witness, flags) = honest(&[value]);
+            let compiled = ScriptBuf::from_bytes(leaf(1, &flags));
+            for alias in aliases {
+                let mut candidate = witness.clone();
+                candidate[0] = alias;
+                let outcome =
+                    execute_tapscript(compiled.clone(), candidate, TapscriptProfile::Consensus);
+                let result = outcome.execution().expect("executed alias leaf");
+                assert!(result.success, "{result}");
+                assert!(result.stack_limit_enforced);
+                assert_eq!(result.final_stack.len(), 1);
+            }
+        }
+        // Claim a second, absent symbol while pointing to a numeric alias of 1.
+        let (mut witness, flags) = honest(&[1]);
+        witness[0] = vec![1, 0];
+        witness[1 + 16 + 15] = vec![1];
+        let result = execute_tapscript(
+            ScriptBuf::from_bytes(leaf(1, &flags)),
+            witness,
+            TapscriptProfile::Consensus,
+        );
+        let result = result.execution().expect("executed forged leaf");
+        assert_eq!(result.error, Some(ExecError::NumEqualVerify), "{result}");
+        assert!(!result.success);
+        let (mut witness, flags) = honest(&[1]);
+        witness[0] = vec![1, 0, 0, 0, 0];
+        let result = execute_tapscript(
+            ScriptBuf::from_bytes(leaf(1, &flags)),
+            witness,
+            TapscriptProfile::Consensus,
+        );
+        let result = result.execution().expect("executed oversized leaf");
+        assert_eq!(
+            result.error,
+            Some(ExecError::ScriptIntNumericOverflow),
+            "{result}"
+        );
     }
 
     #[test]

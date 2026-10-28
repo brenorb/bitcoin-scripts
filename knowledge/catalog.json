@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21550,7 +21550,7 @@
         "membership-projection",
         "native-minimalif"
       ],
-      "security": "Nibbles, indices and flags are hostile. Every nibble must have its flag set and every set flag must be witnessed by an in-range index of an element equal to the symbol, so the returned flags equal the presence bits. In tapscript MINIMALIF makes the flags canonical Booleans. No key or cryptographic security claim.",
+      "security": "Nibbles, indices and flags are hostile. Every nibble must have its flag set and every set flag must be witnessed by an in-range index of an element equal to the symbol, so the returned flags equal the presence bits. In tapscript MINIMALIF makes the flags canonical Booleans. No key or cryptographic security claim. Nibble and index comparisons use numeric values; nonminimal numeric aliases are accepted without MINIMALDATA. Byte-sensitive callers must validate canonical inputs. Returned flags must be consumed/verified and the complete leaf must enforce the intended clean terminal condition.",
       "stack_contract": "Witness x[0..n-1] | idx[0..15] | p[15]..p[0] (p[0] on top) returns p[15]..p[0]; the vector and indices are consumed; peak n+36; hint items 32 per invocation.",
       "configurations": [
         {

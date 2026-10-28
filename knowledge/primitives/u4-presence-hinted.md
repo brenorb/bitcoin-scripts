@@ -66,3 +66,14 @@ cargo test --locked arithmetic::u4::presence_hinted::tests --lib
 cargo test --locked --test primitive_metrics u4_presence_hinted_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+Witnessed nibbles are compared numerically with `OP_NUMEQUALVERIFY`, matching
+the range check and zero-hint projection under the explicit local consensus
+numeric profile. Nonminimal encodings and negative zero are accepted when
+MINIMALDATA is disabled; byte-sensitive callers must validate canonical inputs.
+A regression accepts `[01 00]` for numeric 1 and zero aliases, rejects a
+forged extra flag with a typed numeric-equality failure, and rejects a five-byte
+number. Returned flags are canonical under tapscript MINIMALIF; callers must
+consume or verify all flags and preserved state, enforce the intended predicate
+and leave one truthy item in a complete leaf. The metrics execute the exact
+policy-compiled fragments under the recorded profile with combined stack checks.

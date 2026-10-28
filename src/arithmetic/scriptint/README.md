@@ -47,7 +47,7 @@ witness encoding. Maximum stack items count the combined main and alt stacks.
 ## Security
 
 There is no cryptographic security parameter. Constant multiplication is a
-deterministic arithmetic fragment. Division soundness follows from checking
+deterministic arithmetic fragment. Hinted division soundness follows from checking
 
 `dividend = quotient_hint * divisor + remainder`
 
@@ -58,10 +58,11 @@ execute without overflow.
 ## Script compatibility and standardness
 
 The fragments use opcodes available in bare script, P2SH, P2WSH, and tapscript.
-They are small and do not independently violate opcode-count or script-size
-limits. Bare outputs are generally non-standard, and the complete script must
-still satisfy minimal-number encoding, cleanstack, size, and transaction policy
-rules. See [`docs/script-types.md`](../../../docs/script-types.md) and
+The original constant-multiplication and hinted-division fragments fit the
+individual opcode-count and script-size bounds. Bounded-division configurations
+can exceed them; see the measured full-range case below. Bare outputs are
+generally non-standard, and a complete script must still satisfy its encoding,
+cleanstack, size, and transaction policy rules. See [`docs/script-types.md`](../../../docs/script-types.md) and
 [`docs/standardness.md`](../../../docs/standardness.md).
 
 The fragments return arithmetic values rather than a terminal boolean, so the
@@ -72,8 +73,8 @@ claim cleanstack compliance.
 
 Constant multiplication needs no hint; its operand may come from the witness or
 an earlier fragment. The quotient hint is mandatory for `hinted_*` division;
-`bounded::div_rem` needs none. Immediately
-before a division fragment, the quotient must be below the dividend:
+`bounded::div_rem` needs none. Before a `hinted_*` fragment, the quotient hint
+must be below the dividend:
 
 `... quotient_hint dividend`
 

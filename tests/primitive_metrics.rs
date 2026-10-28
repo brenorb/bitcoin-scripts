@@ -8042,19 +8042,32 @@ fn subset_sum_metrics_are_current() {
         .collect();
     let plain = subset_sum_verify(&weights, target);
     let explicit = subset_sum_verify_explicit(&weights, target);
-    let measure = |fragment: bitcoin_script::Script| {
-        let leaf = script! {
-            { fragment }
-            OP_VERIFY
-            OP_TRUE
+    use bitcoin_lab::support::tapscript::{execute_tapscript, TapscriptProfile};
+    let measure =
+        |fragment: bitcoin_script::Script| {
+            let compiled = fragment.compile_with_policy();
+            let execution = execute_tapscript(
+                compiled.clone(),
+                witness.clone(),
+                TapscriptProfile::Consensus,
+            );
+            let result = execution.execution().expect("executed fragment");
+            assert!(result.success, "metric fragment failed: {result}");
+            assert!(result.stack_limit_enforced);
+            assert_eq!(result.final_stack.len(), 1);
+            assert_eq!(result.final_stack.get(0), vec![1]);
+            let opcodes = compiled.instructions().filter(|instruction| {
+            matches!(instruction, Ok(Instruction::Op(op)) if op.to_u8() > 0x60)
+        }).count();
+            (compiled.len(), result.stats.max_nb_stack_items, opcodes)
         };
-        max_stack_items_strict(leaf, witness.clone())
-    };
+    let (plain_bytes, plain_peak, plain_opcodes) = measure(plain);
+    let (explicit_bytes, explicit_peak, explicit_opcodes) = measure(explicit);
     check_readme_metrics(vec![
         Metric {
             readme: "src/arithmetic/knapsack/README.md",
             key: "subset_sum_32",
-            value: script_len(plain.clone()),
+            value: plain_bytes,
         },
         Metric {
             readme: "src/arithmetic/knapsack/README.md",
@@ -8069,27 +8082,27 @@ fn subset_sum_metrics_are_current() {
         Metric {
             readme: "src/arithmetic/knapsack/README.md",
             key: "subset_sum_32_stack",
-            value: measure(plain.clone()),
+            value: plain_peak,
         },
         Metric {
             readme: "src/arithmetic/knapsack/README.md",
             key: "subset_sum_32_opcodes",
-            value: static_non_push_opcodes(plain),
+            value: plain_opcodes,
         },
         Metric {
             readme: "src/arithmetic/knapsack/README.md",
             key: "subset_sum_explicit_32",
-            value: script_len(explicit.clone()),
+            value: explicit_bytes,
         },
         Metric {
             readme: "src/arithmetic/knapsack/README.md",
             key: "subset_sum_explicit_32_stack",
-            value: measure(explicit.clone()),
+            value: explicit_peak,
         },
         Metric {
             readme: "src/arithmetic/knapsack/README.md",
             key: "subset_sum_explicit_32_opcodes",
-            value: static_non_push_opcodes(explicit),
+            value: explicit_opcodes,
         },
     ]);
 }

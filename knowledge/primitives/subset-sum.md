@@ -28,7 +28,10 @@ MINIMALIF (BIP 342) aborts any `OP_IF` argument other than the empty item or `[1
 so the selection is a canonical bit vector; the local executor reproduces this and
 does not offer a switch to disable it. `subset_sum_verify_explicit` adds a numeric
 `0..=1` range check and a reserialization check per selector for contexts where
-MINIMALIF is only policy; those contexts are not exercised locally.
+MINIMALIF is only policy; those contexts are not exercised locally. The plain
+form accepts at most 998 weights. The explicit form accepts at most 996, with
+`n + 4 + preserved_main + preserved_alt <= 1000`. Exact tests cover the 996-item
+frontier, 997/998 constructor rejections, and preserved main/alt state.
 
 ## Threat model and evidence
 
@@ -67,3 +70,13 @@ cargo test --locked arithmetic::knapsack::tests --lib
 cargo test --locked --test primitive_metrics subset_sum_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The recorded 129/353 opcode counts are static. Conditional `OP_ADD`s are
+skipped for unselected weights, so executed counts depend on the witness and
+remain unmeasured. For the measured nonzero-weight family, 18 weights give 199 static non-push
+opcodes and 19 give 210; the latter exceeds the legacy/P2SH/P2WSH limit of 201 even before a
+caller appends its own operations. The measured 32-weight explicit fragment
+also exceeds P2SH's 520-byte element bound. Tapscript has no legacy opcode
+ceiling, but these local executions remain `unclassified`; no Core or relay
+acceptance is claimed. Callers must verify the result and satisfy their leaf's
+terminal and clean-stack rules.

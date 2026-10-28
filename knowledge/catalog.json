@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21550,7 +21550,7 @@
         "constant-embedding"
       ],
       "security": "The selection is hostile; in tapscript MINIMALIF aborts non-canonical selectors and the explicit variant checks them elsewhere. The sum is exact over a four-byte total. No hint, key or cryptographic security claim; the target and weights are public.",
-      "stack_contract": "Consumes the witness selectors s[0..n-1] (s[n-1] on top; empty or [1]) and returns ok in {0,1}; peak n+1; unrelated main/alt state preserved.",
+      "stack_contract": "Consumes the witness selectors s[0..n-1] (s[n-1] on top; empty or [1]) and returns ok in {0,1}; peak n+1; unrelated main/alt state preserved. The explicit form has a separate maximum of 996 selectors; its bound is n+4+preserved_main+preserved_alt <= 1000.",
       "configurations": [
         {
           "id": "plain-32",
@@ -21624,9 +21624,10 @@
       "limitations": [
         "Non-tapscript MINIMALIF leniency could not be exercised locally; the explicit variant is tested only in the tapscript executor",
         "The claim that MINIMALIF is a consensus rule in tapscript is from BIP 342, not re-verified against Core here",
-        "Static non-push opcode counts equal executed counts only because the fragment is straight-line",
+        "Static non-push opcode counts include conditional OP_ADD instructions; dynamic executed counts depend on selectors and remain unmeasured",
         "Total weights are limited to 2^31 - 1",
-        "No Bitcoin Core consensus or relay-policy validation"
+        "No Bitcoin Core consensus or relay-policy validation",
+        "The measured explicit 32-weight fragment has 353 static non-push opcodes and cannot execute under the legacy/P2SH/P2WSH 201-opcode limit"
       ],
       "open_problems": [
         "OP-059"

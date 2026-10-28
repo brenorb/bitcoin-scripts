@@ -7,8 +7,10 @@
 
 use crate::support::script::*;
 
-/// Largest number of weights: the combined peak is `n + 2`.
+/// Largest plain-form batch; caller state must be included in the stack bound.
 pub const SUBSET_SUM_MAX_ITEMS: u32 = 998;
+/// Largest explicit-canonicality batch: `n + 4 + preserved <= 1000`.
+pub const SUBSET_SUM_EXPLICIT_MAX_ITEMS: u32 = 996;
 
 /// Largest representable sum of weights: it must fit a four-byte ScriptNum.
 pub const SUBSET_SUM_MAX_TOTAL: u64 = (1 << 31) - 1;
@@ -53,9 +55,14 @@ pub fn subset_sum_verify(weights: &[u32], target: u32) -> Script {
 /// Same contract as [`subset_sum_verify`], but each selector is also required
 /// to be a numeric `0` or `1` and to equal its own reserialization, so aliases
 /// such as `[1, 0]`, `[2]` and negative zero abort even when `OP_IF` is lenient.
+/// This variant supports at most 996 selectors and requires
+/// `n + 4 + preserved_main + preserved_alt <= 1000`. Its 32-weight fragment
+/// has 353 static non-push opcodes, above the 201-opcode legacy/P2SH/P2WSH
+/// ceiling. For the measured nonzero-weight family, 18 weights use 199
+/// static non-push opcodes; enclosing scripts must include their own opcodes.
 pub fn subset_sum_verify_explicit(weights: &[u32], target: u32) -> Script {
     assert!(
-        (1..=SUBSET_SUM_MAX_ITEMS as usize).contains(&weights.len()),
+        (1..=SUBSET_SUM_EXPLICIT_MAX_ITEMS as usize).contains(&weights.len()),
         "item count out of range"
     );
     let total: u64 = weights.iter().map(|&w| u64::from(w)).sum();
@@ -247,6 +254,54 @@ mod tests {
             OP_TRUE
         });
         assert!(result.success, "{result}");
+    }
+
+    #[test]
+    fn explicit_nonzero_weight_family_crosses_legacy_opcode_limit() {
+        use bitcoin::script::Instruction;
+        for (len, expected) in [(18u32, 199usize), (19, 210)] {
+            let weights: Vec<u32> = (0..len).map(|i| (37 * i + 11) % 65_535 + 1).collect();
+            let compiled = subset_sum_verify_explicit(&weights, 0).compile_with_policy();
+            let static_ops = compiled.instructions().filter(|instruction| {
+                matches!(instruction, Ok(Instruction::Op(op)) if op.to_u8() > 0x60)
+            }).count();
+            assert_eq!(static_ops, expected);
+        }
+    }
+
+    #[test]
+    fn explicit_stack_frontier_includes_preserved_main_and_alt_items() {
+        use bitcoin_scriptexec::ExecError;
+        for len in [997usize, 998] {
+            assert!(
+                std::panic::catch_unwind(|| subset_sum_verify_explicit(&vec![1; len], 0)).is_err()
+            );
+        }
+        let run = |len: u32, preserved: usize, alt: bool| {
+            let weights = vec![1; len as usize];
+            let leaf = script! {
+                if alt { { len } OP_ROLL OP_TOALTSTACK }
+                { subset_sum_verify_explicit(&weights, 0) }
+                OP_VERIFY
+                if alt { OP_FROMALTSTACK 9 OP_EQUAL }
+                else { for _ in 0..preserved { 9 OP_EQUALVERIFY } OP_TRUE }
+            }
+            .compile_with_policy()
+            .to_bytes();
+            let mut witness = vec![vec![9]; preserved];
+            witness.extend(vec![Vec::new(); len as usize]);
+            execute_raw_script_with_inputs_strict(leaf, witness)
+        };
+        let at_limit = run(SUBSET_SUM_EXPLICIT_MAX_ITEMS, 0, false);
+        assert!(at_limit.success, "{at_limit}");
+        assert_eq!(at_limit.stats.max_nb_stack_items, 1_000);
+        for alt in [false, true] {
+            let preserved = run(SUBSET_SUM_EXPLICIT_MAX_ITEMS - 1, 1, alt);
+            assert!(preserved.success, "alt={alt}: {preserved}");
+            assert_eq!(preserved.stats.max_nb_stack_items, 1_000);
+            let over = run(SUBSET_SUM_EXPLICIT_MAX_ITEMS, 1, alt);
+            assert_eq!(over.error, Some(ExecError::StackSize), "alt={alt}: {over}");
+        }
     }
 
     #[test]

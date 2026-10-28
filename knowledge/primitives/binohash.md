@@ -6,15 +6,18 @@ transaction-dependent digest that Bitcoin Script can extract and authenticate.
 
 - **Position:** external state-of-the-art transaction introspection construction
   that requires no consensus change, according to its primary source.
-- **Evidence:** the full protocol is reported and inspected at the
-  paper/discussion level; the deterministic legacy core is now
-  [locally reproduced](binohash-legacy-core.md).
+- **Evidence:** the full protocol remains `reported`; the
+  [deterministic legacy core](binohash-legacy-core.md) is locally reproduced,
+  and a reduced two-choice funded P2SH configuration is differentially
+  validated against pinned Core v30.3 under consensus but rejected by default
+  relay policy.
 - **Reported profile:** the paper proposes a two-round nonce extraction design
   with tunable work/collision parameters and a Lamport-signable output.
 - **Execution context:** relies on legacy signature semantics, not the local
   tapscript-only executor defaults.
-- **Research need:** pin a reference implementation, reproduce Core regtest
-  behavior, catalog full script/witness/work costs, and model grinding economics.
+- **Research need:** reproduce the full two-round grind and Script extraction,
+  catalog its complete costs and mutation boundaries, and model grinding
+  economics. The reduced Core fixture does not establish these properties.
 
 See source `binohash-paper`, the [transaction-introspection discussion](https://delvingbitcoin.org/t/binohash-transaction-introspection-without-softforks/2288),
 and open problem `OP-011`.

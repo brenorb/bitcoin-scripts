@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21549,7 +21549,7 @@
         "representation-bridge",
         "witness-hints"
       ],
-      "security": "The number and every hint are hostile: the hint-free form checks the input domain, the hinted form range-checks every hint and equates the unique Horner sum to the number. No key or cryptographic security claim.",
+      "security": "The number and every hint are hostile: the hint-free form checks the input domain, the hinted form range-checks every hint and equates the unique Horner sum to the number. No key or cryptographic security claim. Both forms operate on numeric ScriptNums; nonminimal aliases are accepted without MINIMALDATA and the hinted form returns original hint bytes. Byte-sensitive callers must validate canonical encodings. Consume the outputs and preserved state and enforce the intended clean terminal predicate.",
       "stack_contract": "Hint-free: preserved | x -> preserved | d[0..w-1]. Hinted: preserved | d[0..w-1] | x -> preserved | d[0..w-1]. d[0] most significant; unrelated main/alt state preserved.",
       "configurations": [
         {
@@ -21560,7 +21560,7 @@
             "value": "0xBEEF",
             "data_items": 1,
             "hint_items": 0,
-            "hint_bytes": null,
+            "hint_bytes": 0,
             "all_data_present_at_entry": true,
             "context": "tapscript",
             "enforce_stack_limit": true,
@@ -21568,7 +21568,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: domain check, ladder comparisons and subtractions (hint-free) or hint range checks and the Horner equality (hint-checked); excludes the terminal predicate, witness serialization beyond the CompactSize count, transaction framing and unrelated live state",
+          "includes": "fragment-only: domain check, ladder comparisons and subtractions (hint-free) or hint range checks and the Horner equality (hint-checked); excludes the terminal predicate, transaction framing and unrelated live state; serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 230,
           "witness_bytes": 5,
           "witness_bytes_max": null,
@@ -21601,7 +21601,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: domain check, ladder comparisons and subtractions (hint-free) or hint range checks and the Horner equality (hint-checked); excludes the terminal predicate, witness serialization beyond the CompactSize count, transaction framing and unrelated live state",
+          "includes": "fragment-only: domain check, ladder comparisons and subtractions (hint-free) or hint range checks and the Horner equality (hint-checked); excludes the terminal predicate, transaction framing and unrelated live state; serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 59,
           "witness_bytes": 13,
           "witness_bytes_max": null,

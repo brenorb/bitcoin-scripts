@@ -1207,3 +1207,10 @@ See [the knowledge page](../../../knowledge/primitives/u4-reflection.md),
 catalog record `arithmetic/u4-reflection`. The palindromic coefficient
 interpretation is reported in [Gao, arXiv:2109.09006v1](https://arxiv.org/abs/2109.09006v1);
 our nibble encoding and cost results are local.
+
+`scriptnum_nibbles` accepts numeric aliases when MINIMALDATA is disabled; the
+hinted form returns the original hint bytes. Byte-sensitive callers must verify
+canonical encoding. All `width` hint items and the amount coexist at entry;
+`width + 4 + preserved_main + preserved_alt <= 1000` bounds the standalone
+hinted fragment. Callers must consume its outputs and preserved state, enforce
+an intended predicate and leave one truthy item for a complete leaf.

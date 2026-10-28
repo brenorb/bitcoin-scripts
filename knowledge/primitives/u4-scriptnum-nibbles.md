@@ -23,7 +23,8 @@ construction; no global novelty claim is made for either elementary method.
   is omitted at width 8 because `8 * 16^7 = 2^31` is not a four-byte operand.
 - `u4_scriptnum_to_nibbles_hinted(width)`: `preserved | d[0..width-1] | x ->
   preserved | d[0..width-1]`. Each hint is range-checked to `0..=15` and the Horner
-  sum must equal `x`. The sum is unique among in-range digits, so a wrong or
+  sum must equal `x` numerically. Numeric equality rejects five-byte amounts and
+  values beyond the four-byte ScriptNum domain. The sum is unique among in-range digits, so a wrong or
   carry-compensated hint cannot satisfy both checks.
 
 ## Threat model and evidence
@@ -67,3 +68,22 @@ cargo test --locked arithmetic::u4::scriptnum_nibbles::tests --lib
 cargo test --locked --test primitive_metrics u4_scriptnum_nibbles_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The hinted form compares numerically, matching the zero-hint input domain when
+MINIMALDATA is disabled. Both accept nonminimal numeric inputs, including
+negative zero; digit hints are returned with their original bytes. Byte-sensitive
+callers must validate canonical encodings first. Complete leaves must consume or
+verify every returned nibble and preserved item, enforce the intended predicate,
+and finish with exactly one truthy stack item. Local explicit-profile regressions
+cover padded `x=16`, the valid maximum `2^31-1`, and out-of-domain `2^31`.
+
+The measured widths 1/2/4/6/8 require respectively 1/2/4/6/8 hint items and
+2/3/5/7/9 complete data items at entry; all coexist. Each standalone fragment
+has a `width + 4` combined peak, checked on zero-valued witnesses. With caller
+main/alt state `p`, composition requires `width + 4 + p <= 1000`. Preloaded
+batches also include every other invocation's amount, hints and retained outputs,
+plus any staging temporaries; no repeated-batch peak is claimed. The width-4
+fixture's hints add 8 serialized bytes to its data witness (9 bytes as their
+own serialized hint vector); the zero-hint configuration adds zero hint bytes.
+Metrics execute the exact compiled fragment under the explicit local consensus
+numeric profile with combined stack checks.

@@ -56,7 +56,13 @@ pub fn u4_scriptnum_to_nibbles(width: u32) -> Script {
 /// Before: `preserved | d[0] ... d[width-1] | x` (nibble hints under the number,
 /// `d[0]` most significant). After: `preserved | d[0] ... d[width-1]`. Every
 /// hint is range-checked and the Horner sum must equal `x`, so a wrong or
-/// aliased nibble (for example a carry-compensated pair) aborts.
+/// aliased nibble (for example a carry-compensated pair) aborts. The final
+/// numeric equality also parses both operands as at-most-four-byte ScriptNums,
+/// enforcing the documented upper bound. Nonminimal numeric input and hint
+/// encodings are accepted without MINIMALDATA; returned hint bytes are
+/// unchanged. Byte-sensitive callers must validate canonical encodings first.
+/// Consume all output nibbles and preserved state and enforce the intended
+/// clean-stack terminal predicate in a complete leaf.
 pub fn u4_scriptnum_to_nibbles_hinted(width: u32) -> Script {
     scriptnum_nibbles_domain(width);
     script! {
@@ -72,7 +78,7 @@ pub fn u4_scriptnum_to_nibbles_hinted(width: u32) -> Script {
             { index + 1 } OP_PICK
             OP_ADD
         }
-        OP_FROMALTSTACK OP_EQUALVERIFY
+        OP_FROMALTSTACK OP_NUMEQUALVERIFY
     }
 }
 
@@ -113,6 +119,69 @@ mod tests {
         let result = execute_raw_script_with_inputs_strict(compiled.to_vec(), witness);
         assert!(result.error.is_none(), "x={x}: {result}");
         result.success
+    }
+
+    #[test]
+    fn both_expansions_agree_on_numeric_aliases_and_domain_boundaries() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptOutcome, TapscriptProfile};
+        let run = |width: u32, x: i64, raw_x: Vec<u8>, hinted: bool| {
+            let expected = digits(x, width);
+            let fragment = if hinted {
+                u4_scriptnum_to_nibbles_hinted(width)
+            } else {
+                u4_scriptnum_to_nibbles(width)
+            };
+            let leaf = script! {
+                { fragment }
+                for &digit in expected.iter().rev() { { digit } OP_NUMEQUALVERIFY }
+                OP_TRUE
+            }
+            .compile_with_policy();
+            let mut witness: Vec<_> = if hinted {
+                expected.iter().map(|&v| num(v)).collect()
+            } else {
+                vec![]
+            };
+            witness.push(raw_x);
+            match execute_tapscript(leaf, witness, TapscriptProfile::Consensus).outcome {
+                TapscriptOutcome::Executed(result) => result,
+                other => panic!("unexpected outcome: {other:?}"),
+            }
+        };
+        for hinted in [false, true] {
+            for raw in [vec![0x10], vec![0x10, 0], vec![0x10, 0, 0, 0]] {
+                let result = run(2, 16, raw, hinted);
+                assert!(result.success, "hinted={hinted}: {result}");
+            }
+            let maximum = run(8, 2_147_483_647, num(2_147_483_647), hinted);
+            assert!(maximum.success, "hinted={hinted}: {maximum}");
+            let outside = run(8, 2_147_483_648, num(2_147_483_648), hinted);
+            assert!(!outside.success, "hinted={hinted}: {outside}");
+            assert!(
+                matches!(
+                    outside.error,
+                    Some(ExecError::Verify | ExecError::ScriptIntNumericOverflow)
+                ),
+                "{outside}"
+            );
+        }
+    }
+
+    #[test]
+    fn hinted_entry_and_peak_bound_for_measured_widths() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        for width in [1u32, 2, 4, 6, 8] {
+            let witness = vec![Vec::new(); width as usize + 1];
+            let result = execute_tapscript(
+                u4_scriptnum_to_nibbles_hinted(width).compile_with_policy(),
+                witness,
+                TapscriptProfile::Consensus,
+            );
+            let result = result.execution().expect("executed zero fixture");
+            assert!(result.error.is_none(), "width={width}: {result}");
+            assert_eq!(result.final_stack.len(), width as usize);
+            assert_eq!(result.stats.max_nb_stack_items, width as usize + 4);
+        }
     }
 
     #[test]

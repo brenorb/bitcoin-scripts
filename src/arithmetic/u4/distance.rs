@@ -3,7 +3,12 @@
 //! All fragments share one stack contract:
 //! `preserved | a[0] ... a[n-1] | b[0] ... b[n-1]` becomes `preserved | distance`,
 //! with the last `b` on top. Every nibble of both vectors is range-checked;
-//! no hints are used.
+//! no hints are used. Checks interpret nibbles numerically: nonminimal aliases
+//! and negative zero are accepted when MINIMALDATA is disabled. Byte-sensitive
+//! callers must validate canonical nibble encodings separately. These are
+//! fragments; callers must compare each returned distance with the intended
+//! threshold or value, consume preserved state, and leave exactly one truthy
+//! item in a complete tapscript leaf.
 
 use super::{logic::u4_push_full_xor_table, stack::u4_drop};
 use crate::support::script::*;
@@ -195,6 +200,32 @@ mod tests {
         let mut bytes = [0u8; 8];
         let len = bitcoin::script::write_scriptint(&mut bytes, value);
         bytes[..len].to_vec()
+    }
+
+    #[test]
+    fn numeric_aliases_are_accepted_under_explicit_consensus_profile() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        for make in [
+            u4_nibbles_l1_distance as fn(u32) -> Script,
+            u4_nibbles_lee_distance,
+            u4_nibbles_hamming_distance,
+            u4_nibbles_hamming_distance_composed,
+        ] {
+            let leaf = script! { { make(1) } 1 OP_NUMEQUAL }.compile_with_policy();
+            for one in [vec![1], vec![1, 0]] {
+                for zero in [vec![], vec![0], vec![0x80]] {
+                    let result = execute_tapscript(
+                        leaf.clone(),
+                        vec![one.clone(), zero],
+                        TapscriptProfile::Consensus,
+                    );
+                    let execution = result.execution().expect("executed alias leaf");
+                    assert!(execution.success, "{execution}");
+                    assert_eq!(execution.final_stack.len(), 1);
+                    assert!(execution.stack_limit_enforced);
+                }
+            }
+        }
     }
 
     #[test]

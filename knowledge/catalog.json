@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21550,7 +21550,7 @@
         "fused-composition",
         "stack-scheduling"
       ],
-      "security": "Every nibble of both vectors is range-checked before it indexes a table or enters arithmetic. No hint, key or cryptographic security claim.",
+      "security": "Every nibble of both vectors is range-checked before it indexes a table or enters arithmetic. No hint, key or cryptographic security claim. Numeric range checks do not enforce byte-canonical encodings; nonminimal aliases and negative zero are accepted without MINIMALDATA. Byte-sensitive callers must validate canonical nibbles. Compare the returned distance with the intended value or threshold, consume preserved state, and enforce a clean terminal predicate.",
       "stack_contract": "Consumes preserved | a[0..n-1] | b[0..n-1] (last b on top) and returns preserved | distance; peaks 2n+3 (L1, Lee), 2n+258 (fused Hamming), 2n+274 (composed); unrelated main/alt state preserved.",
       "configurations": [
         {
@@ -21570,7 +21570,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: range checks of both vectors, altstack restoration, resident table pushes where used, per-pair roll, index formation and lookup or native arithmetic, accumulation and table cleanup; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: range checks of both vectors, altstack restoration, resident table pushes where used, per-pair roll, index formation and lookup or native arithmetic, accumulation and table cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 334,
           "witness_bytes": 63,
           "witness_bytes_max": null,
@@ -21604,7 +21604,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: range checks of both vectors, altstack restoration, resident table pushes where used, per-pair roll, index formation and lookup or native arithmetic, accumulation and table cleanup; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: range checks of both vectors, altstack restoration, resident table pushes where used, per-pair roll, index formation and lookup or native arithmetic, accumulation and table cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 414,
           "witness_bytes": 63,
           "witness_bytes_max": null,
@@ -21638,7 +21638,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: range checks of both vectors, altstack restoration, resident table pushes where used, per-pair roll, index formation and lookup or native arithmetic, accumulation and table cleanup; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: range checks of both vectors, altstack restoration, resident table pushes where used, per-pair roll, index formation and lookup or native arithmetic, accumulation and table cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 874,
           "witness_bytes": 63,
           "witness_bytes_max": null,
@@ -21672,7 +21672,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: range checks of both vectors, altstack restoration, resident table pushes where used, per-pair roll, index formation and lookup or native arithmetic, accumulation and table cleanup; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: range checks of both vectors, altstack restoration, resident table pushes where used, per-pair roll, index formation and lookup or native arithmetic, accumulation and table cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 962,
           "witness_bytes": 63,
           "witness_bytes_max": null,

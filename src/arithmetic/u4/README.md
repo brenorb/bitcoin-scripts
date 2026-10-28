@@ -1210,3 +1210,11 @@ See [the knowledge page](../../../knowledge/primitives/u4-reflection.md),
 catalog record `arithmetic/u4-reflection`. The palindromic coefficient
 interpretation is reported in [Gao, arXiv:2109.09006v1](https://arxiv.org/abs/2109.09006v1);
 our nibble encoding and cost results are local.
+
+The `distance` fragment APIs check numeric nibble ranges, accepting nonminimal
+aliases and negative zero under local consensus numeric semantics. A caller
+that binds raw bytes must validate canonical nibbles. Compare the returned
+distance against the intended value or threshold, consume preserved state,
+and leave one truthy stack item at a complete leaf. All four 16-nibble rows
+exceed the 201-opcode legacy/P2SH/P2WSH limit, and the table rows additionally
+exceed P2SH's 520-byte element limit. Tapscript execution remains unclassified.

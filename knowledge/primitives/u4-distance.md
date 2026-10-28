@@ -68,3 +68,19 @@ cargo test --locked arithmetic::u4::distance::tests --lib
 cargo test --locked --test primitive_metrics u4_distance_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+Under the explicit local consensus numeric profile (`require_minimal=false`),
+range checks accept nonminimal ScriptNums and negative zero. Callers binding or
+comparing raw witness bytes must validate canonical nibble encodings first.
+Each function is a fragment: compare the returned distance to the intended
+value or threshold, consume preserved items, and leave one truthy stack item at
+a complete tapscript leaf. A zero distance alone is false and a nonzero distance
+alone is true, regardless of the intended bound.
+
+The 16-nibble rows have 253, 317, 514, and 554 static non-push opcodes,
+respectively, exceeding the 201-opcode legacy/P2SH/P2WSH limit. The table rows
+also exceed P2SH's 520-byte element bound. Tapscript removes these legacy
+limits; actual consensus/relay policy acceptance remains unclassified. The
+metrics execute the same policy-compiled fragment used for bytes/opcodes under
+an explicit numeric profile; the full serialized data witness includes its
+item count, item lengths and payloads.

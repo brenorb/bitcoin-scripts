@@ -35,8 +35,15 @@ except the nibbles themselves.
 Each word pass pushes its 16-entry table, accumulates all `2n` inputs, tests
 the accumulator for zero, `OP_BOOLAND`s the result into the running verdict on
 the altstack and drops the table. The range check runs only in the first pass;
-later passes reuse inputs already proved canonical. Surrounding main and alt
-stack items are preserved.
+later passes reuse inputs already range-checked. The checks interpret numeric
+values and accept nonminimal ScriptNums, including negative zero, when
+MINIMALDATA is disabled. Byte-sensitive callers must validate canonical nibble
+encodings before invoking the fragment. Surrounding main and alt stack items
+are preserved.
+
+This fragment returns an equality bit; a mismatch does not abort. Callers must
+consume it with their intended predicate (for example `OP_VERIFY`), consume any
+preserved state, and leave exactly one truthy item at a complete tapscript leaf.
 
 ## Threat model and evidence
 
@@ -49,11 +56,16 @@ all 256 single-symbol pairs at length 8, deterministic shuffle/mutate vectors
 at lengths 1/2/3/8/16 against a sorted-vector model, nonminimal numeric
 encodings under a permissive profile, preserved main/alt state, generation
 bounds, and the exact strict 1,000-item frontier at `n = 489` (accepted with
-one preserved item, rejected with two).
+one preserved item, rejected with two). The maximum-length fragment is
+**63,591 bytes, unoptimized**: its raw serialization exceeds the 32 KiB policy
+cutoff, so compilation uses `CompileOptions::NONE`. The size is pinned by
+`recorded_sizes_are_current`; it is not comparable as an optimized row and
+exceeds the legacy/P2WSH 10,000-byte and P2SH 520-byte bounds.
 
 Evidence is `locally-reproduced`; the model is ordinary Rust sorting, not an
 independent Script interpreter. Execution is `unclassified`: the strict local
-helper runs in a tapscript context with the stack limit enforced, and no
+profile is explicitly `TapscriptProfile::Consensus` (`require_minimal=false`)
+with the combined stack limit enforced, and no
 Bitcoin Core consensus or policy validation is claimed.
 
 ## Measured comparison
@@ -74,8 +86,8 @@ state excluded; zero hint items, all 32 data items present at entry.
 route composes sixteen `u4_nibbles_count` calls per vector. Their bare
 script sizes alone sum to 8,512 bytes at length 16 (`32 x 266`), before
 copying each vector sixteen times and comparing the counts, so the packed
-form is at least 7.3 times smaller there. That baseline is a lower-bound
-estimate, not a built and measured comparator.
+form is 7.3 times smaller than that helper-size sum there. That baseline is a naive repeated-helper
+estimate, not a built comparator or a lower bound on shared counting designs.
 
 ## Reproduction
 

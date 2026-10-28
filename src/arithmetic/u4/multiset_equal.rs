@@ -43,6 +43,12 @@ pub fn u4_multiset_words(len: u32) -> u32 {
 /// After: `preserved | equal`, where `equal` is `1` when the multisets are equal
 /// and `0` otherwise. Every hostile nibble is range-checked; an out-of-range
 /// value aborts the script. No hint items are used.
+///
+/// Range checks interpret ScriptNums numerically. Nonminimal aliases and
+/// negative zero are accepted when MINIMALDATA is disabled; byte-sensitive
+/// callers must validate canonical nibbles before invoking this fragment.
+/// A mismatch returns zero without aborting: callers must verify the equality
+/// bit and consume preserved state before ending a leaf with one truthy item.
 pub fn u4_nibbles_multiset_equal(len: u32) -> Script {
     let lanes = u4_multiset_lanes_per_word(len);
     let words = u4_multiset_words(len);
@@ -146,6 +152,9 @@ mod tests {
 
     #[test]
     fn recorded_sizes_are_current() {
+        let maximum = u4_nibbles_multiset_equal(U4_MULTISET_EQUAL_MAX_LEN).compile_with_policy();
+        assert_eq!(maximum.len(), 63_591, "maximum fragment is unoptimized");
+        assert!(maximum.len() > crate::support::script::MAX_OPTIMIZER_INPUT_BYTES);
         for (len, bytes) in [(4, 275), (8, 637), (16, 1_158), (64, 5_523)] {
             let compiled = script! { { u4_nibbles_multiset_equal(len) } }.compile_with_policy();
             assert_eq!(compiled.len(), bytes, "len {len}");

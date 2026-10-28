@@ -24,7 +24,11 @@ these operations, but this module contains no hash-specific round logic.
   `nibble_count + 3 + preserved_items <= 1000`.
 - `multiset_equal::u4_nibbles_multiset_equal(len)` takes two equal-length checked
   vectors with `len` in `1..=489`; composition must satisfy
-  `2*len + 21 + preserved_items <= 1000`.
+  `2*len + 21 + preserved_items <= 1000`. These are numeric range checks:
+  nonminimal aliases and negative zero are accepted without MINIMALDATA.
+  Byte-sensitive callers must validate canonical nibbles first. A mismatch
+  returns zero; verify the equality bit and consume preserved state before
+  ending a complete leaf with exactly one truthy stack item.
 - `cyclic_equality::u4_nibbles_to_cyclic_equality(nibble_count, offset)` takes
   a checked batch size in `1..=499` and returns a wrapped equality bit per
   input nibble.
@@ -300,7 +304,12 @@ The fixed-symbol count fixture uses <!-- metric:u4_symbol_count_16_witness -->33
 
 The 16-nibble presence-bit batch uses <!-- metric:u4_presence_bits_16_witness -->33<!-- /metric:u4_presence_bits_16_witness --> serialized witness bytes for <!-- metric:u4_presence_bits_16_witness_items -->16<!-- /metric:u4_presence_bits_16_witness_items --> data items, zero hint items, and returns 16 Boolean outputs; all data items coexist at script entry. This is the canonical 16-item profile. Membership uses `OP_NUMEQUAL`, so non-minimal numeric aliases such as `[0x01, 0x00]`, negative zero `[0x80]` and `[0x02, 0x00]` produce the numeric presence bits under the local `TapscriptProfile::Consensus` profile and can serialize larger; the local `Policy` profile rejects them with `MinimalData`. Compose `verify_canonical_nibble()` when byte-unique witness encoding is required.
 
-The multiset-equality fixture (`A = 0..=15`, `B` = reverse) uses <!-- metric:u4_multiset_equal_16_witness -->63<!-- /metric:u4_multiset_equal_16_witness --> serialized witness bytes for <!-- metric:u4_multiset_equal_16_witness_items -->32<!-- /metric:u4_multiset_equal_16_witness_items --> data items and zero hints. The fragment is straight-line (no conditionals), so its executed non-push opcodes equal the static count in the opcode column. A lower bound for the per-symbol alternative (32 fixed-symbol counts, excluding vector copies and the comparisons) is <!-- metric:u4_multiset_equal_16_count_baseline -->8512<!-- /metric:u4_multiset_equal_16_count_baseline --> bytes.
+The multiset-equality fixture (`A = 0..=15`, `B` = reverse) uses <!-- metric:u4_multiset_equal_16_witness -->63<!-- /metric:u4_multiset_equal_16_witness --> serialized witness bytes for <!-- metric:u4_multiset_equal_16_witness_items -->32<!-- /metric:u4_multiset_equal_16_witness_items --> data items and zero hints. The fragment is straight-line (no conditionals), so its executed non-push opcodes equal the static count in the opcode column. A naive repeated-helper estimate for the per-symbol alternative (32 fixed-symbol counts, excluding vector copies and the comparisons) is <!-- metric:u4_multiset_equal_16_count_baseline -->8512<!-- /metric:u4_multiset_equal_16_count_baseline --> bytes.
+The length-489 maximum is <!-- metric:u4_multiset_equal_489 -->63591<!-- /metric:u4_multiset_equal_489 --> bytes, **unoptimized**
+(`CompileOptions::NONE` above the 32 KiB raw-policy cutoff); it exceeds
+legacy/P2WSH script-size and P2SH element-size limits. The maximum size is
+pinned separately from the optimized length-16 row.
+
 
 <!-- metric:u4_parity_batch32_witness -->65<!-- /metric:u4_parity_batch32_witness --> serialized witness bytes for the representative range-checked parity batch.
 

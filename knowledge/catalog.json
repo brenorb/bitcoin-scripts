@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21551,7 +21551,7 @@
         "bit-packing",
         "permutation"
       ],
-      "security": "Every nibble of both vectors is range-checked before it indexes a stack table, so hostile values cannot alias another stack slot. Lane base 2n+1 makes the signed histogram difference injective. No hint, key or cryptographic security claim.",
+      "security": "Every nibble of both vectors is range-checked before it indexes a stack table, so hostile values cannot alias another stack slot. Lane base 2n+1 makes the signed histogram difference injective. No hint, key or cryptographic security claim. Range checks are numeric only: nonminimal aliases and negative zero are accepted without MINIMALDATA; byte-sensitive callers must validate canonical nibbles. Verify the returned equality bit and consume preserved state before the terminal clean-stack predicate.",
       "stack_contract": "Consumes preserved | a[0..n-1] | b[0..n-1] (last item on top) and returns preserved | equal with equal in {0,1}; out-of-range nibbles abort. Peak is 2n+21+preserved combined items.",
       "configurations": [
         {
@@ -21572,7 +21572,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: 2n range checks (first pass only), per-word 16-entry constant tables, 2n signed lane accumulations per word, word-zero tests, table and input cleanup; excludes input pushes, witness serialization beyond the CompactSize count, transaction framing and unrelated live state",
+          "includes": "fragment-only: 2n range checks (first pass only), per-word 16-entry constant tables, 2n signed lane accumulations per word, word-zero tests, table and input cleanup; excludes input pushes, transaction framing and unrelated live state; the complete serialized data witness includes the CompactSize item count, all item-length prefixes and payloads",
           "script_bytes": 1158,
           "witness_bytes": 63,
           "witness_bytes_max": null,

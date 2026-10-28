@@ -10,10 +10,13 @@ executed with the repository's default tapscript-only assumptions.
 when they occur at Script opcode boundaries. `binohash::binohash_digest` then
 passes the mutated `scriptCode` to rust-bitcoin's legacy sighash implementation.
 This reproduces the deterministic mutation boundary used by a Binohash-style
-subset grind; the proof-of-work search, signature construction, and complete
-legacy transaction execution remain outside this helper.
+subset grind. A separate [funded Core fixture](../../research/binohash-legacy-core/README.md)
+constructs fixed ECDSA signatures and executes two complete P2SH spends. The
+proof-of-work search and digest extraction into Script remain outside this
+helper.
 
 The focused tests cover opcode-boundary deletion, subset-dependent digests,
 the legacy `SIGHASH_SINGLE` bug constant, invalid selections, and invalid input
-indices. Evidence is local host-side reproduction only; it is not consensus or
-relay-policy validation.
+indices. The host helper alone remains `unclassified`; the separate funded
+configuration is `differentially-validated` against Core v30.3 and
+`consensus-validated`, but fails default relay policy.

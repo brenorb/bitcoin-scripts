@@ -8047,14 +8047,31 @@ fn casting_out_residue_metrics() -> Vec<Metric> {
             17,
         ),
     ] {
-        let leaf = script! { { fragment.clone() } { value(modulus) } OP_EQUAL };
+        use bitcoin_lab::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let compiled = fragment.compile_with_policy();
+        let execution = execute_tapscript(
+            compiled.clone(),
+            witness.clone(),
+            TapscriptProfile::Consensus,
+        );
+        let result = execution.execution().expect("executed residue fragment");
+        assert!(result.error.is_none(), "{result}");
+        assert!(result.stack_limit_enforced);
+        assert_eq!(result.final_stack.len(), 1);
+        assert_eq!(result.final_stack.get(0), scriptnum(value(modulus)));
+        let opcodes = compiled
+            .instructions()
+            .filter(
+                |instruction| matches!(instruction, Ok(Instruction::Op(op)) if op.to_u8() > 0x60),
+            )
+            .count();
         let key = |suffix: &str| -> &'static str {
             Box::leak(format!("u4_{name}_32{suffix}").into_boxed_str())
         };
         for (suffix, measured) in [
-            ("", script_len(fragment.clone())),
-            ("_stack", max_stack_items_strict(leaf, witness.clone())),
-            ("_opcodes", static_non_push_opcodes(fragment)),
+            ("", compiled.len()),
+            ("_stack", result.stats.max_nb_stack_items),
+            ("_opcodes", opcodes),
         ] {
             metrics.push(Metric {
                 readme: "src/arithmetic/u4/README.md",
@@ -8078,14 +8095,36 @@ fn casting_out_residue_metrics() -> Vec<Metric> {
         ("mod255", u32::mersenne_residue::u32_mod255(), 255u32),
         ("mod65535", u32::mersenne_residue::u32_mod65535(), 65_535),
     ] {
-        let leaf = script! { { fragment.clone() } { i64::from(0x89abcdefu32 % modulus) } OP_EQUAL };
+        use bitcoin_lab::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let compiled = fragment.compile_with_policy();
+        let execution = execute_tapscript(
+            compiled.clone(),
+            word_witness.clone(),
+            TapscriptProfile::Consensus,
+        );
+        let result = execution
+            .execution()
+            .expect("executed word-residue fragment");
+        assert!(result.error.is_none(), "{result}");
+        assert!(result.stack_limit_enforced);
+        assert_eq!(result.final_stack.len(), 1);
+        assert_eq!(
+            result.final_stack.get(0),
+            scriptnum(i64::from(0x89abcdefu32 % modulus))
+        );
+        let opcodes = compiled
+            .instructions()
+            .filter(
+                |instruction| matches!(instruction, Ok(Instruction::Op(op)) if op.to_u8() > 0x60),
+            )
+            .count();
         let key = |suffix: &str| -> &'static str {
             Box::leak(format!("u32_{name}{suffix}").into_boxed_str())
         };
         for (suffix, measured) in [
-            ("", script_len(fragment.clone())),
-            ("_stack", max_stack_items_strict(leaf, word_witness.clone())),
-            ("_opcodes", static_non_push_opcodes(fragment)),
+            ("", compiled.len()),
+            ("_stack", result.stats.max_nb_stack_items),
+            ("_opcodes", opcodes),
         ] {
             metrics.push(Metric {
                 readme: "src/arithmetic/u32/README.md",

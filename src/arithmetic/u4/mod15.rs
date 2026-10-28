@@ -20,7 +20,9 @@ fn reduce_once() -> Script {
 ///
 /// Before: `preserved | nibble[0] ... nibble[n-1]`. After: `preserved | r` with
 /// `r` the canonical residue of the integer in `0..=14`. Every input is checked
-/// for range and minimal encoding.
+/// for range and minimal encoding. This is a fragment: compare the returned
+/// residue with the intended value, consume preserved state, and leave one
+/// truthy item at a complete tapscript leaf.
 pub fn u4_nibbles_to_mod15(nibble_count: u32) -> Script {
     assert!(
         (1..=U4_MOD15_MAX_BATCH).contains(&nibble_count),
@@ -228,6 +230,16 @@ mod tests {
                 "{name}"
             );
         }
+    }
+
+    #[test]
+    fn mod17_maximum_batch_sizes_are_current() {
+        use crate::arithmetic::u4::mod17::{u4_nibbles_to_mod17, u4_nibbles_to_mod17_delayed};
+        assert_eq!(u4_nibbles_to_mod17(997).compile_with_policy().len(), 20_926);
+        assert_eq!(
+            u4_nibbles_to_mod17_delayed(997).compile_with_policy().len(),
+            13_066
+        );
     }
 
     #[test]

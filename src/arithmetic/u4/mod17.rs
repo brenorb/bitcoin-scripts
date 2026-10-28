@@ -19,7 +19,9 @@ fn normalize_negative() -> Script {
 /// Before: `preserved | nibble[0] ... nibble[n-1]` (last nibble on top).
 /// After: `preserved | residue`. The altstack is never touched. Every input
 /// is checked for numeric range and raw minimal encoding before arithmetic.
-/// This is a fragment; callers supply an observable terminal predicate.
+/// This is a fragment; callers must compare the returned residue to the
+/// intended value, consume preserved state, and leave one truthy stack item
+/// for a complete tapscript leaf.
 ///
 /// Since 16 = -1 modulo 17, folding from the top uses `r = x - r`.
 /// Each difference lies in -16..=15 and needs at most one addition of 17.

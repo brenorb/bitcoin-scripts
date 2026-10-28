@@ -68,8 +68,17 @@ for mod 17). Peaks are unchanged (`n + 3`). The u32 byte-sum residues cost 87
 ## Reproduction
 
 ```sh
-cargo test --locked arithmetic::u4::mod15::tests arithmetic::u4::mod17 --lib
+cargo test --locked --lib arithmetic::u4::mod15::tests
+cargo test --locked --lib arithmetic::u4::mod17::tests
 cargo test --locked --lib arithmetic::u32::mersenne_residue
 cargo test --locked --test primitive_metrics casting_out_residue_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The 997-nibble mod-17 running/delayed sizes are independently pinned by
+`mod17_maximum_batch_sizes_are_current`, compiled through the repository
+policy. The measured fragment returns a numeric residue; callers must compare
+it with the intended value, consume preserved state and leave a single truthy
+item at a complete tapscript leaf. Representative metrics execute the exact
+compiled fragment under the explicit local consensus numeric profile, with the
+combined stack limit; script-size, opcode and peak boundaries therefore agree.

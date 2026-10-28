@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21568,7 +21568,7 @@
             "schedule": "running",
             "data_items": 32
           },
-          "includes": "fragment-only: all canonical nibble checks, the fold and the final reduction; excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness is the complete data-only vector, all inputs coexist at entry; peak measured with a terminal expected-residue OP_EQUAL leaf; no table, setup or hints",
+          "includes": "fragment-only: all canonical nibble checks, the fold and the final reduction; excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness is the complete data-only vector, all inputs coexist at entry; peak measured on the exact compiled fragment; no table, setup or hints",
           "script_bytes": 606,
           "witness_bytes": 62,
           "witness_bytes_max": null,
@@ -21601,7 +21601,7 @@
             "schedule": "ladder",
             "data_items": 32
           },
-          "includes": "fragment-only: all canonical nibble checks, the fold and the final reduction; excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness is the complete data-only vector, all inputs coexist at entry; peak measured with a terminal expected-residue OP_EQUAL leaf; no table, setup or hints",
+          "includes": "fragment-only: all canonical nibble checks, the fold and the final reduction; excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness is the complete data-only vector, all inputs coexist at entry; peak measured on the exact compiled fragment; no table, setup or hints",
           "script_bytes": 438,
           "witness_bytes": 62,
           "witness_bytes_max": null,
@@ -21674,7 +21674,7 @@
             "schedule": "delayed",
             "data_items": 32
           },
-          "includes": "fragment-only: all canonical nibble checks, the fold and the final reduction; excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness is the complete data-only vector, all inputs coexist at entry; peak measured with a terminal expected-residue OP_EQUAL leaf; no table, setup or hints",
+          "includes": "fragment-only: all canonical nibble checks, the fold and the final reduction; excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness is the complete data-only vector, all inputs coexist at entry; peak measured on the exact compiled fragment; no table, setup or hints",
           "script_bytes": 467,
           "witness_bytes": 62,
           "witness_bytes_max": null,
@@ -21747,7 +21747,7 @@
             "word": "0x89abcdef",
             "data_items": 4
           },
-          "includes": "fragment-only: four raw canonical byte checks, limb sums and the final reduction ladder; excludes input pushes, terminal predicate, transaction framing and unrelated live state; peak measured with a terminal expected-residue OP_EQUAL leaf; no table, setup or hints",
+          "includes": "fragment-only: four raw canonical byte checks, limb sums and the final reduction ladder; excludes input pushes, terminal predicate, transaction framing and unrelated live state; peak measured on the exact compiled fragment; no table, setup or hints",
           "script_bytes": 87,
           "witness_bytes": 13,
           "witness_bytes_max": null,
@@ -21780,7 +21780,7 @@
             "word": "0x89abcdef",
             "data_items": 4
           },
-          "includes": "fragment-only: four raw canonical byte checks, limb sums and the final reduction ladder; excludes input pushes, terminal predicate, transaction framing and unrelated live state; peak measured with a terminal expected-residue OP_EQUAL leaf; no table, setup or hints",
+          "includes": "fragment-only: four raw canonical byte checks, limb sums and the final reduction ladder; excludes input pushes, terminal predicate, transaction framing and unrelated live state; peak measured on the exact compiled fragment; no table, setup or hints",
           "script_bytes": 115,
           "witness_bytes": 13,
           "witness_bytes_max": null,

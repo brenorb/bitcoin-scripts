@@ -1224,3 +1224,9 @@ expected-residue `OP_EQUAL` under strict local execution.
 
 The running modulo-17 form above measures 670 bytes on the same boundary. See
 the [knowledge page](../../../knowledge/primitives/u4-mod15.md).
+
+The modulo-15/17 residue operations are fragments: compare the numeric result
+with the intended residue, consume preserved state and enforce a clean truthy
+terminal stack. Their 997-nibble mod-17 fragment sizes are pinned by an
+executable policy-compilation test; the representative 32-nibble metrics execute
+the same policy-produced fragments used for their bytes and static opcodes.

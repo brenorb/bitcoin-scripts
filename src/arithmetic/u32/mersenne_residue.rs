@@ -4,6 +4,10 @@
 //! sum of the byte (respectively 16-bit lane) limbs reduced by a ladder of
 //! conditional subtractions. Contrast `residue::u32_mod65537`, where
 //! 65,536 = -1 and a difference replaces the sum.
+//!
+//! These fragments return a residue, not an authorization predicate. Callers
+//! must compare the residue with the intended value, consume preserved state,
+//! and leave one truthy item in a complete tapscript leaf.
 
 use super::stack::verify_canonical_byte;
 use crate::support::{script::*, script_ops::OP_256MUL};

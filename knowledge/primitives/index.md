@@ -10,6 +10,8 @@ the source. Read a page together with its comparison page and evidence record.
 
 ## Arithmetic
 
+- [Hint-checked u32 expansion](u32-uncompress-hinted.md)
+
 - [CRC-8/SMBus with nibble feedback](crc8-smbus.md)
 
 - [ScriptNum constant multiplication](scriptnum-constant-mul.md)
@@ -159,4 +161,3 @@ the source. Read a page together with its comparison page and evidence record.
 - [BN254 fields](bn254-fields.md)
 - [BN254 groups and MSM](bn254-groups.md)
 - [BN254 pairing verifier](bn254-pairing.md)
-- [Hint-checked u32 expansion](u32-uncompress-hinted.md)

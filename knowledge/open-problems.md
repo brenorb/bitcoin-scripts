@@ -1188,8 +1188,7 @@ semantics and full-spend/Core validation; odd complement centers remain excluded
 
 ## OP-062 — Hinted conversions inside compressed u32 operations
 
-The compressed total-domain operations (`u32_compressed_add` and the shift pair) pay
-for the bit-ladder conversion. **Accept when:** a compressed operation is rebuilt with
+`u32_compressed_add` uses the bit-ladder conversion; the direct compressed shift pair operates on the normalized magnitude instead. **Accept when:** a compressed operation is rebuilt with
 the hint-checked conversion, correctness is preserved on every semantic boundary
 class including `0x80000000`, and the complete operation is compared with the
 existing one on an equal boundary with script bytes, witness bytes and items, hint

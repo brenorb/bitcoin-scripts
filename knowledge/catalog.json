@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -4669,7 +4669,7 @@
       "id": "commitment/ternary-hash-path-integer",
       "name": "Ternary mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
@@ -4743,7 +4743,7 @@
       "id": "commitment/four-way-hash-path-integer",
       "name": "Four-way mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -4903,7 +4903,7 @@
       "id": "commitment/hash-path-integer",
       "name": "Mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1–31-bit integer.",
+      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -21551,7 +21551,7 @@
         "witness-hints"
       ],
       "security": "The compressed value and the byte hints are hostile: every byte must be canonical in 0..=255 and its compression must equal the value bytewise, which fixes the bytes uniquely and forces a canonical value. No key or cryptographic security claim.",
-      "stack_contract": "Consumes preserved | b0 b1 b2 b3 x (x on top) and returns preserved | b0 b1 b2 b3; 4 hint items per invocation; unrelated main/alt state preserved.",
+      "stack_contract": "Consumes preserved | b0 b1 b2 b3 x (x on top) and returns preserved | b0 b1 b2 b3; 4 hint items per invocation; unrelated main/alt state preserved. With preserved main and alt items, the measured bound is 12 + preserved_main + preserved_alt <= 1000. The four byte outputs need a consumer, terminal predicate and clean-stack handling.",
       "configurations": [
         {
           "id": "ladder-0x89abcdef",
@@ -21565,7 +21565,7 @@
             "all_data_present_at_entry": true,
             "context": "tapscript",
             "enforce_stack_limit": true,
-            "require_minimal": false,
+            "require_minimal": true,
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
@@ -21594,13 +21594,15 @@
             "form": "hint-checked",
             "data_items": 5,
             "hint_items": 4,
-            "hint_bytes": 8,
+            "hint_bytes": 12,
             "all_data_present_at_entry": true,
             "context": "tapscript",
             "enforce_stack_limit": true,
-            "require_minimal": false,
+            "require_minimal": true,
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
-            "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
+            "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed",
+            "hint_bytes_boundary": "incremental item serialization; standalone hint vector is 13 bytes including count",
+            "hint_vector_bytes": 13
           },
           "includes": "fragment-only: byte canonicality checks, recompression and the bytewise comparison (hinted) or the sign branch and bit ladder (ladder); excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness includes the count and every item; peak measured with a terminal word drop",
           "script_bytes": 135,
@@ -21616,7 +21618,8 @@
             "u32_uncompress_hinted_compare",
             "u32_uncompress_hinted_compare_witness",
             "u32_uncompress_hinted_compare_stack",
-            "u32_uncompress_hinted_compare_opcodes"
+            "u32_uncompress_hinted_compare_opcodes",
+            "u32_uncompress_hinted_hint_bytes"
           ]
         }
       ],

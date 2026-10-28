@@ -8035,8 +8035,21 @@ fn u32_uncompress_hinted_metrics_are_current() {
         .iter()
         .map(|&b| scriptnum(i64::from(b)))
         .collect();
+    let hint_vector_bytes = witness_size(&hinted_witness);
+    let incremental_hint_bytes = hint_vector_bytes - 1; // The four-item CompactSize count is shared.
     hinted_witness.push(compressed);
-    let mut metrics = Vec::new();
+    let mut metrics = vec![
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_hinted_hint_bytes",
+            value: incremental_hint_bytes,
+        },
+        Metric {
+            readme: "src/arithmetic/u32/README.md",
+            key: "u32_uncompress_hinted_hint_vector",
+            value: hint_vector_bytes,
+        },
+    ];
     for (name, fragment, witness) in [
         (
             "ladder",

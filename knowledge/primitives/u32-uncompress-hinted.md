@@ -19,7 +19,7 @@ preserved | b0 b1 b2 b3 x  ->  preserved | b0 b1 b2 b3
 ```
 
 `x` is the compressed value (`value as i32` in minimal signed encoding, with the
-five-byte `-2^31` for words `>= 0x80000000` whose signed image is `-2^31`). The script
+five-byte `-2^31` for the word exactly `0x80000000`). The script
 checks that every `b_i` is a canonical ScriptNum in `0..=255`, compresses a copy of
 the four bytes with `u32_compress()` and requires the result to equal `x` with
 `OP_EQUALVERIFY`. Because `OP_EQUALVERIFY` compares raw bytes and compression yields
@@ -62,3 +62,13 @@ cargo test --locked arithmetic::u32::uncompress_hinted::tests --lib
 cargo test --locked --test primitive_metrics u32_uncompress_hinted_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+For the measured word, four hints coexist with the compressed item at entry.
+The eight payload bytes plus four item-length prefixes add 12 serialized bytes;
+a separate hint vector is 13 bytes including its item count. The fragment's
+measured peak with its word-drop wrapper is 12; with caller state, require
+`12 + preserved_main + preserved_alt <= 1000`. Other consumers and preloaded
+batches must account for their own items and transient peaks. A complete leaf
+must consume or check all four returned bytes, enforce its intended predicate,
+and leave a clean stack. The metric uses the strict local helper with numeric
+minimality enabled; separate hostile-input tests cover permissive execution.

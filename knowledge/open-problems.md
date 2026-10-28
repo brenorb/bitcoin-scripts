@@ -1230,5 +1230,5 @@ the technique is extended to a position-dependent GF(2)-linear map such as a CRC
 Hamming syndrome of a fixed-length message, with exact hint counts, soundness
 established by exhaustive hint search on a small case, and script bytes, witness
 bytes and items, executed opcodes and combined peaks compared with the existing
-table-driven construction on an equal boundary; a two-word lane split for vectors
-above 212 nibbles is also open. Core validation is required for any deployment claim.
+table-driven construction on an equal boundary. Supporting 213 nibbles and a
+two-word lane split for vectors at 214 or above are also open. Core validation is required for any deployment claim.

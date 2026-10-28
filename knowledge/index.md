@@ -41,6 +41,8 @@ python3 tools/kb.py validate
 - [Taproot signature differential experiment](tapscript-signature-validation.md)
 - [Complete-witness signature-budget experiment](tapscript-budget-validation.md)
 - [Five-byte CSV differential experiment](tapscript-csv-validation.md)
+- [Absolute transaction-finality differential experiment](tapscript-finality-validation.md)
+- [Binohash legacy Core comparison](primitives/binohash-legacy-core.md)
 - [Checked PRINCEv2 complete-leaf experiment](prince-core-validation.md)
 - [Primitive entries](primitives/index.md)
 - [Reusable implementation techniques](techniques/index.md)

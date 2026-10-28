@@ -3,6 +3,24 @@
 Each problem has a falsifiable completion criterion. Update comparisons and
 negative results when closing one.
 
+## OP-043 — Exact sorting certificate frontier
+
+The [destructive-selection sorter](primitives/u4-sort.md) uses `n-1` hints and
+linear script growth. At 32 canonical nibbles it measures 969 script bytes,
+122 representative data-witness bytes, 31 hints / 63 total entry items,
+718 executed non-push opcodes and a 66-item combined stack peak. Its zero-hint
+selection-network baseline measures 3,044 + 63 bytes and a 36-item peak. These
+are `locally-reproduced`, `unclassified` fragment results, not a sorting optimum.
+
+**Complete when:** compare an exact canonical sort against an optimized
+Batcher/bitonic network and at least one compressed-selector schedule at widths
+8, 16 and 32, including encoding validation, hint/data serialization, all
+entry items, output restoration, actual executed operations, and preserved
+state. Publish a reproducible Pareto frontier for combined bytes and combined
+stack peak, and retain malformed-hint, duplicate-multiplicity and out-of-pool
+selector tests. Any claim of consensus or relay acceptance additionally needs
+a complete validated spend; local stack enforcement alone is insufficient.
+
 **Next priority (2026-09-28): OP-001, remaining Taproot transaction context.**
 The interpreter repairs and explicit context-free consensus/policy profiles
 are adopted. Complete-witness budgeting and annex signature context now have
@@ -13,7 +31,11 @@ mutated, and malformed control paths with pinned Core. The recorded comparisons
 are `differentially-validated`; the preflight is not a complete transaction
 validator. A separate [confirmed-output BIP68 comparison](tapscript-csv-validation.md#confirmed-output-bip68-maturity-follow-up-2026-09-28)
 now matches Core immediately before and at exact height/MTP maturity while
-preserving a missing-context `Unsupported` result. Next, validate the remaining
+preserving a missing-context `Unsupported` result.
+The [absolute-finality comparison](tapscript-finality-validation.md) now checks
+`nLockTime` at exact height and parent-MTP boundaries against Core, including
+the all-final-sequence escape. It is a separate preflight, not an integration
+with commitment, BIP68 and script validation. Next, validate the remaining
 transaction context:
 **complete when** valid and mutated Taproot commitments, annexes and Schnorr
 signatures produce supported local verdicts that agree with pinned Core,
@@ -503,17 +525,20 @@ linked, and the catalog-wide `as_of` date is advanced.
 
 ## OP-011 — Reproduce Binohash
 
-The deterministic core is now locally reproduced: selected serialized
-signature pushes are removed at opcode boundaries before rust-bitcoin's legacy
-sighash, including the out-of-range `SIGHASH_SINGLE` constant. The full
-protocol remains open because grinding, valid ECDSA signatures, transaction
-mutation boundaries, Script extraction, and pinned Core regtest behavior are
-not yet reproduced.
+The deterministic core is locally reproduced: selected serialized signature
+pushes are removed at opcode boundaries before rust-bitcoin's legacy sighash,
+including the out-of-range `SIGHASH_SINGLE` constant. A reduced two-choice
+fixture now uses valid ECDSA signatures and confirms selected funded P2SH
+spends and wrong-selection failures against pinned Core v30.3. Default Core
+relay policy rejects the valid spends under `CONST_SCRIPTCODE`. The full
+protocol remains open because two-round grinding, transaction mutation
+boundaries, Script extraction, and complete protocol costs are not reproduced.
 
 Implement the specified legacy signature-grinding construction and validate it
 against a pinned Bitcoin Core regtest. **Complete when:** extraction correctness,
 collision/work parameters, full transaction costs, mutation boundaries, and
-malformed/grinding failure cases are reproduced from deterministic fixtures.
+malformed/grinding failure cases are reproduced from deterministic fixtures;
+document how any policy barrier is handled without claiming default relay.
 
 ## OP-012 — Audit BN254 residue-witness subfield constraints
 
@@ -1043,6 +1068,18 @@ Price a keyed BLAKE3 construction for the existing 32-byte input profile.
 independent BLAKE3 implementation, records the eight key words and
 `KEYED_HASH` flag handling, reports witness and combined-stack costs, and
 compares the result with the unkeyed profile under the same compilation policy.
+
+## OP-065 — Complete Adler-state leaf validation
+
+Build a complete, independently bound error-detection computation leaf for
+the canonical Adler-32 state fragment. **Complete when:** a funded fixture
+validates both residue predicates against a pinned Bitcoin Core revision,
+rejects noncanonical bytes, wrong A/B, and over-limit composed state, and
+records full leaf/control-block/data witness serialization, transaction
+weight, consensus and relay-policy outcomes separately. Include explicit
+zero hint counts and combined stack peaks. Keep the documented checksum
+collision and lack of authentication explicit; Core acceptance must not be
+represented as cryptographic security or inherited by other configurations.
 
 ## OP-031 — Positional nibble checksum composition
 

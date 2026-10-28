@@ -40,6 +40,7 @@ pub mod reflection;
 pub mod rotate;
 pub mod run_length;
 pub mod shift;
+pub mod sort;
 pub mod square;
 pub mod stack;
 pub mod stack_add;

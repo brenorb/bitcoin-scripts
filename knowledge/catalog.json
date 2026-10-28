@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21549,7 +21549,7 @@
         "permutation",
         "stack-scheduling"
       ],
-      "security": "Every nibble is range-checked before use; the output depends only on witness values the script has validated. No hint, key or cryptographic security claim.",
+      "security": "Every nibble is range-checked before use; the output depends only on witness values the script has validated. No hint, key or cryptographic security claim. Inputs are checked by numeric value; nonminimal aliases and negative zero are accepted without MINIMALDATA. Byte-sensitive callers must validate canonical nibbles. Consume the returned count with the intended equality/threshold predicate and clean up preserved state.",
       "stack_contract": "Consumes preserved | a[0..n-1] (last item on top) and returns preserved | count in 0..=n(n-1)/2; out-of-range nibbles abort. Peak is n+3+preserved combined items.",
       "configurations": [
         {
@@ -21568,7 +21568,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: one range check per nibble, n(n-1)/2 in-place comparisons with Boolean accumulation, and input cleanup; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: one range check per nibble, n(n-1)/2 in-place comparisons with Boolean accumulation, and input cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 822,
           "witness_bytes": 32,
           "witness_bytes_max": null,

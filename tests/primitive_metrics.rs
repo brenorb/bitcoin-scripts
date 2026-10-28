@@ -8030,19 +8030,28 @@ fn u4_inversions_metrics_are_current() {
     let fragment = u4::inversions::u4_nibbles_inversions(LEN);
     // Strictly descending: every pair is an inversion, 120 in total.
     let witness: Vec<Vec<u8>> = (0..16).rev().map(|nibble| scriptnum(nibble)).collect();
-    let leaf = script! {
-        { fragment.clone() }
-        120 OP_EQUALVERIFY
-        OP_TRUE
-    };
-    let result = execute_script_with_inputs_strict(leaf, witness.clone());
-    assert!(result.success, "strict metric execution failed: {result}");
+    use bitcoin_lab::support::tapscript::{execute_tapscript, TapscriptProfile};
+    let compiled = fragment.compile_with_policy();
+    let execution = execute_tapscript(
+        compiled.clone(),
+        witness.clone(),
+        TapscriptProfile::Consensus,
+    );
+    let result = execution.execution().expect("executed fragment");
+    assert!(result.success, "metric fragment failed: {result}");
+    assert!(result.stack_limit_enforced);
+    assert_eq!(result.final_stack.len(), 1);
+    assert_eq!(result.final_stack.get(0), scriptnum(120));
+    let opcodes = compiled
+        .instructions()
+        .filter(|instruction| matches!(instruction, Ok(Instruction::Op(op)) if op.to_u8() > 0x60))
+        .count();
     let nondecreasing = script_len(u4::nondecreasing::u4_nibbles_nondecreasing(LEN));
     check_readme_metrics(vec![
         Metric {
             readme: "src/arithmetic/u4/README.md",
             key: "u4_inversions_16",
-            value: script_len(fragment.clone()),
+            value: compiled.len(),
         },
         Metric {
             readme: "src/arithmetic/u4/README.md",
@@ -8062,7 +8071,7 @@ fn u4_inversions_metrics_are_current() {
         Metric {
             readme: "src/arithmetic/u4/README.md",
             key: "u4_inversions_16_opcodes",
-            value: static_non_push_opcodes(fragment),
+            value: opcodes,
         },
         Metric {
             readme: "src/arithmetic/u4/README.md",

@@ -1206,3 +1206,15 @@ See [the knowledge page](../../../knowledge/primitives/u4-reflection.md),
 catalog record `arithmetic/u4-reflection`. The palindromic coefficient
 interpretation is reported in [Gao, arXiv:2109.09006v1](https://arxiv.org/abs/2109.09006v1);
 our nibble encoding and cost results are local.
+
+For `inversions::u4_nibbles_inversions`, `len` is explicit (no default).
+The input contract is numeric: range checks accept nonminimal ScriptNums and
+negative zero under the explicit local `TapscriptProfile::Consensus` profile
+(`require_minimal=false`, combined stack limit enabled). Byte-sensitive callers
+must validate canonical nibbles before invoking the fragment. The returned
+count is not a complete locking predicate: compare it with the intended count
+or threshold, consume preserved state, and finish with exactly one truthy item.
+A zero count alone is false and a nonzero count alone is true.
+
+The length-16 metrics execute the exact fragment under that explicit profile;
+serialized witness bytes include the item count, lengths, and payloads.

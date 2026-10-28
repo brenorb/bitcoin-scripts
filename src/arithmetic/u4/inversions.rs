@@ -12,6 +12,12 @@ pub const U4_INVERSIONS_MAX_LEN: u32 = 128;
 /// Before: `preserved | a[0] ... a[n-1]`, last item on top. After:
 /// `preserved | count`, with `count` in `0..=n(n-1)/2`. Equal nibbles are not
 /// inversions. Every nibble is range-checked; no hints are used.
+///
+/// Checks are numeric: nonminimal ScriptNums and negative zero are accepted
+/// when MINIMALDATA is disabled. Byte-sensitive callers must validate canonical
+/// nibbles first. This returns a count, not a terminal predicate: compare it
+/// with the intended value or threshold, consume preserved state, and leave
+/// exactly one truthy item at a complete tapscript leaf.
 pub fn u4_nibbles_inversions(len: u32) -> Script {
     assert!(
         (1..=U4_INVERSIONS_MAX_LEN).contains(&len),
@@ -70,6 +76,24 @@ mod tests {
         });
         assert!(result.success, "values {values:?}: {result}");
         expected
+    }
+
+    #[test]
+    fn numeric_aliases_match_canonical_inputs_under_the_explicit_profile() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let compiled = script! { { u4_nibbles_inversions(3) } 2 OP_NUMEQUAL }.compile_with_policy();
+        for zero in [vec![], vec![0], vec![0x80]] {
+            for position in 0..2 {
+                let mut witness = vec![vec![1], vec![1], zero.clone()];
+                witness[position] = vec![1, 0];
+                let outcome =
+                    execute_tapscript(compiled.clone(), witness, TapscriptProfile::Consensus);
+                let execution = outcome.execution().expect("executed alias leaf");
+                assert!(execution.success, "{execution}");
+                assert!(execution.stack_limit_enforced);
+                assert_eq!(execution.final_stack.len(), 1);
+            }
+        }
     }
 
     #[test]

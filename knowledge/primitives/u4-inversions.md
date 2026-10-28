@@ -25,6 +25,14 @@ stack state is preserved; the accumulator is parked on the altstack only during
 cleanup. The length bound is script size (quadratic), not stack depth: the
 peak is `n + 3 + preserved`.
 
+The input contract is numeric: range checks accept nonminimal ScriptNums and
+negative zero under the explicit local `TapscriptProfile::Consensus` profile
+(`require_minimal=false`, combined stack limit enabled). Byte-sensitive callers
+must validate canonical nibbles before invoking the fragment. The returned
+count is not a complete locking predicate: compare it with the intended count
+or threshold, consume preserved state, and finish with exactly one truthy item.
+A zero count alone is false and a nonzero count alone is true.
+
 ## Threat model and evidence
 
 All nibbles are hostile. Tests cover `-1`, `16` and `255` at every position of
@@ -73,3 +81,7 @@ cargo test --locked arithmetic::u4::inversions::tests --lib
 cargo test --locked --test primitive_metrics u4_inversions_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+Metrics execute the exact policy-compiled fragment used for bytes and opcode
+counts, without an appended comparison or cleanup wrapper. The data witness
+includes its CompactSize count, every item-length prefix and every payload.

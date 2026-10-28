@@ -8057,7 +8057,16 @@ fn u4_compare_packed_metrics_are_current() {
             { expected } OP_EQUALVERIFY
             OP_TRUE
         };
-        let peak = max_stack_items_strict(leaf, witness.clone());
+        let compiled_leaf = leaf.compile_with_policy();
+        let run = bitcoin_lab::support::tapscript::execute_tapscript(
+            compiled_leaf,
+            witness.clone(),
+            bitcoin_lab::support::tapscript::TapscriptProfile::Consensus,
+        );
+        let result = run.execution().expect("comparison leaf executes");
+        assert!(result.success, "{result}");
+        assert!(result.stack_limit_enforced);
+        let peak = result.stats.max_nb_stack_items;
         let key = |suffix: &str| -> &'static str {
             Box::leak(format!("u4_compare_{name}_64{suffix}").into_boxed_str())
         };

@@ -83,6 +83,19 @@ mod tests {
     use crate::support::execution::{execute_raw_script_with_inputs_strict, execute_script};
     use bitcoin_scriptexec::ExecError;
 
+    #[test]
+    fn consensus_numeric_aliases_are_accepted() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let leaf =
+            script! { { lexicographic_le_packed(2) } OP_VERIFY OP_TRUE }.compile_with_policy();
+        // [1, 0] <= [1, 0] with padded one and negative zero aliases.
+        let witness = vec![vec![1, 0], vec![0x80], vec![1], vec![]];
+        let run = execute_tapscript(leaf, witness, TapscriptProfile::Consensus);
+        let result = run.execution().expect("alias comparison executes");
+        assert!(result.success, "{result}");
+        assert!(result.stack_limit_enforced);
+    }
+
     fn item(value: u8) -> Vec<u8> {
         if value == 0 {
             Vec::new()

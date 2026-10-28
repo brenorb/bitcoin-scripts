@@ -30,7 +30,7 @@ Every nibble is range-checked when it is picked into its word, once.
 
 ## Threat model and evidence
 
-All nibbles are hostile. Tests cover: all 256 and all 65,536 vector pairs for widths
+All nibbles are hostile. Range checks are numeric and do not canonicalize encodings: with MINIMALDATA disabled, padded values and negative zero are accepted. Byte-sensitive callers must bind canonical encodings separately. Tests cover: all 256 and all 65,536 vector pairs for widths
 1 and 2; differences at every position, with ascending, descending and
 overridden suffixes, for widths 6, 7, 8, 13, 14, 15, 21 and 22 (chunk boundaries at
 multiples of seven); equal vectors; agreement with the existing per-nibble
@@ -67,3 +67,5 @@ cargo test --locked arithmetic::u4::compare_packed::tests --lib
 cargo test --locked --test primitive_metrics u4_compare_packed_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The packed form is smaller in locking-script bytes for the measured widths, but is not resource-dominant: its peak is four items higher and its maximum width is 496 versus 498 for the older comparator. The peak fixture uses the explicit local consensus numeric profile with stack enforcement; it executes a complete checking leaf while the size and opcode measurements cover the independently compiled fragment. This is not Bitcoin Core validation.

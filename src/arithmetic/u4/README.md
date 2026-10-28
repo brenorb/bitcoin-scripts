@@ -1219,4 +1219,4 @@ nibbles each sharing a 40-nibble prefix (<!-- metric:u4_compare_node_witness -->
 | Per-nibble state machine, 64 + 64 nibbles | <!-- metric:u4_compare_state_64 -->3532<!-- /metric:u4_compare_state_64 --> | <!-- metric:u4_compare_state_64_stack -->131<!-- /metric:u4_compare_state_64_stack --> | <!-- metric:u4_compare_state_64_opcodes -->2178<!-- /metric:u4_compare_state_64_opcodes --> |
 | Packed seven-nibble words, 64 + 64 nibbles | <!-- metric:u4_compare_packed_64 -->2171<!-- /metric:u4_compare_packed_64 --> | <!-- metric:u4_compare_packed_64_stack -->135<!-- /metric:u4_compare_packed_64_stack --> | <!-- metric:u4_compare_packed_64_opcodes -->1650<!-- /metric:u4_compare_packed_64_opcodes --> |
 
-See the [knowledge page](../../../knowledge/primitives/u4-compare-packed.md).
+Numeric range checks accept nonminimal aliases under the measured profile; byte-sensitive callers must enforce canonical encoding. The packed form saves script bytes in the measured cases, but its peak is four items higher and its maximum width is 496 instead of 498. See the [knowledge page](../../../knowledge/primitives/u4-compare-packed.md).

@@ -37,18 +37,19 @@ def generate(funding_txid=None):
     return json.loads(raw), sha256(raw)
 
 
-def csv_transaction(txid, vout, witness, outputs, version, sequence):
+def csv_transaction(txid, vout, witness, outputs, version, sequence, lock_time=0):
     """Independently serialize a version/sequence-parametrized one-input spend."""
-    if version not in (1, 2) or not 0 <= sequence <= 0xffffffff:
+    if version not in (1, 2) or not 0 <= sequence <= 0xffffffff or not 0 <= lock_time <= 0xffffffff:
         raise ValueError("Unsupported fixture transaction context")
     prefix = struct.pack("<I", version)
     txin = (compact_size(1) + bytes.fromhex(txid)[::-1] + struct.pack("<I", vout)
             + b"\x00" + struct.pack("<I", sequence))
     txout = compact_size(len(outputs)) + b"".join(struct.pack("<Q", value) + vector(script)
                                                   for value, script in outputs)
-    base = prefix + txin + txout + b"\x00" * 4
+    lock_time_bytes = struct.pack("<I", lock_time)
+    base = prefix + txin + txout + lock_time_bytes
     witness_bytes = compact_size(len(witness)) + b"".join(vector(item) for item in witness)
-    raw = prefix + b"\x00\x01" + txin + txout + witness_bytes + b"\x00" * 4
+    raw = prefix + b"\x00\x01" + txin + txout + witness_bytes + lock_time_bytes
     digest = lambda data: hashlib.sha256(hashlib.sha256(data).digest()).digest()[::-1].hex()
     weight = len(base) * 3 + len(raw)
     return {"hex": raw.hex(), "txid": digest(base), "wtxid": digest(raw), "weight": weight,

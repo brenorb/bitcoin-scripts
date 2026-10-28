@@ -196,6 +196,13 @@ still checks only script execution; the separate BIP68 preflight checks
 confirmed-output maturity for two exact funded boundaries. Core independently
 validates each complete spend.
 
+The [absolute-finality preflight](absolute_finality.rs) checks only `nLockTime`
+against candidate height or parent MTP and the all-final-sequence escape.
+Missing required chain context is `Unsupported`. Its [funded Core
+comparison](../../knowledge/tapscript-finality-validation.md) checks exact
+equality and first-eligible boundaries; local success does not establish
+complete transaction validity.
+
 The [complete-witness budget experiment](../../knowledge/tapscript-budget-validation.md)
 adds 32 funded cases with exact exhaustion, empty signatures, annexes, control
 paths and CompactSize boundaries. All local verdicts and rejection categories

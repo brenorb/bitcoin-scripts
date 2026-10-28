@@ -91,6 +91,18 @@ These measurements are locally-reproduced / unclassified, with zero hints and
 explicit stack-limited local tapscript profiles. Protocol/Core composition is
 [OP-036](../open-problems.md#op-036--stable-selection-protocol-composition).
 
+## Destructive sorting pools
+
+The [u4 sorting certificate](../primitives/u4-sort.md) requires a contiguous
+operand pool above its reversed hint vector. One call needs `n` operands and
+`n-1` hints at entry; `2*n+2` combined items is the exact standalone peak for
+`n>=2`. Every unrelated main/alt-stack item adds to that bound. Two preloaded
+32-input calls carry 62 hints and 64 operands and peak at 129 items if the
+first output is consumed before the second call. Keeping those outputs would
+require additional explicit routing and a fresh measurement. The primitive
+preserves surrounding state but does not authenticate operands or preserve
+their original ordering in the sorted result.
+
 ## Binary hash-path checkpoints
 
 The [optional-SHA256 hash path](../primitives/hash-path-integer.md) finishes
@@ -101,6 +113,20 @@ branch bits for downstream authentication. A path has zero hints and `n+1`
 input data items; a retained path peaks at `n+2` combined items before unrelated
 protocol state. This bound does not include a surrounding pinning/signature
 wrapper (OP-020).
+
+## Validation and accumulator lifetimes
+
+The [Adler-state experiment](../primitives/adler32-state.md) separates byte
+validation from accumulator allocation. The first interleaved schedule
+holds A/B during each check and peaks at n+5. Validate-and-stage all inputs
+first, then allocate the accumulators: the peak becomes n+3 for positive n,
+with both caller stacks preserved. At n997 this accepts at 1,000 items
+instead of failing at 1,001, with the same 19,122-byte fragment. All n
+ordinary data items coexist at entry, zero hints, maximum 2,994 serialized
+data-witness bytes at n997. Caller main/alt state must still be added; the
+endpoint has no spare slot. An optimized constant empty leaf has peak one
+but its reusable two-output fragment has peak two. Measure those boundaries
+separately. These are local strict tapscript results, `unclassified`.
 
 ## Reverse positional residue folds
 

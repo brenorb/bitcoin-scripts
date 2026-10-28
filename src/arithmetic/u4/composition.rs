@@ -41,9 +41,17 @@ pub fn u4_composition_words(len: u32) -> u32 {
 ///
 /// Before: `preserved | a[0] ... a[n-1]`, last item on top, with
 /// `n = sum(counts)`. After: `preserved | ok` in `{0, 1}`. Every nibble is
-/// range-checked; an out-of-range value aborts. No hints.
+/// range-checked; an out-of-range value aborts. No hints. Checks compare
+/// numeric values and accept nonminimal aliases without MINIMALDATA. Callers
+/// needing byte-unique inputs must validate canonical nibbles separately. Verify
+/// the returned bit and consume preserved state before a clean terminal leaf.
 pub fn u4_nibbles_have_composition(counts: &[u32; 16]) -> Script {
-    let len: u32 = counts.iter().sum();
+    let total: u64 = counts.iter().map(|&count| u64::from(count)).sum();
+    assert!(
+        (1..=u64::from(U4_COMPOSITION_MAX_LEN)).contains(&total),
+        "composition length out of range"
+    );
+    let len = total as u32;
     let lanes = u4_composition_lanes_per_word(len);
     let words = u4_composition_words(len);
     let base = i64::from(len) + 1;
@@ -98,6 +106,7 @@ fn target_word(counts: &[u32; 16], word: u32, lanes: u32, base: i64) -> i64 {
 ///
 /// Before: `preserved | a[0] ... a[n-1]`. After: `preserved | distinct`. For
 /// `n = 16` the vector is a permutation of `0..=15` exactly when it is distinct.
+/// Distinctness compares numeric values, so byte aliases cannot hide duplicates.
 pub fn u4_nibbles_pairwise_distinct(len: u32) -> Script {
     assert!((1..=128).contains(&len), "length out of range");
     script! {
@@ -110,7 +119,7 @@ pub fn u4_nibbles_pairwise_distinct(len: u32) -> Script {
             for right in left + 1..len {
                 { len - left } OP_PICK
                 { len - right + 1 } OP_PICK
-                OP_EQUAL
+                OP_NUMEQUAL
                 OP_ADD
             }
         }
@@ -191,6 +200,44 @@ mod tests {
                 "{values:?}"
             );
         }
+    }
+
+    #[test]
+    fn pairwise_distinctness_compares_numeric_aliases() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let fragment = u4_nibbles_pairwise_distinct(16);
+        let reject_duplicate = script! { { fragment.clone() } OP_NOT }.compile_with_policy();
+        for alias in [vec![14, 0], vec![14, 0, 0, 0], vec![0x80]] {
+            let mut witness: Vec<Vec<u8>> = (0..15).map(item).collect();
+            witness.push(alias);
+            let outcome = execute_tapscript(
+                reject_duplicate.clone(),
+                witness,
+                TapscriptProfile::Consensus,
+            );
+            let result = outcome.execution().expect("executed numeric-alias leaf");
+            assert!(result.success, "{result}");
+            assert_eq!(result.final_stack.len(), 1);
+        }
+        let valid = script! { { fragment } }.compile_with_policy();
+        let outcome = execute_tapscript(
+            valid,
+            (0..16).map(item).collect(),
+            TapscriptProfile::Consensus,
+        );
+        assert!(outcome.execution().expect("executed control").success);
+    }
+
+    #[test]
+    fn rejects_count_sum_overflow_before_narrowing() {
+        let mut counts = [0u32; 16];
+        counts[0] = u32::MAX;
+        counts[1] = 2;
+        assert!(std::panic::catch_unwind(|| u4_nibbles_have_composition(&counts)).is_err());
+        assert!(std::panic::catch_unwind(|| u4_nibbles_have_composition(&[u32::MAX; 16])).is_err());
+        counts = [0; 16];
+        counts[0] = U4_COMPOSITION_MAX_LEN + 1;
+        assert!(std::panic::catch_unwind(|| u4_nibbles_have_composition(&counts)).is_err());
     }
 
     #[test]

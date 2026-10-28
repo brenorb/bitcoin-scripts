@@ -56,9 +56,10 @@ excluded; zero hints; all `n` nibbles coexist at entry. Sizes pinned by
 
 For the 16-nibble permutation the pairwise comparator (`120` equality tests) costs
 823 bytes with a 19-item peak, so the lane check is 21% smaller but uses 18 more
-combined stack items. Sixteen fixed-symbol counts alone are a 4,256-byte lower
-bound (an estimate, excluding vector copies and the comparisons), 6.6 times the
-lane check, and 8,976 against 1,172 at 32 nibbles (7.7 times).
+combined stack items. Sixteen separately compiled fixed-symbol helpers cost 4,256 bytes as a naive
+estimate (excluding vector copies and the comparisons), 6.6 times the lane
+check, and 8,976 against 1,172 at 32 nibbles (7.7 times). These are not lower
+bounds on a shared implementation: repeated helper setup may be avoidable.
 
 ## Reproduction
 
@@ -67,3 +68,13 @@ cargo test --locked arithmetic::u4::composition::tests --lib
 cargo test --locked --test primitive_metrics u4_composition_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+Both fragments check numeric nibble values, so nonminimal aliases and negative
+zero are accepted when MINIMALDATA is disabled. Pairwise distinctness uses
+numeric equality: alternate encodings of the same value are duplicates.
+Byte-sensitive callers must separately validate canonical input encodings.
+Generation sums public counts in `u64` and rejects totals outside `1..=979`
+before narrowing. A complete leaf must verify the returned bit, consume
+preserved state and leave exactly one truthy item. Metrics execute the same
+policy-compiled fragments under an explicit local consensus numeric profile;
+this is `locally-reproduced` with execution `unclassified`.

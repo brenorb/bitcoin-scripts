@@ -1992,14 +1992,16 @@ witness layout would save 3 bytes and was not adopted. Byte counts are
 and deployment is `unclassified`. See the
 [generator record](blake3-short-generator.md).
 
-## NR-099: Per-symbol counting is dominated for fixed compositions
+## NR-099: Repeated fixed-symbol helpers cost more for the sampled compositions
 
 Verifying that a vector has an exact public composition by running a fixed-symbol
-count for each of the 16 symbols costs at least 4,256 script bytes at 16 nibbles
-and 8,976 at 32 (excluding the vector copies and the sixteen comparisons), against
+count for each of the 16 symbols costs 4,256 script bytes at 16 nibbles
+and 8,976 at 32 as a naive repeated-helper estimate (excluding the vector copies
+and sixteen comparisons), against
 649 and 1,172 bytes for packed count lanes: 6.6 and 7.7 times larger. The pairwise
 comparator is not dominated by the lane check at 16 nibbles: it is 27% larger but
 needs 18 fewer combined stack items (19 versus 37). Lane figures are
 policy-compiled fragments under strict local `unclassified` tapscript rules,
-`locally-reproduced`; the per-symbol figure is an estimate. See the
+`locally-reproduced`; the repeated-helper figure is an estimate and not a lower bound on shared
+counting constructions. See the
 [primitive](../primitives/u4-composition.md).

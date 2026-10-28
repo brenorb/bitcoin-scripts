@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21551,7 +21551,7 @@
         "bit-packing",
         "permutation"
       ],
-      "security": "Every nibble is range-checked before it indexes a stack table, so hostile values cannot alias another slot. Lanes cannot carry, so a word matches its target only when every count does. No hint, key or cryptographic security claim.",
+      "security": "Every nibble is range-checked before it indexes a stack table, so hostile values cannot alias another slot. Lanes cannot carry, so a word matches its target only when every count does. No hint, key or cryptographic security claim. Checks are numeric: aliases and negative zero are accepted without MINIMALDATA, and numeric pairwise equality detects them as duplicates. Callers needing byte-unique inputs must validate canonical nibbles; verify the returned bit and enforce clean-stack terminal semantics.",
       "stack_contract": "Consumes preserved | a[0..n-1] (last on top), n = sum(counts), and returns preserved | ok in {0,1}; out-of-range nibbles abort; peak n+21+preserved; unrelated main/alt state preserved.",
       "configurations": [
         {

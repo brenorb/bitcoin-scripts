@@ -1221,6 +1221,12 @@ the 16 nibbles `15..0` (<!-- metric:u4_composition_16_witness -->32<!-- /metric:
 | Packed-lane composition, permutation of 16 | <!-- metric:u4_composition_lanes_16 -->649<!-- /metric:u4_composition_lanes_16 --> | <!-- metric:u4_composition_lanes_16_stack -->37<!-- /metric:u4_composition_lanes_16_stack --> | <!-- metric:u4_composition_lanes_16_opcodes -->379<!-- /metric:u4_composition_lanes_16_opcodes --> |
 | Pairwise distinctness, 16 nibbles | <!-- metric:u4_composition_pairwise_16 -->823<!-- /metric:u4_composition_pairwise_16 --> | <!-- metric:u4_composition_pairwise_16_stack -->19<!-- /metric:u4_composition_pairwise_16_stack --> | <!-- metric:u4_composition_pairwise_16_opcodes -->538<!-- /metric:u4_composition_pairwise_16_opcodes --> |
 
-Sixteen fixed-symbol counts alone are a <!-- metric:u4_composition_16_count_baseline -->4256<!-- /metric:u4_composition_16_count_baseline -->-byte lower bound
+Sixteen fixed-symbol counts alone are a <!-- metric:u4_composition_16_count_baseline -->4256<!-- /metric:u4_composition_16_count_baseline -->-byte naive repeated-helper estimate
 (an estimate: it excludes vector copies and the comparisons). See the
 [knowledge page](../../../knowledge/primitives/u4-composition.md).
+
+Fixed-composition checks accept nonminimal numeric aliases when MINIMALDATA is
+disabled; the pairwise comparator checks numeric equality so alias duplicates
+are rejected. Byte-sensitive callers must canonicalize first. Public count
+totals are summed without `u32` overflow and checked before narrowing. Verify
+the result and enforce a clean terminal leaf.

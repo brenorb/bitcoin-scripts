@@ -10,14 +10,16 @@ the source. Read a page together with its comparison page and evidence record.
 
 ## Arithmetic
 
-- [Table-free Luhn checksum](u4-luhn.md)
+- [Canonical Adler-32 state](adler32-state.md) — non-cryptographic checksum with deferred reduction
 
+- [Table-free Luhn checksum](u4-luhn.md)
 - [CRC-8/SMBus with nibble feedback](crc8-smbus.md)
 
 - [ScriptNum constant multiplication](scriptnum-constant-mul.md)
 - [ScriptNum integer floor root](scriptnum-isqrt.md)
 - [Hinted ScriptNum division](scriptnum-hinted-div.md)
 - [u4 digit arithmetic](u4.md)
+- [Exact u4 sorting with destructive-selection hints](u4-sort.md)
 - [Numeric decimal Damm finite-state checksum](u4-damm.md)
 - [Signed radix-32 window decoder](signed-radix32-decoder.md)
 - [Checked factoradic (Lehmer code) decoding](factoradic-u4.md)

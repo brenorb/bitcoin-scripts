@@ -1223,3 +1223,5 @@ hints. Peak uses a terminal expected-residue `OP_EQUAL` under strict local execu
 The Damm fragment on the same digits is 766 bytes with a 136-item peak. Luhn
 misses the `09`/`90` adjacent transposition that Damm detects; see the
 [knowledge page](../../../knowledge/primitives/u4-luhn.md).
+
+The measured 32-digit Luhn fragment has 295 static non-push opcodes and exceeds the 201-opcode limit for legacy, P2SH and P2WSH; its 411 bytes fit the P2SH element limit. Tapscript removes that opcode limit, but local execution is not consensus or policy validation.

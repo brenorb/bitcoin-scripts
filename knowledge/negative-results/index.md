@@ -1997,7 +1997,7 @@ and deployment is `unclassified`. See the
 The table-free Luhn check is 46% smaller than the Damm fold at 32 digits (411
 versus 766 script bytes) and needs a quarter of its stack (35 versus 136), but a
 Rust-model comparison over all 1,000 three-digit messages finds that it misses
-60 of 3,000 adjacent transpositions, every one a `0`/`9` swap, which Damm always
+60 of 2,700 changed adjacent transpositions, every one a `0`/`9` swap, which Damm always
 detects. Both detect all 36,000 single-digit substitutions. Luhn is therefore a
 cost-saving option only where that blind spot is acceptable. Byte counts are
 policy-compiled fragments under strict local `unclassified` tapscript rules,

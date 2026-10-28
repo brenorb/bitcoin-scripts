@@ -30,14 +30,14 @@ four-byte ScriptNum domain.
 Every digit is hostile and range-checked in `0..=9` (numeric aliases are
 accepted when the execution profile permits them, as for the Damm primitive).
 Tests cover: every digit string of length 1 to 4 against a Rust model; the
-published 11-digit example `79927398713`; seeded vectors up to 128 digits;
+deterministic 11-digit example `79927398713`; seeded vectors up to 128 digits;
 `-1`, 10, 15, 16 and 255 at every position; preserved main/alt state;
 generation bounds; and an exact stack frontier at 997 digits.
 
 Error detection is compared with the Damm quasigroup from Rust models only (the
 shared table is the one the Damm primitive uses): over all 1,000 three-digit
 messages with a computed check digit, neither scheme misses any of the 36,000
-single-digit substitutions, but Luhn misses 60 of the 3,000 adjacent
+single-digit substitutions, but Luhn misses 60 of the 2,700 changed adjacent
 transpositions, every one of them a swap of `0` and `9`, while Damm misses none.
 Evidence is `locally-reproduced`; execution is `unclassified`; no Bitcoin Core
 validation is claimed. This is an error-detecting checksum, not authentication.
@@ -67,3 +67,10 @@ cargo test --locked arithmetic::u4::luhn::tests --lib
 cargo test --locked --test primitive_metrics u4_luhn_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The 32-digit fragment has 295 static non-push opcodes, exceeding the 201-opcode
+limit for legacy, P2SH and P2WSH, although its 411 bytes fit P2SH's element
+size limit. Tapscript removes that opcode limit; this local result is not Core
+consensus or relay-policy validation. The original definition is described in
+[Luhn's 1960 patent US2950048A](https://patents.google.com/patent/US2950048A/en);
+the deterministic example above is not attributed to that document.

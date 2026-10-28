@@ -10,6 +10,8 @@ the source. Read a page together with its comparison page and evidence record.
 
 ## Arithmetic
 
+- [Table-free Luhn checksum](u4-luhn.md)
+
 - [CRC-8/SMBus with nibble feedback](crc8-smbus.md)
 
 - [ScriptNum constant multiplication](scriptnum-constant-mul.md)
@@ -159,4 +161,3 @@ the source. Read a page together with its comparison page and evidence record.
 - [BN254 fields](bn254-fields.md)
 - [BN254 groups and MSM](bn254-groups.md)
 - [BN254 pairing verifier](bn254-pairing.md)
-- [Table-free Luhn checksum](u4-luhn.md)

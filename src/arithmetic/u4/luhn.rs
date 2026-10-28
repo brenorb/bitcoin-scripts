@@ -259,6 +259,7 @@ mod tests {
     fn luhn_misses_the_zero_nine_transposition_that_damm_detects() {
         let mut luhn_counts = (0u32, 0u32);
         let mut damm_counts = (0u32, 0u32);
+        let mut changed_swaps = [0u32; 2];
         for message in 0..1000u32 {
             let m = [
                 (message / 100) as u8,
@@ -297,6 +298,7 @@ mod tests {
                 }
                 for position in 0..3 {
                     if word[position] != word[position + 1] {
+                        changed_swaps[scheme] += 1;
                         let mut forged = word;
                         forged.swap(position, position + 1);
                         if valid(&forged) {
@@ -312,6 +314,8 @@ mod tests {
                 }
             }
         }
+        assert_eq!(changed_swaps, [2700, 2700]);
+        assert_eq!(luhn_counts.1, 60);
         // Neither scheme misses a single-digit error; only Luhn misses transpositions.
         assert_eq!(luhn_counts.0, 0);
         assert_eq!(damm_counts, (0, 0));

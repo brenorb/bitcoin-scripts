@@ -507,6 +507,7 @@ the per-symbol complement quotient and cyclic vector rotation.
 Packed signed-histogram lanes decide multiset equality of two 16-nibble
 vectors in 1,158 script bytes, 63 witness bytes, zero hints and a 53-item peak
 (strict local `unclassified` tapscript, `locally-reproduced`). The per-symbol
-alternative needs 32 fixed-symbol counts, a lower bound of 8,512 script bytes
-before vector copies and comparisons (an estimate, not a built comparator);
+alternative's 32 separately compiled fixed-symbol helpers total 8,512 script
+bytes before vector copies and comparisons. This is a naive repeated-helper
+estimate, not a built comparator or a lower bound on shared counting designs;
 see [the primitive](../primitives/u4-multiset-equal.md) and NR-088.

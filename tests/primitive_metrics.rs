@@ -8038,7 +8038,21 @@ fn u4_xor_hinted_metrics_are_current() {
     let mut hinted_witness = table_witness.clone();
     hinted_witness.push(scriptnum(y));
     hinted_witness.extend(halves.iter().map(|&h| scriptnum(h)));
-    let mut metrics = Vec::new();
+    let hints = &hinted_witness[table_witness.len()..];
+    let separate_hint_bytes = witness_size(hints);
+    let incremental_hint_bytes = separate_hint_bytes - 1;
+    let mut metrics = vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_xor_hinted_32_hint_bytes",
+            value: incremental_hint_bytes,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_xor_hinted_32_hint_vector",
+            value: separate_hint_bytes,
+        },
+    ];
     for (name, fragment, witness) in [
         ("table", u4_nibbles_to_xor(N), table_witness),
         ("hinted", u4_nibbles_xor_hinted(N), hinted_witness),
@@ -8048,8 +8062,14 @@ fn u4_xor_hinted_metrics_are_current() {
             { y } OP_EQUALVERIFY
             OP_TRUE
         };
-        let result = execute_script_with_inputs_strict(leaf, witness.clone());
-        assert!(result.success, "strict metric execution failed: {result}");
+        let run = bitcoin_lab::support::tapscript::execute_tapscript(
+            leaf.compile_with_policy(),
+            witness.clone(),
+            bitcoin_lab::support::tapscript::TapscriptProfile::Consensus,
+        );
+        let result = run.execution().expect("comparison leaf executes");
+        assert!(result.success, "metric execution failed: {result}");
+        assert!(result.stack_limit_enforced);
         let key = |suffix: &str| -> &'static str {
             Box::leak(format!("u4_xor_{name}_32{suffix}").into_boxed_str())
         };

@@ -4669,7 +4669,7 @@
       "id": "commitment/ternary-hash-path-integer",
       "name": "Ternary mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
@@ -4743,7 +4743,7 @@
       "id": "commitment/four-way-hash-path-integer",
       "name": "Four-way mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -4903,7 +4903,7 @@
       "id": "commitment/hash-path-integer",
       "name": "Mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1–31-bit integer.",
+      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -21550,7 +21550,7 @@
         "bit-packing",
         "lookup-table"
       ],
-      "security": "Nibbles, the claim and the lane halves are hostile and range-checked. Exact non-carrying lane arithmetic fixes each lane's parity, so a forged claim or half-count cannot verify and the honest pair is unique (checked by exhaustive search on four vectors). No key or cryptographic security claim.",
+      "security": "Nibbles, the claim and the lane halves are hostile and range-checked. Exact non-carrying lane arithmetic fixes each lane's parity, so a forged claim or half-count cannot verify and the honest numeric pair is unique (checked by exhaustive search on four vectors). No key or cryptographic security claim. With minimality disabled, numeric aliases are accepted and the original y bytes are returned; byte-sensitive consumers must canonicalize.",
       "stack_contract": "Witness x[0..n-1] y h0 h1 h2 h3 (h3 on top) returns y; the vector and hints are consumed; five hint items per invocation; peak n+27; unrelated main/alt state preserved.",
       "configurations": [
         {
@@ -21570,7 +21570,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: range checks, lane halves, packed accumulation, the lane equality and cleanup (hinted) or the table pushes, per-nibble lookups and cleanup (table); excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness includes the count and every item",
+          "includes": "fragment-only: range checks, lane halves, packed accumulation, the lane equality and cleanup (hinted) or the table pushes, per-nibble lookups and cleanup (table); excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness includes the count and every item Stack peak executes a complete checking leaf under the explicit consensus numeric profile; script size and opcode counts cover the independently compiled fragment.",
           "script_bytes": 1122,
           "witness_bytes": 63,
           "witness_bytes_max": null,
@@ -21604,7 +21604,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: range checks, lane halves, packed accumulation, the lane equality and cleanup (hinted) or the table pushes, per-nibble lookups and cleanup (table); excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness includes the count and every item",
+          "includes": "fragment-only: range checks, lane halves, packed accumulation, the lane equality and cleanup (hinted) or the table pushes, per-nibble lookups and cleanup (table); excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness includes the count and every item Stack peak executes a complete checking leaf under the explicit consensus numeric profile; script size and opcode counts cover the independently compiled fragment.",
           "script_bytes": 617,
           "witness_bytes": 72,
           "witness_bytes_max": null,
@@ -21623,12 +21623,13 @@
         }
       ],
       "limitations": [
-        "Single-word lanes limit the vector to 212 nibbles",
+        "The implementation conservatively caps vectors at 212 nibbles",
         "Five hint items per invocation",
         "The exhaustive hint search covers four short vectors, not every vector",
         "Static non-push opcode counts equal executed counts only because the fragments are straight-line",
         "The model is ordinary Rust; the existing table reduction is the only independent comparator",
-        "No Bitcoin Core consensus or relay-policy validation"
+        "No Bitcoin Core consensus or relay-policy validation",
+        "The 212-item implementation cap is conservative; the arithmetic bound fits at 213 and first overflows at 214"
       ],
       "open_problems": [
         "OP-063"

@@ -1992,14 +1992,14 @@ witness layout would save 3 bytes and was not adopted. Byte counts are
 and deployment is `unclassified`. See the
 [generator record](blake3-short-generator.md).
 
-## NR-107: The table-driven XOR reduction is dominated when hints are allowed
+## NR-107: Table-driven XOR versus hinted packed lanes
 
-Folding a u4 vector through the 256-entry XOR table costs about 24 script bytes per
-nibble plus a fixed table cost and a 256-item stack peak: 740 bytes and a 273-item
-peak at 16 nibbles, 1,890 and 321 at 64. Verifying a claimed XOR from packed
-bit-count lanes with four hinted half-counts costs 367 bytes (peak 43) and 1,087
-(peak 91), 50% and 42% less, for five hint items; script plus witness is 408 versus 772
-bytes at 16 nibbles. The table form keeps its role beyond 212 nibbles, where the
-single-word accumulator overflows, or where hints are forbidden. Figures are
-policy-compiled fragments under strict local `unclassified` tapscript rules,
-`locally-reproduced`. See the [primitive](../primitives/u4-xor-hinted.md).
+For the 32-item fixture, the table-driven XOR fragment costs 1,122 script bytes,
+63 witness bytes and a 289-item peak; hinted packed lanes cost 617 script bytes,
+72 witness bytes and a 59-item peak with five hints. The table remains relevant
+when hints are unavailable or beyond the conservative 212-item implementation
+cap. The packed arithmetic bound fits at 213 and first exceeds the four-byte
+range at 214. Non-32 script sizes are pinned separately, but their prior witness
+and peak figures are not established by the recorded fixtures. Results are
+`locally-reproduced`, `unclassified` local execution. See the
+[primitive](../primitives/u4-xor-hinted.md).

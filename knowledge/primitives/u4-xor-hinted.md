@@ -25,7 +25,7 @@ Let `B = n + 2` and `T[v] = sum_{b<4} bit_b(v) * B^b`. The script range-checks e
 right side is `y_b + 2 h_b <= 1 + n < B`. Both sides are therefore base-`B`
 numbers with every digit below `B`, so equal integers have equal digits:
 `c_b = y_b + 2 h_b`, i.e. `y_b` is `c_b mod 2`, the XOR bit. A forged `y` or `h`
-cannot pass, and the honest pair is unique. All sums are below `2^31` for
+cannot pass, and the honest numeric pair is unique. All sums are below `2^31` for
 `n <= 212`, where `n * (B^4 - 1) / (B - 1)` stays inside the four-byte domain.
 
 ## Threat model and evidence
@@ -45,18 +45,18 @@ accumulator bound fits at the limit. Evidence is `locally-reproduced`; execution
 Boundary: the policy-compiled fragment; input pushes and terminal predicate
 excluded. Sizes pinned by `xor_hinted::tests::recorded_sizes_are_current`.
 
-| n | Table bytes | Table peak | Hinted bytes | Hinted peak | Totals (script + witness) |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 4 | 464 | 261 | 175 | 31 | 473 vs 192 |
-| 16 | 740 | 273 | 367 | 43 | 772 vs 408 |
-| 32 | 1,122 | 289 | 617 | 59 | 1,185 vs 689 |
-| 64 | 1,890 | 321 | 1,087 | 91 | 2,015 vs 1,221 |
-| 212 | 5,525 | 469 | 3,378 | 239 | 5,937 vs 3,799 |
+| n | Table script bytes | Hinted script bytes |
+| ---: | ---: | ---: |
+| 4 | 464 | 175 |
+| 16 | 740 | 367 |
+| 32 | 1,122 | 617 |
+| 64 | 1,890 | 1,087 |
+| 212 | 5,525 | 3,378 |
 
+Only the 32-item fixture has pinned witness and peak measurements in this comparison: table 63 witness bytes and peak 289, hinted 72 bytes and peak 59. Non-32 witness and peak figures are not asserted here.
 The hinted form is 50% smaller on script at 16 nibbles and 42% at 64, with five hint
-items and a combined peak six times lower at 16 nibbles (43 versus 273) because it
-needs no resident table. Beyond 212 nibbles the single-word accumulator overflows and
-a two-word lane split would be needed.
+items and, in the 32-item fixture, a 59-item rather than 289-item peak because it
+needs no resident table. The implementation cap of 212 is deliberately conservative: at 213 the bound is 2,126,765,808 and still fits; the bound first exceeds the domain at 214. Supporting 213 requires separate implementation and execution testing.
 
 ## Reproduction
 
@@ -65,3 +65,20 @@ cargo test --locked arithmetic::u4::xor_hinted::tests --lib
 cargo test --locked --test primitive_metrics u4_xor_hinted_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+For the 32-item fixture the five hints add 9 serialized bytes to the existing witness; a separately serialized hint vector occupies 10 bytes, including its item count.
+
+The verifier binds numeric values; it returns the original y bytes, so padded
+numbers and negative zero can pass without MINIMALDATA. Byte-sensitive consumers
+must canonicalize. Each invocation has five hints and n input items, all
+coexisting at entry; k equal-width preloaded invocations therefore start with
+k(n+5) data items including 5k hints, before caller state and transient work.
+The isolated hinted peak is n+27; any batch must also allow for remaining items,
+caller main/alt state and routing overhead under the 1,000-item limit. No batch
+schedule or peak is measured. The 32-item 617-byte fragment exceeds P2SH's
+520-byte element limit, and its 383 non-push opcodes exceed the legacy, P2SH and
+P2WSH 201-opcode limit; tapscript removes that opcode limit. No consensus or
+policy validation is claimed. The peak metric runs a checking leaf with the
+explicit local consensus numeric profile, while bytes/opcodes cover the fragment.
+
+For the measured 32-item configurations, both the 617-byte hinted fragment and the 1,122-byte table fragment exceed P2SH’s 520-byte redeem-script element limit; their 383 and 758 non-push opcodes exceed the 201-opcode legacy, P2SH and P2WSH limit. Tapscript removes that opcode limit but retains stack and element constraints. Complete-script and relay-policy validity have not been established.

@@ -13,8 +13,8 @@ use super::stack::u4_drop;
 use crate::arithmetic::scriptint::mul_by_constant;
 use crate::support::script::*;
 
-/// Largest vector: the accumulator `n * (B^4 - 1) / (B - 1)` with `B = n + 2`
-/// must stay below `2^31`.
+/// Conservative implementation limit. The accumulator bound still fits at 213
+/// and first exceeds the four-byte domain at 214.
 pub const U4_XOR_HINTED_MAX_LEN: u32 = 212;
 
 /// Lane base for vectors of length `len`.
@@ -82,6 +82,19 @@ mod tests {
     use crate::arithmetic::u4::xor_reduce::u4_nibbles_to_xor;
     use crate::support::execution::{execute_raw_script_with_inputs_strict, execute_script};
     use bitcoin_scriptexec::ExecError;
+
+    #[test]
+    fn permissive_aliases_preserve_the_claimed_output_bytes() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let fragment = u4_nibbles_xor_hinted(1).compile_with_policy();
+        let witness = vec![vec![1, 0], vec![1, 0], vec![0x80], vec![], vec![], vec![]];
+        let run = execute_tapscript(fragment, witness, TapscriptProfile::Consensus);
+        let result = run.execution().expect("xor fragment executes");
+        assert!(result.error.is_none(), "{result}");
+        assert!(result.stack_limit_enforced);
+        assert_eq!(result.final_stack.len(), 1);
+        assert_eq!(result.final_stack.get(0), vec![1, 0]);
+    }
 
     fn num(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
@@ -300,6 +313,7 @@ mod tests {
         );
         // The documented limit is conservative by design; the first overflowing length is above it.
         let first_overflow = (max..2_000).find(|&n| bound(n) >= 1 << 31).unwrap();
-        assert!(first_overflow > max);
+        assert_eq!(bound(213), 2_126_765_808);
+        assert_eq!(first_overflow, 214);
     }
 }

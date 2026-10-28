@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -4669,7 +4669,7 @@
       "id": "commitment/ternary-hash-path-integer",
       "name": "Ternary mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
@@ -4743,7 +4743,7 @@
       "id": "commitment/four-way-hash-path-integer",
       "name": "Four-way mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -4903,7 +4903,7 @@
       "id": "commitment/hash-path-integer",
       "name": "Mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1–31-bit integer.",
+      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -21541,7 +21541,8 @@
       ],
       "references": [
         "bitcoin-script-locked",
-        "bitcoin-scriptexec-locked"
+        "bitcoin-scriptexec-locked",
+        "u4-sort-baseline-55a61e5"
       ],
       "techniques": [
         "digit-arithmetic",
@@ -21549,7 +21550,7 @@
         "witness-hints",
         "threshold-comparison"
       ],
-      "security": "The vector and the claim are hostile: both are range-checked and the claim is accepted only when its rank interval contains k. No hint is trusted beyond that check; no key or cryptographic security claim.",
+      "security": "The vector and the claim are hostile: both are range-checked and the claim is accepted only when its rank interval contains k. No hint is trusted beyond that check; no key or cryptographic security claim. The hinted claim is returned as supplied; nonminimal numeric aliases pass without minimality, so byte-sensitive consumers must canonicalize.",
       "stack_contract": "Claim check: preserved | a[0..n-1] | claim -> preserved | claim, or abort. Selector: preserved | a[0..n-1] -> preserved | value in 0..=15. Peak n+4 (claim check) and n+6 (selector); unrelated main/alt state preserved.",
       "configurations": [
         {
@@ -21570,7 +21571,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: range checks, the two counting passes (hinted) or the pairwise ranks and selection (hint-free), and cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: range checks, the two counting passes (hinted) or the pairwise ranks and selection (hint-free), and cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state Peak executes a complete checking leaf under the explicit local consensus numeric profile; byte and opcode metrics cover the separately compiled fragment.",
           "script_bytes": 312,
           "witness_bytes": 35,
           "witness_bytes_max": null,
@@ -21605,7 +21606,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: range checks, the two counting passes (hinted) or the pairwise ranks and selection (hint-free), and cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: range checks, the two counting passes (hinted) or the pairwise ranks and selection (hint-free), and cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state Peak executes a complete checking leaf under the explicit local consensus numeric profile; byte and opcode metrics cover the separately compiled fragment.",
           "script_bytes": 3512,
           "witness_bytes": 33,
           "witness_bytes_max": null,
@@ -21625,7 +21626,7 @@
       ],
       "limitations": [
         "The pairwise selector is quadratic and limited to 32 nibbles",
-        "The sorting-network comparison figure is reported by the open sorting PR, not reproduced here",
+        "The sorting-network comparison figure is reported by the pinned sorting baseline at 55a61e5, not reproduced here",
         "Selector opcode count is branch dependent and its executed count is recorded as null",
         "The model is ordinary Rust, not an independent Script interpreter",
         "No Bitcoin Core consensus or relay-policy validation"

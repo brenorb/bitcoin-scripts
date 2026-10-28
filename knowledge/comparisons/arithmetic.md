@@ -469,6 +469,7 @@ the per-symbol complement quotient and cyclic vector rotation.
 At 16 nibbles a witness-claimed lower median is verified in 312 script bytes (one
 hint, 17 witness items, peak 20), against 3,512 bytes for hint-free pairwise
 selection (peak 22); at 32 nibbles 656 versus 14,223 bytes (strict local
-`unclassified` tapscript, `locally-reproduced`). The open sorting PR reports a
-3,044-byte zero-hint selection network at 32 inputs, which would undercut the
-pairwise selector. See [the primitive](../primitives/u4-order-statistic.md) and NR-101.
+`unclassified` tapscript, `locally-reproduced`). The pinned sorting reference reports a
+3,044-byte zero-hint sorting network at 32 inputs; it returns all sorted items
+and needs an unmeasured selection/cleanup consumer, so the output boundaries
+are not yet matched. See [the primitive](../primitives/u4-order-statistic.md) and NR-101.

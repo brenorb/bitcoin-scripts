@@ -106,6 +106,22 @@ mod tests {
     use crate::support::execution::{execute_raw_script_with_inputs_strict, execute_script};
     use bitcoin_scriptexec::ExecError;
 
+    #[test]
+    fn permissive_claim_alias_is_returned_unchanged() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let fragment = u4_nibbles_kth_smallest_hinted(2, 1).compile_with_policy();
+        let run = execute_tapscript(
+            fragment,
+            vec![vec![1], vec![2], vec![1, 0]],
+            TapscriptProfile::Consensus,
+        );
+        let result = run.execution().expect("order statistic executes");
+        assert!(result.error.is_none(), "{result}");
+        assert!(result.stack_limit_enforced);
+        assert_eq!(result.final_stack.len(), 1);
+        assert_eq!(result.final_stack.get(0), vec![1, 0]);
+    }
+
     fn num(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
         let len = bitcoin::script::write_scriptint(&mut bytes, value);

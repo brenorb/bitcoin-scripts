@@ -52,10 +52,11 @@ excluded. Sizes pinned by `order_statistic::tests::recorded_sizes_are_current`.
 At 16 nibbles the claim check costs 312 script bytes with a 35-byte, 17-item
 witness (one hint) and a 20-item peak; the selector costs 3,512 bytes with a
 33-byte witness and a 22-item peak. The selector is quadratic (14,223 bytes at 32)
-and is dominated by a sorting network: the open sorting PR reports a zero-hint
+while the [pinned sorting baseline](https://github.com/solving-bitcoin/bitcoin-scripts/blob/55a61e5cecb4cc767dc4aa6788f76cd6fe01f3a6/knowledge/primitives/u4-sort.md) reports a zero-hint
 min/max selection network at 3,044 script bytes plus 63 witness bytes for 32
 inputs (reported there, not reproduced here), about a quarter of the pairwise
-selector.
+selector. Sorting returns all outputs; selecting one and cleaning up the rest adds
+a consumer whose cost is not measured here, so the boundaries are unmatched.
 
 ## Reproduction
 
@@ -64,3 +65,5 @@ cargo test --locked arithmetic::u4::order_statistic::tests --lib
 cargo test --locked --test primitive_metrics u4_order_statistic_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The hinted claim is checked numerically and returned unchanged. With numeric minimality disabled, padded aliases can pass; byte-sensitive consumers must canonicalize. The peak metric executes a checking leaf under the explicit local consensus numeric profile; fragment byte and opcode metrics are compiled separately. No Bitcoin Core validation is claimed.

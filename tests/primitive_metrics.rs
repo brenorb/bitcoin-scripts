@@ -8054,13 +8054,39 @@ fn u4_ascii_hex_encode_metrics_are_current() {
             u4_nibbles_to_ascii_hex_table(LEN, HexLetterCase::Lower),
         ),
     ] {
-        let leaf = script! {
-            { fragment.clone() }
-            for _ in 0..LEN { OP_DROP }
-            OP_TRUE
-        };
-        let result = execute_script_with_inputs_strict(leaf, witness.clone());
-        assert!(result.success, "strict metric execution failed: {result}");
+        let compiled = fragment.clone().compile_with_policy();
+        let run = bitcoin_lab::support::tapscript::execute_tapscript(
+            compiled,
+            witness.clone(),
+            bitcoin_lab::support::tapscript::TapscriptProfile::Consensus,
+        );
+        let result = run.execution().expect("encoder fragment executes");
+        assert!(result.error.is_none(), "{result}");
+        assert!(result.stack_limit_enforced);
+        assert_eq!(result.final_stack.len(), LEN as usize);
+        for i in 0..LEN as usize {
+            let nibble = i % 16;
+            let ascii = if nibble < 10 {
+                48 + nibble
+            } else {
+                97 + nibble - 10
+            };
+            assert_eq!(result.final_stack.get(i), scriptnum(ascii as i64));
+        }
+        if name == "table" {
+            // Sixteen two-byte constant pushes, 64 independently sized ten-byte
+            // queries and eight cleanup bytes equal this whole compiled fragment.
+            let setup = script! { for nibble in (0..16u8).rev() { { i64::from(u4::ascii_hex_encode::ascii_hex_code(nibble, HexLetterCase::Lower)) } } };
+            let query =
+                script! { 16 OP_ROLL OP_DUP 0 16 OP_WITHIN OP_VERIFY OP_PICK OP_TOALTSTACK };
+            let restore = script! { OP_FROMALTSTACK };
+            let cleanup = u4::stack::u4_drop(16);
+            assert_eq!(script_len(setup), 32);
+            assert_eq!(script_len(query), 9);
+            assert_eq!(script_len(restore), 1);
+            assert_eq!(script_len(cleanup), 8);
+            assert_eq!(script_len(fragment.clone()), 32 + 64 * (9 + 1) + 8);
+        }
         let key = |suffix: &str| -> &'static str {
             Box::leak(format!("u4_ascii_hex_encode_{name}_64{suffix}").into_boxed_str())
         };

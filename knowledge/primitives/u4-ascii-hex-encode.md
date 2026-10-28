@@ -64,3 +64,12 @@ cargo test --locked arithmetic::u4::ascii_hex_encode::tests --lib
 cargo test --locked --test primitive_metrics u4_ascii_hex_encode_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+For the 64-nibble table fragment, setup is 32 bytes for sixteen two-byte ASCII
+pushes, each of 64 queries is 10 bytes, and cleanup is 8 bytes: `32 + 64*10 + 8
+= 680`. The cross-component optimizer delta is zero for this decomposition.
+The 64-item arithmetic and table rows use 702 and 456 static non-push opcodes,
+respectively, exceeding the 201-opcode legacy, P2SH and P2WSH limit; both fragments also exceed P2SH's 520-byte element limit. Tapscript removes the
+opcode limit, but local execution is not consensus or policy validation. The
+metric executes the exact policy-compiled fragment under the explicit local
+consensus numeric profile and observes each output.

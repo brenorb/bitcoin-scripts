@@ -1220,3 +1220,9 @@ and terminal predicate excluded. Fixture: the nibbles `0..=15` repeated four tim
 | Table, 64 nibbles | <!-- metric:u4_ascii_hex_encode_table_64 -->680<!-- /metric:u4_ascii_hex_encode_table_64 --> | <!-- metric:u4_ascii_hex_encode_table_64_stack -->83<!-- /metric:u4_ascii_hex_encode_table_64_stack --> | <!-- metric:u4_ascii_hex_encode_table_64_opcodes -->456<!-- /metric:u4_ascii_hex_encode_table_64_opcodes --> |
 
 See the [knowledge page](../../../knowledge/primitives/u4-ascii-hex-encode.md).
+
+The 64-item ASCII-hex encoder table costs 32 bytes of setup, 10 per nibble,
+and 8 cleanup bytes; `32 + 64*10 + 8 = 680`, with zero cross-component optimizer
+delta. The 64-item rows exceed the legacy/P2SH/P2WSH 201-opcode limit; both
+fragments also exceed P2SH's 520-byte element limit. This is not a
+consensus or policy validation.

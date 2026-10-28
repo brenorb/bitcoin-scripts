@@ -66,6 +66,26 @@ mod tests {
 
     const SEED: &[u8] = b"lamport-digits-test";
 
+    #[test]
+    fn permissive_numeric_aliases_are_returned_unchanged() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let images = lamport_digit_images(SEED, 2, 2);
+        let fragment = lamport_digits_commit(&images).compile_with_policy();
+        let witness = vec![
+            vec![1, 0],
+            lamport_digit_secret(SEED, 0, 1),
+            vec![0x80],
+            lamport_digit_secret(SEED, 1, 0),
+        ];
+        let run = execute_tapscript(fragment, witness, TapscriptProfile::Consensus);
+        let result = run.execution().expect("fragment executes");
+        assert!(result.error.is_none(), "{result}");
+        assert!(result.stack_limit_enforced);
+        assert_eq!(result.final_stack.len(), 2);
+        assert_eq!(result.final_stack.get(0), vec![1, 0]);
+        assert_eq!(result.final_stack.get(1), vec![0x80]);
+    }
+
     fn num(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
         let len = bitcoin::script::write_scriptint(&mut bytes, value);

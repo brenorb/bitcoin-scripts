@@ -8046,12 +8046,33 @@ fn lamport_digits_metrics_are_current() {
         (fragment, witness)
     };
     let (fragment32, witness32) = measure(32);
-    let leaf = script! {
-        { fragment32.clone() }
-        for _ in 0..16 { OP_DROP }
-        OP_TRUE
-    };
-    let peak = max_stack_items_strict(leaf, witness32.clone());
+    let run = bitcoin_lab::support::tapscript::execute_tapscript(
+        fragment32.clone().compile_with_policy(),
+        witness32.clone(),
+        bitcoin_lab::support::tapscript::TapscriptProfile::Consensus,
+    );
+    let result = run.execution().expect("commitment fragment executes");
+    assert!(result.error.is_none(), "{result}");
+    assert!(result.stack_limit_enforced);
+    assert_eq!(result.final_stack.len(), 16);
+    for d in 0..16 {
+        assert_eq!(
+            result.final_stack.get(d),
+            scriptnum((37 * d as i64 + 5) % 4)
+        );
+    }
+    let peak = result.stats.max_nb_stack_items;
+    let witness_one_bit: Vec<Vec<u8>> = (0..160u32)
+        .flat_map(|digit| {
+            let value = (37 * digit + 5) % 2;
+            [
+                scriptnum(i64::from(value)),
+                lamport_digit_secret(SEED, digit, value),
+            ]
+        })
+        .collect();
+    assert_eq!(witness_one_bit.len(), 320);
+    assert_eq!(witness_size(&witness_one_bit), 2963);
     let (fragment160, witness160) = measure(160);
     let script160 = script_len(fragment160);
     check_readme_metrics(vec![

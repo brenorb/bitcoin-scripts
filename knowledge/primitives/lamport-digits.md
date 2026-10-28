@@ -50,22 +50,26 @@ predicate and transaction framing excluded; zero hints. Sizes pinned by
 | 32 | 1 | 1,855 | 593 | 2,448 |
 | 32 | 2 | 1,615 | 301 | 1,916 |
 | 32 | 4 | 2,871 | 153 | 3,024 |
-| 160 | 1 | 9,279 | 2,961 | 12,240 |
+| 160 | 1 | 9,279 | 2,963 | 12,242 |
 | 160 | 2 | 8,079 | 1,501 | 9,580 |
 | 160 | 4 | 14,359 | 759 | 15,118 |
 
 Two bits per digit minimizes script plus witness at every width (the 8-bit,
 8-bit-digit row costs 5,540 bytes and the 3-bit rows lie between). It halves the
 witness of one-bit digits for the same image count, which is why radix four
-beats radix two. At 160 bits the best Lamport total is 9,580 bytes (peak 165,
-160 witness items), against **2,334** for the smallest tested Winternitz
-construction, 3,809 for clamped base-16 Winternitz and 2,400 for constant
-composition, all on the fragment-plus-signature boundary with 16-byte secrets
-(see the [Winternitz comparison](../../src/signatures/winternitz/README.md)).
-The Lamport commitment leaves 80 two-bit digits, not 20 bytes, so a consumer
-would add a conversion; the Winternitz totals leave the message in their own
-forms. The Lamport figure is therefore a lower bound on a like-for-like byte
-comparison.
+beats radix two. At 160 bits the radix-four Lamport fixture totals 9,580 bytes (peak 165,
+160 witness items). Existing Winternitz `and_clear` totals include 2,334 and
+2,400 bytes but leave no authenticated message data; the clamped base-16 row
+has its own output contract. These are unmatched outputs and do not establish a
+like-for-like ranking for a consumer requiring authenticated digits or bytes.
+A matched consumer and terminal boundary remains future work.
+
+The generated honest secrets are 16 bytes, capping generic single-target
+exhaustive search over that domain at 128 bits; multi-target effects may lower
+work and are not quantified. This is not an end-to-end security proof. Numeric
+digit aliases pass with minimality disabled and are returned unchanged;
+byte-sensitive consumers must canonicalize. The 320-item one-bit witness has
+a three-byte CompactSize item count, included in its 2,963-byte serialization.
 
 ## Reproduction
 

@@ -425,10 +425,9 @@ and [OP-022](../open-problems.md#op-022--constant-composition-script-decoder).
 
 ## Multi-digit Lamport versus Winternitz
 
-A 160-bit Lamport commitment with two bits per digit (80 digits, four images each)
-costs 8,079 script bytes and 1,501 witness bytes, 9,580 in total, with 160 witness
-items and a 165-item peak. The smallest tested Winternitz construction totals
-2,334 bytes on the same fragment-plus-serialized-signature boundary with 16-byte
-secrets, and base-16 Winternitz 3,809. Two bits per digit minimizes the Lamport
-total at every tested width. See [the primitive](../primitives/lamport-digits.md)
+A 160-bit radix-four Lamport fixture costs 8,079 script bytes and 1,501 witness
+bytes, and returns 80 authenticated digits. The cited 2,334- and 2,400-byte
+Winternitz `and_clear` totals leave no authenticated message data. Those outputs
+are unmatched, so they do not establish a like-for-like ranking for a consumer
+that needs authenticated data. See [the primitive](../primitives/lamport-digits.md)
 and NR-100.

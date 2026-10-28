@@ -10,8 +10,7 @@ deterministic 16-byte secrets (`SHA-256(seed || digit || value)` truncated), the
 secret length used in the Winternitz comparison tables.
 
 Strictly one-time: a revealed preimage is public, and the commitment authenticates
-only the value left on the stack, not a transaction. HASH160 bounds apply
-(80-bit collision resistance). No signature, covenant or Core validation claim.
+only the value left on the stack, not a transaction. The 16-byte honest secret domain caps generic single-target exhaustive search at 128 bits; multi-target effects are unquantified. HASH160 collision properties do not prove end-to-end security. Numeric aliases may be returned unchanged when minimality is disabled. No signature, covenant or Core validation claim.
 
 ## Script metrics
 
@@ -20,8 +19,7 @@ cleanup and value restoration for every digit; input pushes, terminal predicate
 and transaction framing excluded. Witness bytes serialize the count and every item
 for the fixture digit `v_d = (37*d + 5) mod radix`, with one-byte digit values and
 17-byte serialized preimages; a zero digit value is an empty item, so the
-maximum is at most one byte per digit larger. Peak uses a terminal drop of the
-digits under strict local execution.
+maximum is at most one byte per digit larger. Peak executes the same compiled fragment under the explicit local consensus numeric profile, with stack enforcement and observed outputs.
 
 32-bit message, two bits per digit (16 digits, 4 images each):
 
@@ -34,3 +32,5 @@ and <!-- metric:lamport_digits_160_w2_witness -->1501<!-- /metric:lamport_digits
 
 See the [knowledge page](../../../knowledge/primitives/lamport-digits.md) for the
 digit-width design space and the comparison with Winternitz.
+
+The 160-bit one-bit-digit fixture has 320 witness items, a three-byte CompactSize count and 2,963 serialized bytes (12,242 including the 9,279-byte fragment); a deterministic metric test pins this boundary. The Winternitz `and_clear` totals discussed in the knowledge page have a different output contract.

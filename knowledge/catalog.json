@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -21550,7 +21550,7 @@
         "lookup-table",
         "stack-scheduling"
       ],
-      "security": "Every character is checked against the accepted hex set before use, so gap codes cannot alias letters and out-of-range or overflowing values abort. No hint, key or cryptographic security claim.",
+      "security": "Every character is checked against the accepted hex set before use, so gap codes cannot alias letters and out-of-range or overflowing values abort. No hint, key or cryptographic security claim. The fragment returns n items; callers must consume or verify every output, enforce their intended predicate, remove preserved state, and leave exactly one truthy item in a complete tapscript leaf.",
       "stack_contract": "Consumes preserved | c[0..n-1] (last on top) and returns preserved | v[0..n-1] in the same order; fold peak n+3, table peak n+58; unrelated main/alt state preserved.",
       "configurations": [
         {
@@ -21571,7 +21571,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: per-character offset, range checks and either branch selection (fold) or table push, roll, index check and cleanup (table), plus altstack order restoration; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: per-character offset, range checks and either branch selection (fold) or table push, roll, index check and cleanup (table), plus altstack order restoration; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 1470,
           "witness_bytes": 129,
           "witness_bytes_max": null,
@@ -21606,7 +21606,7 @@
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
             "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
           },
-          "includes": "fragment-only: per-character offset, range checks and either branch selection (fold) or table push, roll, index check and cleanup (table), plus altstack order restoration; excludes input pushes, witness serialization beyond the CompactSize count, terminal predicate, transaction framing and unrelated live state",
+          "includes": "fragment-only: per-character offset, range checks and either branch selection (fold) or table push, roll, index check and cleanup (table), plus altstack order restoration; excludes input pushes, terminal predicate, transaction framing and unrelated live state; complete serialized data-witness bytes include the item count, every length prefix and payload",
           "script_bytes": 1299,
           "witness_bytes": 129,
           "witness_bytes_max": null,

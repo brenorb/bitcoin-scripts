@@ -66,8 +66,9 @@ items and 129 serialized witness bytes.
 
 These sizes are pinned by `ascii_hex::tests::recorded_sizes_are_current`. The fold
 costs about 23 bytes per lowercase character (33.9 for `Either`) and the table
-about 19 plus 83 fixed, so the table wins above roughly 28 lowercase, 48
-uppercase and 10 either-case characters. At digest-text length (64) the table is
+about 19 plus 83 fixed. The first strictly smaller table sizes occur at 22
+lowercase, 43 uppercase and 6 either-case characters; the crossover test checks
+every smaller length and each boundary. At digest-text length (64) the table is
 12% smaller for lowercase and 40% smaller for either-case input, at the price
 of 55 more combined stack items. Under a tight stack budget the fold remains
 the only choice.
@@ -79,3 +80,16 @@ cargo test --locked arithmetic::u4::ascii_hex::tests --lib
 cargo test --locked --test primitive_metrics u4_ascii_hex_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The 64-character rows have 830/732 static non-push opcodes and exceed the
+201-opcode ceiling for bare, P2SH and P2WSH. Their 1,470/1,299-byte scripts
+also exceed P2SH's 520-byte element limit. Tapscript removes those legacy
+limits; the local result remains `unclassified`, with full transaction and
+relay-policy acceptance untested. Smaller shapes require their own limits.
+
+Each decoder is a fragment returning `n` nibbles. A complete leaf must consume
+or verify every output and preserved item, enforce the intended condition and
+leave exactly one truthy stack item. Representative stack, size and opcode
+metrics use the same policy-compiled fragment and the explicit local consensus
+numeric profile with stack checks. Witness bytes serialize the item count,
+every length prefix and each payload; no script/control block is included.

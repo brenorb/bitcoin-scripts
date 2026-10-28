@@ -8038,20 +8038,38 @@ fn u4_ascii_hex_metrics_are_current() {
         ("fold", ascii_hex_to_nibbles_fold(LEN, HexCase::Lower)),
         ("table", ascii_hex_to_nibbles_table(LEN, HexCase::Lower)),
     ] {
-        let leaf = script! {
-            { fragment.clone() }
-            for _ in 0..LEN { OP_DROP }
-            OP_TRUE
-        };
-        let result = execute_script_with_inputs_strict(leaf, witness.clone());
-        assert!(result.success, "strict metric execution failed: {result}");
+        use bitcoin_lab::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let compiled = fragment.compile_with_policy();
+        let execution = execute_tapscript(
+            compiled.clone(),
+            witness.clone(),
+            TapscriptProfile::Consensus,
+        );
+        let result = execution.execution().expect("executed fragment");
+        assert!(result.error.is_none(), "metric fragment failed: {result}");
+        assert!(result.stack_limit_enforced);
+        assert_eq!(result.final_stack.len(), text.len());
+        for (index, character) in text.iter().enumerate() {
+            let expected =
+                u4::ascii_hex::ascii_hex_value(i64::from(*character), HexCase::Lower).unwrap();
+            assert_eq!(
+                result.final_stack.get(index),
+                scriptnum(i64::from(expected))
+            );
+        }
+        let opcodes = compiled
+            .instructions()
+            .filter(
+                |instruction| matches!(instruction, Ok(Instruction::Op(op)) if op.to_u8() > 0x60),
+            )
+            .count();
         let key = |suffix: &str| -> &'static str {
             Box::leak(format!("u4_ascii_hex_{name}_64{suffix}").into_boxed_str())
         };
         metrics.push(Metric {
             readme: "src/arithmetic/u4/README.md",
             key: key(""),
-            value: script_len(fragment.clone()),
+            value: compiled.len(),
         });
         metrics.push(Metric {
             readme: "src/arithmetic/u4/README.md",
@@ -8061,7 +8079,7 @@ fn u4_ascii_hex_metrics_are_current() {
         metrics.push(Metric {
             readme: "src/arithmetic/u4/README.md",
             key: key("_opcodes"),
-            value: static_non_push_opcodes(fragment),
+            value: opcodes,
         });
     }
     metrics.push(Metric {

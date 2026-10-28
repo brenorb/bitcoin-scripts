@@ -1207,3 +1207,12 @@ See [the knowledge page](../../../knowledge/primitives/u4-reflection.md),
 catalog record `arithmetic/u4-reflection`. The palindromic coefficient
 interpretation is reported in [Gao, arXiv:2109.09006v1](https://arxiv.org/abs/2109.09006v1);
 our nibble encoding and cost results are local.
+
+For the 64-character ASCII-hex decoders, the 1,470/1,299-byte fragments
+exceed P2SH's 520-byte redeemScript element limit, and their 830/732 static
+non-push opcodes exceed the legacy/P2SH/P2WSH 201-opcode limit. Tapscript
+removes those legacy limits, but the local results remain `unclassified` and
+full transaction/relay policy is untested. Callers must consume or verify all
+returned nibbles and preserved state, enforce the intended predicate and leave
+one truthy item at a complete leaf. Measurements execute the exact compiled
+fragment with the explicit local consensus numeric profile.

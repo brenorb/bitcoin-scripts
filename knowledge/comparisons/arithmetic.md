@@ -470,5 +470,5 @@ At 64 lowercase characters the table-free fold costs 1,470 script bytes and a
 67-item peak, and the resident-table decoder 1,299 bytes and a 122-item peak
 (129 witness bytes, zero hints, strict local `unclassified` tapscript,
 `locally-reproduced`). Either-case text widens the gap to 2,174 versus 1,299.
-The fold wins below about 28 lowercase characters, 48 uppercase and 10
-either-case. See [the primitive](../primitives/u4-ascii-hex.md) and NR-090.
+The table first wins at 22 lowercase characters, 43 uppercase and 6
+either-case characters. See [the primitive](../primitives/u4-ascii-hex.md) and NR-090.

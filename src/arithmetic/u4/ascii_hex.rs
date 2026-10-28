@@ -3,6 +3,10 @@
 //! Each hostile input item is one ScriptNum that must be the ASCII code of a
 //! hexadecimal digit of the selected case. Two schedulers share one contract:
 //! a table-free arithmetic fold and a resident 55-entry lookup table.
+//!
+//! Both return one nibble per input and are fragments. A complete leaf must
+//! consume or verify all outputs and any preserved state, enforce its intended
+//! predicate, and leave exactly one truthy stack item.
 
 use super::stack::u4_drop;
 use crate::support::script::*;
@@ -249,6 +253,25 @@ mod tests {
             )
             .expect("execution");
             assert!(result.success, "{name}: {result}");
+        }
+    }
+
+    #[test]
+    fn table_first_wins_at_the_documented_crossover() {
+        for (case, expected) in [
+            (HexCase::Lower, 22),
+            (HexCase::Upper, 43),
+            (HexCase::Either, 6),
+        ] {
+            let first = (1..=64).find(|&len| {
+                ascii_hex_to_nibbles_table(len, case)
+                    .compile_with_policy()
+                    .len()
+                    < ascii_hex_to_nibbles_fold(len, case)
+                        .compile_with_policy()
+                        .len()
+            });
+            assert_eq!(first, Some(expected), "case {case:?}");
         }
     }
 

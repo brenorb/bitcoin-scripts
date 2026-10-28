@@ -22,7 +22,10 @@ Each nibble is checked for range and minimal encoding and added to the running
 exact sum, which is at most `15n`. A ladder subtracts `16 * 2^k` when it fits,
 for `k` from the top level (the largest with `16 * 2^k <= 15n`) down to zero; any
 sum below `16 * 2^(top+1)` ends in `0..=15`. The fragment never touches the
-altstack, keeps no table and has combined peak `n + 3`. All values are far inside
+altstack, keeps no table and has standalone combined peak `n + 3`. With
+caller state, require `n + 3 + preserved_main + preserved_alt <= 1000`; at
+`n=997` no preserved item fits. A complete leaf must compare the residue with
+the intended value and ensure clean-stack success. All values are far inside
 the four-byte ScriptNum domain. The sum is order independent, so the output
 does not depend on digit order.
 
@@ -60,3 +63,5 @@ cargo test --locked arithmetic::u4::sum_ladder::tests --lib
 cargo test --locked --test primitive_metrics u4_sum_ladder_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The 32-nibble fragment has 311 static non-push opcodes and exceeds the 201-opcode legacy, P2SH and P2WSH limit; tapscript removes that particular limit. This is not a consensus or policy validation.

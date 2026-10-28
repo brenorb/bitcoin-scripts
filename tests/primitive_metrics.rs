@@ -8032,6 +8032,11 @@ fn u4_sum_ladder_metrics_are_current() {
     check_readme_metrics(vec![
         Metric {
             readme: "src/arithmetic/u4/README.md",
+            key: "u4_sum_ladder_batch32_witness",
+            value: witness_size(&witness),
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
             key: "u4_sum_ladder_batch32",
             value: script_len(fragment.clone()),
         },
@@ -8044,7 +8049,7 @@ fn u4_sum_ladder_metrics_are_current() {
                     OP_DROP
                     OP_TRUE
                 },
-                witness,
+                witness.clone(),
             ),
         },
         Metric {

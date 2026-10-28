@@ -4669,7 +4669,7 @@
       "id": "commitment/ternary-hash-path-integer",
       "name": "Ternary mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
@@ -4743,7 +4743,7 @@
       "id": "commitment/four-way-hash-path-integer",
       "name": "Four-way mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -4903,7 +4903,7 @@
       "id": "commitment/hash-path-integer",
       "name": "Mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1–31-bit integer.",
+      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -21531,7 +21531,7 @@
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
-      "as_of": "2026-10-20",
+      "as_of": "2026-10-28",
       "knowledge_page": "knowledge/primitives/u4-sum-ladder.md",
       "implementation": "src/arithmetic/u4/sum_ladder.rs",
       "documentation": "src/arithmetic/u4/README.md",
@@ -21581,14 +21581,16 @@
           "metric_keys": [
             "u4_sum_ladder_batch32",
             "u4_sum_ladder_batch32_stack",
-            "u4_sum_ladder_batch32_opcodes"
+            "u4_sum_ladder_batch32_opcodes",
+            "u4_sum_ladder_batch32_witness"
           ]
         }
       ],
       "limitations": [
         "Static non-push opcode count is not a dynamic measurement (the ladder branches)",
         "The model is ordinary Rust, not an independent Script interpreter",
-        "No Bitcoin Core consensus or relay-policy validation"
+        "No Bitcoin Core consensus or relay-policy validation",
+        "The 32-nibble fragment exceeds the 201 static non-push opcode limit in legacy, P2SH and P2WSH"
       ],
       "open_problems": [
         "OP-053"

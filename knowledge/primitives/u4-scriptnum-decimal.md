@@ -23,7 +23,7 @@ global novelty claim is made.
   omitted at width 10.
 - `u4_scriptnum_to_decimal_hinted(width)`: `preserved | d[0..width-1] | x ->
   preserved | d[0..width-1]`. Each hint is range-checked to `0..=9` and the
-  Horner sum (multiplying by ten with `mul_by_constant(10)`) must equal `x`,
+  amount is checked in its domain, and the Horner sum (multiplying by ten with `mul_by_constant(10)`) must numerically equal `x`,
   which is unique among in-range digits, so a carry-compensated hint cannot pass.
 
 ## Threat model and evidence
@@ -48,18 +48,18 @@ framing and leaf/control-block witness items excluded. Sizes pinned by
 
 | Digits | Hint-free bytes | Hint-checked bytes |
 | ---: | ---: | ---: |
-| 1 | 50 | 9 |
-| 4 | 223 | 59 |
-| 9 | 582 | 144 |
-| 10 | 616 | 161 |
+| 1 | 50 | 14 |
+| 4 | 223 | 66 |
+| 9 | 582 | 153 |
+| 10 | 616 | 165 |
 
 Complete leaves for the amount `123456789` and Damm state 4: nine digit items
 alone are 326 script bytes with a 19-byte, 9-item witness (the digits are not
 bound to any amount); a single hint-free amount is 908 bytes with a 6-byte, 1-item
-witness (914 bytes in total); an amount plus nine digit hints is 470 bytes with a
-24-byte, 10-item witness (494 in total). The combined peak is 113 in all three, set
-by the Damm table. Binding the amount costs 582 script bytes hint-free or 144
-hint-checked on top of the digits-only leaf, so the hint-checked form is 1.85 times
+witness (914 bytes in total); an amount plus nine digit hints is 479 bytes with a
+24-byte, 10-item witness (503 in total). The combined peak is 113 in all three, set
+by the Damm table. Binding the amount costs 582 script bytes hint-free or 153
+hint-checked on top of the digits-only leaf, so the hint-checked form is 1.82 times
 smaller in total for the same binding.
 
 ## Reproduction
@@ -69,3 +69,24 @@ cargo test --locked arithmetic::u4::scriptnum_decimal::tests --lib
 cargo test --locked --test primitive_metrics u4_scriptnum_decimal_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+The local execution uses the explicit `TapscriptProfile::Consensus` interpreter
+profile with stack enforcement and without minimal-number enforcement; this is
+not Bitcoin Core validation. Numeric aliases can pass, and the hinted fragment
+returns hint bytes unchanged. Byte-sensitive consumers must canonicalize them.
+The fragment returns digits and needs a terminal predicate and clean stack in a
+complete leaf.
+
+For width `w`, the hinted fragment has exactly `w` hint items and `w+1` data
+items at entry, all coexisting. For zero-valued hints their separate serialized
+vector has `w+1` bytes and incremental hint cost is `w` bytes; nonzero digits
+1 through 9 each use two serialized bytes, so the width-9 fixture uses 18
+incremental bytes (19 as a separate vector). The measured isolated combined
+main-plus-alt peak is `w+4` for widths 1, 2, 4, 6, 8, 9 and 10. With `p`
+otherwise-preserved items, composition requires `w+4+p <= 1000`; preloaded
+batches must also account for all remaining witness items and their staging.
+The hint-free variant has zero hint items.
+
+For the nine-digit fixture the hint-free fragment has 301 static non-push
+opcodes, above the 201 limit for legacy, P2SH and P2WSH. The hinted fragment
+has 114; these observations alone do not establish script or relay validity.

@@ -52,10 +52,20 @@ pub fn u4_scriptnum_to_decimal(width: u32) -> Script {
 ///
 /// Before: `preserved | d[0] ... d[width-1] | x` (digit hints under the number,
 /// `d[0]` most significant). After: `preserved | d[0] ... d[width-1]`. Every
-/// hint is range-checked to `0..=9` and the Horner sum must equal `x`.
+/// hint is range-checked to `0..=9`, `x` is checked against the stated
+/// four-byte ScriptNum domain, and the Horner sum must equal `x` numerically.
+/// With MINIMALDATA disabled, numeric aliases are accepted and returned hints
+/// retain their original bytes; callers requiring byte uniqueness must validate
+/// canonical input encodings. Consume all output digits and preserved state,
+/// enforce the intended predicate, and leave one truthy item in a complete leaf.
 pub fn u4_scriptnum_to_decimal_hinted(width: u32) -> Script {
-    scriptnum_decimal_domain(width);
+    let domain = scriptnum_decimal_domain(width);
     script! {
+        if domain > i64::from(i32::MAX) {
+            OP_DUP 0 OP_GREATERTHANOREQUAL OP_VERIFY
+        } else {
+            OP_DUP 0 { domain } OP_WITHIN OP_VERIFY
+        }
         OP_TOALTSTACK
         for index in 0..width {
             { width - 1 - index } OP_PICK
@@ -67,7 +77,7 @@ pub fn u4_scriptnum_to_decimal_hinted(width: u32) -> Script {
             { index + 1 } OP_PICK
             OP_ADD
         }
-        OP_FROMALTSTACK OP_EQUALVERIFY
+        OP_FROMALTSTACK OP_NUMEQUALVERIFY
     }
 }
 
@@ -110,6 +120,123 @@ mod tests {
         let result = execute_raw_script_with_inputs_strict(compiled.to_vec(), witness);
         assert!(result.error.is_none(), "x={x}: {result}");
         result.success
+    }
+
+    #[test]
+    fn hinted_width_boundaries_and_aliases_under_explicit_consensus_profile() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptOutcome, TapscriptProfile};
+        let run = |width: u32, x: i64, input: Vec<u8>, hint_alias: bool, hinted: bool| {
+            let expected = digits(x, width);
+            let fragment = if hinted {
+                u4_scriptnum_to_decimal_hinted(width)
+            } else {
+                u4_scriptnum_to_decimal(width)
+            };
+            let leaf = script! {
+                { fragment }
+                for &digit in expected.iter().rev() { { digit } OP_NUMEQUALVERIFY }
+                OP_TRUE
+            }
+            .compile_with_policy();
+            let mut witness: Vec<_> = if hinted {
+                expected.iter().map(|&digit| num(digit)).collect()
+            } else {
+                vec![]
+            };
+            if hint_alias && hinted {
+                let last = witness.last_mut().unwrap();
+                *last = if last.is_empty() {
+                    vec![0x80]
+                } else {
+                    vec![last[0], 0]
+                };
+            }
+            witness.push(input);
+            match execute_tapscript(leaf, witness, TapscriptProfile::Consensus).outcome {
+                TapscriptOutcome::Executed(result) => result,
+                other => panic!("unexpected outcome: {other:?}"),
+            }
+        };
+        let mut state = 0x4445_4349_2026_1028u64;
+        for width in 1..=10 {
+            let domain = scriptnum_decimal_domain(width);
+            let mut samples = vec![0, 1, domain / 2, domain - 1];
+            for _ in 0..20 {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                samples.push((state % domain as u64) as i64);
+            }
+            for x in samples {
+                for alias in [false, true] {
+                    let result = run(width, x, num(x), alias, true);
+                    assert!(
+                        result.success,
+                        "width={width} x={x} alias={alias}: {result}"
+                    );
+                    assert!(result.stack_limit_enforced);
+                    assert_eq!(result.final_stack.len(), 1);
+                }
+            }
+            let valid_alias = run(width, 1, vec![1, 0], true, true);
+            assert!(valid_alias.success, "width={width}: {valid_alias}");
+            let zero_hint_alias = run(width, 1, vec![1, 0], false, false);
+            assert!(zero_hint_alias.success, "width={width}: {zero_hint_alias}");
+            for invalid in [-1, domain, domain + 1] {
+                let result = run(width, invalid.max(0), num(invalid), false, true);
+                assert!(!result.success, "width={width} invalid={invalid}: {result}");
+                assert!(
+                    matches!(
+                        result.error,
+                        Some(ExecError::Verify | ExecError::ScriptIntNumericOverflow)
+                    ),
+                    "{result}"
+                );
+            }
+        }
+        let result = run(10, 2_147_483_648, num(2_147_483_648), false, true);
+        assert_eq!(
+            result.error,
+            Some(ExecError::ScriptIntNumericOverflow),
+            "{result}"
+        );
+        let fragment = u4_scriptnum_to_decimal_hinted(1).compile_with_policy();
+        let outcome = execute_tapscript(
+            fragment,
+            vec![vec![1, 0], vec![1, 0]],
+            TapscriptProfile::Consensus,
+        );
+        let result = outcome.execution().expect("executed alias fragment");
+        assert!(result.error.is_none(), "{result}");
+        assert_eq!(result.final_stack.len(), 1);
+        assert_eq!(result.final_stack.get(0), vec![1, 0]);
+    }
+
+    #[test]
+    fn hinted_width_costs_and_witness_boundaries_are_current() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        for (width, bytes) in [
+            (1u32, 14),
+            (2, 30),
+            (4, 66),
+            (6, 101),
+            (8, 136),
+            (9, 153),
+            (10, 165),
+        ] {
+            let fragment = u4_scriptnum_to_decimal_hinted(width).compile_with_policy();
+            let witness = vec![Vec::new(); width as usize + 1];
+            let serialized =
+                bitcoin::consensus::encode::serialize(&bitcoin::Witness::from_slice(&witness));
+            assert_eq!(serialized.len(), width as usize + 2);
+            assert_eq!(witness.len(), width as usize + 1);
+            let result = execute_tapscript(fragment.clone(), witness, TapscriptProfile::Consensus);
+            let execution = result.execution().expect("executed zero fixture");
+            assert!(execution.error.is_none(), "{execution}");
+            assert_eq!(execution.final_stack.len(), width as usize);
+            assert_eq!(fragment.len(), bytes);
+            assert_eq!(execution.stats.max_nb_stack_items, width as usize + 4);
+        }
     }
 
     #[test]
@@ -164,13 +291,13 @@ mod tests {
     fn recorded_sizes_are_current() {
         // (width, hint-free bytes, hint-checked bytes)
         for (width, zero, hinted) in [
-            (1, 50, 9),
-            (2, 102, 24),
-            (4, 223, 59),
-            (6, 358, 93),
-            (8, 505, 127),
-            (9, 582, 144),
-            (10, 616, 161),
+            (1, 50, 14),
+            (2, 102, 30),
+            (4, 223, 66),
+            (6, 358, 101),
+            (8, 505, 136),
+            (9, 582, 153),
+            (10, 616, 165),
         ] {
             let measure = |script: Script| script.compile_with_policy().len();
             assert_eq!(

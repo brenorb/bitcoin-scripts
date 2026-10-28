@@ -1217,7 +1217,7 @@ pushes and terminal predicate excluded. Nine digits of `123456789`.
 | Configuration | Script bytes | Combined peak | Static non-push opcodes |
 | --- | ---: | ---: | ---: |
 | Hint-free, 9 digits | <!-- metric:u4_decimal_zero_9 -->582<!-- /metric:u4_decimal_zero_9 --> | <!-- metric:u4_decimal_zero_9_stack -->12<!-- /metric:u4_decimal_zero_9_stack --> | <!-- metric:u4_decimal_zero_9_opcodes -->301<!-- /metric:u4_decimal_zero_9_opcodes --> |
-| Hint-checked, 9 digits | <!-- metric:u4_decimal_hinted_9 -->144<!-- /metric:u4_decimal_hinted_9 --> | <!-- metric:u4_decimal_hinted_9_stack -->13<!-- /metric:u4_decimal_hinted_9_stack --> | <!-- metric:u4_decimal_hinted_9_opcodes -->111<!-- /metric:u4_decimal_hinted_9_opcodes --> |
+| Hint-checked, 9 digits | <!-- metric:u4_decimal_hinted_9 -->153<!-- /metric:u4_decimal_hinted_9 --> | <!-- metric:u4_decimal_hinted_9_stack -->13<!-- /metric:u4_decimal_hinted_9_stack --> | <!-- metric:u4_decimal_hinted_9_opcodes -->114<!-- /metric:u4_decimal_hinted_9_opcodes --> |
 
 Complete leaves ending in the nine-digit Damm fold and a check of state 4:
 
@@ -1225,6 +1225,6 @@ Complete leaves ending in the nine-digit Damm fold and a check of state 4:
 | --- | ---: | ---: | ---: | ---: |
 | Nine digit items only (amount not bound) | <!-- metric:u4_decimal_leaf_digits -->326<!-- /metric:u4_decimal_leaf_digits --> | <!-- metric:u4_decimal_leaf_digits_witness -->19<!-- /metric:u4_decimal_leaf_digits_witness --> | <!-- metric:u4_decimal_leaf_digits_witness_items -->9<!-- /metric:u4_decimal_leaf_digits_witness_items --> | <!-- metric:u4_decimal_leaf_digits_stack -->113<!-- /metric:u4_decimal_leaf_digits_stack --> |
 | One amount, hint-free expansion | <!-- metric:u4_decimal_leaf_zero -->908<!-- /metric:u4_decimal_leaf_zero --> | <!-- metric:u4_decimal_leaf_zero_witness -->6<!-- /metric:u4_decimal_leaf_zero_witness --> | <!-- metric:u4_decimal_leaf_zero_witness_items -->1<!-- /metric:u4_decimal_leaf_zero_witness_items --> | <!-- metric:u4_decimal_leaf_zero_stack -->113<!-- /metric:u4_decimal_leaf_zero_stack --> |
-| Amount plus nine digit hints | <!-- metric:u4_decimal_leaf_hinted -->470<!-- /metric:u4_decimal_leaf_hinted --> | <!-- metric:u4_decimal_leaf_hinted_witness -->24<!-- /metric:u4_decimal_leaf_hinted_witness --> | <!-- metric:u4_decimal_leaf_hinted_witness_items -->10<!-- /metric:u4_decimal_leaf_hinted_witness_items --> | <!-- metric:u4_decimal_leaf_hinted_stack -->113<!-- /metric:u4_decimal_leaf_hinted_stack --> |
+| Amount plus nine digit hints | <!-- metric:u4_decimal_leaf_hinted -->479<!-- /metric:u4_decimal_leaf_hinted --> | <!-- metric:u4_decimal_leaf_hinted_witness -->24<!-- /metric:u4_decimal_leaf_hinted_witness --> | <!-- metric:u4_decimal_leaf_hinted_witness_items -->10<!-- /metric:u4_decimal_leaf_hinted_witness_items --> | <!-- metric:u4_decimal_leaf_hinted_stack -->113<!-- /metric:u4_decimal_leaf_hinted_stack --> |
 
-See the [knowledge page](../../../knowledge/primitives/u4-scriptnum-decimal.md).
+Each width-`w` hinted invocation takes `w` hint items and one amount item; all coexist at entry. The measured isolated combined-stack peak is `w+4`, so preserved caller state must satisfy `w+4+p <= 1000`. Numeric aliases are accepted in the measured profile and hint bytes are returned unchanged; canonicalize before byte-sensitive use. These fragments require a terminal predicate and clean stack. See the [knowledge page](../../../knowledge/primitives/u4-scriptnum-decimal.md) for witness accounting, execution assumptions and script-type limits.

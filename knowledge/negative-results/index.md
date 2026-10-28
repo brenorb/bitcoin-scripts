@@ -1992,13 +1992,14 @@ witness layout would save 3 bytes and was not adopted. Byte counts are
 and deployment is `unclassified`. See the
 [generator record](blake3-short-generator.md).
 
-## NR-098: Hint-free decimal expansion is dominated by hint-checked expansion
+## NR-098: Hint-free decimal expansion costs more script-plus-witness bytes
 
 Binding a ScriptNum amount to its nine decimal digits costs 582 script bytes with
-a compare-and-subtract ladder and 144 with Horner-checked digit hints (about 65
-versus 16 bytes per digit). In a complete leaf with the Damm fold the hint-free
-form totals 914 script-plus-witness bytes against 494 hint-checked, 1.85 times
-more, and saves only nine hint items. The hint-free form remains the choice only
-when the witness must be a single item. Byte counts are policy-compiled leaves
+a compare-and-subtract ladder and 153 with Horner-checked digit hints (about 65
+versus 17 bytes per digit). In a complete leaf with the Damm fold the hint-free
+form totals 914 script-plus-witness bytes against 503 hint-checked, 1.82 times
+more. The hint-free form saves nine hint items and witness bytes, and the isolated
+fragment peaks one item lower, so this comparison does not establish dominance
+on those resources. Byte counts are policy-compiled leaves
 under strict local `unclassified` tapscript rules, `locally-reproduced`. See the
 [primitive](../primitives/u4-scriptnum-decimal.md).

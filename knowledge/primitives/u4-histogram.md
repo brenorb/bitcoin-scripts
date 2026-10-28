@@ -63,3 +63,5 @@ cargo test --locked arithmetic::u4::histogram::tests --lib
 cargo test --locked --test primitive_metrics u4_histogram_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+Counts are range-checked and bound numerically, but returned as the original witness bytes. With minimal-number enforcement disabled, padded numbers and negative zero are accepted; byte-sensitive consumers must enforce canonical encoding. For the measured all-four fixture the sixteen hints add 32 serialized bytes (one length prefix and one payload byte each); the separate vector is 33 bytes including its item count. All 80 items coexist at entry. The metric runs the exact compiled fragment under the explicit local consensus numeric profile and observes all outputs; this is not Bitcoin Core validation.

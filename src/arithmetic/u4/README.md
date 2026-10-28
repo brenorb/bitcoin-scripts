@@ -1219,6 +1219,8 @@ accumulation and cleanup; input pushes and terminal predicate excluded. Fixture
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Hint-checked histogram, 64 nibbles | <!-- metric:u4_histogram_64 -->3158<!-- /metric:u4_histogram_64 --> | <!-- metric:u4_histogram_64_witness -->157<!-- /metric:u4_histogram_64_witness --> | <!-- metric:u4_histogram_64_witness_items -->80<!-- /metric:u4_histogram_64_witness_items --> | 16 | <!-- metric:u4_histogram_64_stack -->102<!-- /metric:u4_histogram_64_stack --> | <!-- metric:u4_histogram_64_opcodes -->2080<!-- /metric:u4_histogram_64_opcodes --> |
 
+For the all-four fixture the sixteen hints add <!-- metric:u4_histogram_64_hint_bytes -->32<!-- /metric:u4_histogram_64_hint_bytes --> serialized bytes; separately serialized they occupy <!-- metric:u4_histogram_64_hint_vector -->33<!-- /metric:u4_histogram_64_hint_vector --> bytes. The numeric checks return original hint bytes, so permissive execution accepts padded count values and negative zero; enforce canonical encodings if output bytes matter.
+
 Sixteen fixed-symbol counts alone are a <!-- metric:u4_histogram_64_count_baseline -->18448<!-- /metric:u4_histogram_64_count_baseline -->-byte lower bound for the same
 output (an estimate: it excludes vector copies). See the
 [knowledge page](../../../knowledge/primitives/u4-histogram.md).

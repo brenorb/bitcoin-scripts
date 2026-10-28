@@ -8034,15 +8034,35 @@ fn u4_histogram_metrics_are_current() {
         counts[v as usize] += 1;
     }
     let mut witness: Vec<Vec<u8>> = values.iter().map(|&v| scriptnum(v)).collect();
-    witness.extend(counts.iter().map(|&c| scriptnum(c)));
+    let hints: Vec<_> = counts.iter().map(|&c| scriptnum(c)).collect();
+    let hint_vector_bytes = witness_size(&hints);
+    let incremental_hint_bytes = hint_vector_bytes - 1;
+    witness.extend(hints);
     let fragment = u4_nibbles_histogram_hinted(N);
-    let leaf = script! {
-        { fragment.clone() }
-        for _ in 0..16 { OP_DROP }
-        OP_TRUE
-    };
-    let peak = max_stack_items_strict(leaf, witness.clone());
+    let run = bitcoin_lab::support::tapscript::execute_tapscript(
+        fragment.clone().compile_with_policy(),
+        witness.clone(),
+        bitcoin_lab::support::tapscript::TapscriptProfile::Consensus,
+    );
+    let result = run.execution().expect("histogram fragment executes");
+    assert!(result.error.is_none(), "{result}");
+    assert!(result.stack_limit_enforced);
+    assert_eq!(result.final_stack.len(), 16);
+    for i in 0..16 {
+        assert_eq!(result.final_stack.get(i), scriptnum(counts[i]));
+    }
+    let peak = result.stats.max_nb_stack_items;
     check_readme_metrics(vec![
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_histogram_64_hint_bytes",
+            value: incremental_hint_bytes,
+        },
+        Metric {
+            readme: "src/arithmetic/u4/README.md",
+            key: "u4_histogram_64_hint_vector",
+            value: hint_vector_bytes,
+        },
         Metric {
             readme: "src/arithmetic/u4/README.md",
             key: "u4_histogram_64",

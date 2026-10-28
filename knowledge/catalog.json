@@ -1,6 +1,6 @@
 {
   "schema_version": 1.1,
-  "as_of": "2026-10-20",
+  "as_of": "2026-09-16",
   "cost_model": "knowledge/cost-model.md",
   "records": [
     {
@@ -4669,7 +4669,7 @@
       "id": "commitment/ternary-hash-path-integer",
       "name": "Ternary mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates canonical base-3 trits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "unclassified",
@@ -4743,7 +4743,7 @@
       "id": "commitment/four-way-hash-path-integer",
       "name": "Four-way mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1–31-bit integer.",
+      "summary": "Authenticates base-4 digits with fixed-length SHA-256/RIPEMD-160 codewords and reconstructs a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -4903,7 +4903,7 @@
       "id": "commitment/hash-path-integer",
       "name": "Mixed-hash integer path",
       "class": "commitment/integer",
-      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1–31-bit integer.",
+      "summary": "Verifies an optional-SHA256/mandatory-RIPEMD160 bit path from an independently bound starting state, retains normalized bits, and can reconstruct a 1\u201331-bit integer.",
       "status": "experimental",
       "evidence": "locally-reproduced",
       "execution": "research-unlimited",
@@ -21550,7 +21550,7 @@
         "bit-packing",
         "lookup-table"
       ],
-      "security": "Nibbles and counts are hostile and range-checked. Packed words with digits below the base are equal only when every count is exact, so forged or shifted counts fail (1,500 random forgeries rejected in tests). No key or cryptographic security claim.",
+      "security": "Nibbles and counts are hostile and range-checked. Packed words with digits below the base are equal only when every count is exact, so forged or shifted counts fail (1,500 random forgeries rejected in tests). No key or cryptographic security claim. Counts are verified numerically and returned as original raw witness bytes; nonminimal aliases pass when minimality is disabled. Byte-sensitive consumers must canonicalize.",
       "stack_contract": "Witness x[0..n-1] c[0..15] (c[15] on top) returns c[0..15]; the vector is consumed; 16 hint items per invocation; peak n+38; unrelated main/alt state preserved.",
       "configurations": [
         {
@@ -21561,15 +21561,16 @@
             "fixture": "x[i]=(7i+3)%16",
             "data_items": 80,
             "hint_items": 16,
-            "hint_bytes": null,
+            "hint_bytes": 32,
             "all_data_present_at_entry": true,
             "context": "tapscript",
             "enforce_stack_limit": true,
             "require_minimal": false,
             "compiler_commit": "124b561ed75ac3ec4c6ad99207d8dcdd3bc67180",
-            "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed"
+            "interpreter_commit": "a09e87af444034698697f0a2267e755cf72f9aed",
+            "hint_vector_bytes": 33
           },
-          "includes": "fragment-only: nibble and count range checks, claimed target words, packed lane accumulation, equality checks and cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness includes the count and every item",
+          "includes": "fragment-only: nibble and count range checks, claimed target words, packed lane accumulation, equality checks and cleanup; excludes input pushes, terminal predicate, transaction framing and unrelated live state; serialized witness includes the count and every item Peak executes the policy-compiled fragment under the explicit consensus numeric profile; outputs are observed.",
           "script_bytes": 3158,
           "witness_bytes": 157,
           "witness_bytes_max": null,

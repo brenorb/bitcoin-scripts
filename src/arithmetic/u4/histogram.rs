@@ -114,6 +114,26 @@ mod tests {
     use crate::support::execution::{execute_raw_script_with_inputs_strict, execute_script};
     use bitcoin_scriptexec::ExecError;
 
+    #[test]
+    fn permissive_numeric_count_aliases_remain_unchanged() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        let fragment = u4_nibbles_histogram_hinted(1).compile_with_policy();
+        let mut witness = vec![vec![]]; // One zero symbol.
+        let mut counts = vec![vec![]; 16];
+        counts[0] = vec![1, 0];
+        counts[1] = vec![0x80];
+        counts[2] = vec![0];
+        witness.extend(counts.clone());
+        let run = execute_tapscript(fragment, witness, TapscriptProfile::Consensus);
+        let result = run.execution().expect("histogram fragment executes");
+        assert!(result.error.is_none(), "{result}");
+        assert!(result.stack_limit_enforced);
+        assert_eq!(result.final_stack.len(), 16);
+        for (i, expected) in counts.iter().enumerate() {
+            assert_eq!(result.final_stack.get(i), *expected);
+        }
+    }
+
     fn num(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
         let len = bitcoin::script::write_scriptint(&mut bytes, value);

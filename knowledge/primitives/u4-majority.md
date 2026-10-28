@@ -47,7 +47,7 @@ Bitcoin Core validation is claimed, and the model is ordinary Rust.
 Boundary: the policy-compiled fragment; input pushes and terminal predicate
 excluded. Sizes pinned by `majority::tests::recorded_sizes_are_current`.
 
-| n | Hint-free | Claim check (1 hint) | 16 symbol counts (lower bound) |
+| n | Hint-free | Claim check (1 hint) | 16 destructive helpers (naive sum) |
 | ---: | ---: | ---: | ---: |
 | 4 | 130 | 62 | 1,072 |
 | 16 | 486 | 213 | 4,256 |
@@ -57,8 +57,8 @@ At 16 nibbles the hint-free decision costs 486 script bytes with 32 witness byte
 over 16 items (peak 20); the claim check 213 bytes with 34 witness bytes over 17
 items (peak 20, one hint item). The hint-free decision is 8.8 times smaller than
 sixteen `u4_nibbles_count` calls, whose total excludes the vector copies and the
-comparison of sixteen counts against `n/2`; that lower bound is an estimate, not a
-built comparator. The claim check costs about 13 bytes per element against about
+comparison of sixteen counts against `n/2`; that sum is a naive repeated-helper estimate, not a
+built comparator or a lower bound on shared counting schemes. The claim check costs about 13 bytes per element against about
 30, but it cannot report that no majority exists.
 
 ## Reproduction
@@ -68,3 +68,5 @@ cargo test --locked arithmetic::u4::majority::tests --lib
 cargo test --locked --test primitive_metrics u4_majority_metrics_are_current -- --exact
 python3 tools/kb.py validate
 ```
+
+Both APIs can return original nonminimal candidate or claim bytes when minimality is disabled, even though the numerical value is checked. Byte-sensitive consumers must canonicalize. The peak metric runs a checking leaf under the explicit local consensus numeric profile; fragment sizes and opcode counts are compiled separately. The data-witness byte totals include item count, lengths and payloads.

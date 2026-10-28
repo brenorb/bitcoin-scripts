@@ -8043,8 +8043,14 @@ fn u4_majority_metrics_are_current() {
             7 OP_EQUALVERIFY
             OP_TRUE
         };
-        let result = execute_script_with_inputs_strict(leaf, witness.clone());
-        assert!(result.success, "strict metric execution failed: {result}");
+        let run = bitcoin_lab::support::tapscript::execute_tapscript(
+            leaf.compile_with_policy(),
+            witness.clone(),
+            bitcoin_lab::support::tapscript::TapscriptProfile::Consensus,
+        );
+        let result = run.execution().expect("checking leaf executes");
+        assert!(result.success, "metric execution failed: {result}");
+        assert!(result.stack_limit_enforced);
         let key = |suffix: &str| -> &'static str {
             Box::leak(format!("u4_majority_{name}_16{suffix}").into_boxed_str())
         };

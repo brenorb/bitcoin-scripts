@@ -467,7 +467,7 @@ the per-symbol complement quotient and cyclic vector rotation.
 ## Strict majority of u4 vectors
 
 At 16 nibbles the Boyer-Moore decision costs 486 script bytes (peak 20, zero
-hints) against a 4,256-byte lower bound for sixteen fixed-symbol counts, and a
+hints) against a 4,256-byte naive sum of sixteen destructive fixed-symbol helpers (not a lower bound for shared counting), and a
 witness-claimed majority check costs 213 bytes with one hint (strict local
 `unclassified` tapscript, `locally-reproduced`). The claim check cannot report
 absence. See [the primitive](../primitives/u4-majority.md) and NR-094.

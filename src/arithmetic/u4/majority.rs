@@ -108,6 +108,26 @@ mod tests {
     use crate::support::execution::{execute_raw_script_with_inputs_strict, execute_script};
     use bitcoin_scriptexec::ExecError;
 
+    #[test]
+    fn permissive_numeric_aliases_remain_on_the_stack() {
+        use crate::support::tapscript::{execute_tapscript, TapscriptProfile};
+        for (fragment, witness) in [
+            (u4_nibbles_majority(1), vec![vec![7, 0]]),
+            (u4_nibbles_majority_hinted(1), vec![vec![7], vec![7, 0]]),
+        ] {
+            let run = execute_tapscript(
+                fragment.compile_with_policy(),
+                witness,
+                TapscriptProfile::Consensus,
+            );
+            let result = run.execution().expect("majority fragment executes");
+            assert!(result.error.is_none(), "{result}");
+            assert!(result.stack_limit_enforced);
+            assert_eq!(result.final_stack.len(), 1);
+            assert_eq!(result.final_stack.get(0), vec![7, 0]);
+        }
+    }
+
     fn num(value: i64) -> Vec<u8> {
         let mut bytes = [0u8; 8];
         let len = bitcoin::script::write_scriptint(&mut bytes, value);
